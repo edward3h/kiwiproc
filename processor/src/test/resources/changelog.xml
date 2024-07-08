@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+    <changeSet id="1" author="edward3h">
+        <createTable tableName="restaurant">
+            <column name="id" type="serial"><constraints nullable="false" primaryKey="true"/> </column>
+            <column name="name" type="varchar(255)"><constraints nullable="false"/> </column>
+            <column name="tables" type="int" defaultValueNumeric="0"/>
+            <column name="chain" type="varchar(255)"/>
+        </createTable>
+        <createTable tableName="booking">
+            <column name="id" type="serial"><constraints nullable="false" primaryKey="true"/> </column>
+            <column name="restaurant_id" type="int"><constraints nullable="false" foreignKeyName="id" referencedTableName="restaurant"/> </column>
+            <column name="date" type="date"><constraints nullable="false"/> </column>
+            <column name="time" type="time"><constraints nullable="false"/> </column>
+            <column name="guests" type="int" defaultValueNumeric="2"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="2" author="edward3h">
+        <loadData tableName="restaurant" file="restaurants.csv"/>
+    </changeSet>
+</databaseChangeLog>

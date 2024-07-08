@@ -1,0 +1,1 @@
+Database schema and data are copied from the famous spring-petclinic demo.
