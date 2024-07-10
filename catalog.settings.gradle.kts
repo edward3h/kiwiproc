@@ -18,7 +18,7 @@ dependencyResolutionManagement {
 
             library("metainfservices", "org.kohsuke.metainf-services:metainf-services:1.11")
 
-            library("utilitary", "com.karuslabs:utilitary:2.0.0")
+            library("utilitary", "com.karuslabs:utilitary:2.0.1")
             library("postgresql", "org.postgresql:postgresql:42.5.1")
 
             library("jstachio-processor", "io.jstach", "jstachio-apt").versionRef("jstachio")
