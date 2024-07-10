@@ -52,9 +52,9 @@ public class DatabaseWrapper {
 
     @SuppressWarnings("SqlSourceToSinkFlow")
     public QueryMetaData getQueryMetaData(String sql) throws SQLException {
+        System.err.printf("getQueryMetaData(%s)%n", sql);
         try (var connection = getConnection(); var statement = connection.prepareStatement(sql)) {
             var builder = QueryMetaDataBuilder.builder();
-            System.err.println("statement for " + sql + "  " + statement);
             var rsmd = statement.getMetaData();
             for (var index = 1; index <= rsmd.getColumnCount(); index++) {
                 builder.addResultColumns(ColumnMetaData.from(connection, index, rsmd));

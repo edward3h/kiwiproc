@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     api(project(":shared"))
+    api(libs.mapstruct.compile)
 }

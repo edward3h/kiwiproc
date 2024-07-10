@@ -1,5 +1,6 @@
 plugins {
     id("java-convention")
+    id("org.ethelred.embeddedpostgres")
     id("io.micronaut.library") version "4.4.0"
 }
 
@@ -10,5 +11,5 @@ micronaut {
 dependencies {
     annotationProcessor(project(":processor"))
     implementation(project(":runtime"))
-     testImplementation("io.micronaut.test:micronaut-test-junit5")
+    testImplementation("io.micronaut.test:micronaut-test-junit5")
 }

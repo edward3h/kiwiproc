@@ -16,6 +16,7 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.recordbuilder.core)
     implementation(libs.jstachio.compile)
+    implementation(libs.mapstruct.processor)
     testAnnotationProcessor(libs.mapstruct.processor)
     testImplementation(project(":runtime"))
     testImplementation(libs.jakarta.inject)

@@ -1,12 +1,16 @@
 package org.ethelred.kiwiproc.processor;
 
 import com.karuslabs.utilitary.AnnotationProcessor;
+import io.avaje.jsonb.JsonType;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.meta.DatabaseWrapper;
 import org.ethelred.kiwiproc.meta.ParsedQuery;
+import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
 import io.avaje.jsonb.Jsonb;
+import org.ethelred.kiwiproc.processorconfig.jsonb.DataSourceConfigJsonAdapter;
+import org.ethelred.kiwiproc.processorconfig.jsonb.ProcessorConfigJsonAdapter;
 import org.jspecify.annotations.Nullable;
 import org.kohsuke.MetaInfServices;
 
@@ -16,6 +20,8 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.ElementFilter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
@@ -44,6 +50,13 @@ public class KiwiProcessor extends AnnotationProcessor implements ClassNameMixin
     private final Map<String, DatabaseWrapper> databases = new HashMap<>();
     private @Nullable DAOGenerator generator;
 
+    // automated adapter discovery doesn't work in annotation processor
+    Jsonb jsonb = Jsonb.builder()
+            .add(ProcessorConfig.class, ProcessorConfigJsonAdapter::new)
+            .add(DataSourceConfig.class, DataSourceConfigJsonAdapter::new)
+            .build();
+    JsonType<ProcessorConfig> configType = jsonb.type(ProcessorConfig.class);
+
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
@@ -63,8 +76,6 @@ public class KiwiProcessor extends AnnotationProcessor implements ClassNameMixin
                 logger.error(null, "Config file '%s' not found.".formatted(path));
             } else {
                 try (var reader = Files.newBufferedReader(path)) {
-                    var jsonb = Jsonb.builder().build();
-                    var configType = jsonb.type(ProcessorConfig.class);
                     var config = configType.fromJson(reader);
                     if (config.dataSources().isEmpty()) {
                         logger.error(null, "No datasources in config file '%s'.".formatted(path));
@@ -72,11 +83,17 @@ public class KiwiProcessor extends AnnotationProcessor implements ClassNameMixin
                         return config;
                     }
                 } catch (Exception e) {
-                    logger.error(null, "Exception reading config file '%s'. %s".formatted(path, e.getMessage()));
+                    logger.error(null, "Exception reading config file '%s'. %s%n%s".formatted(path, e.getMessage(), stackTrace(e)));
                 }
             }
         }
         return ProcessorConfig.EMPTY;
+    }
+
+    private String stackTrace(Exception e) {
+        var stringWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(stringWriter));
+        return stringWriter.toString();
     }
 
     private DatabaseWrapper getDatabase(String name) {

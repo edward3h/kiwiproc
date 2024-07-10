@@ -15,16 +15,14 @@ public enum QueryMethodKind {
         @Override
         public String getSql(ExecutableElement element) {
             var prism = SqlQueryPrism.getInstanceOn(element);
-            assert prism != null;
-            return Objects.requireNonNullElse(prism.sql(), prism.value());
+            return prism.sql().isBlank() ? prism.value() : prism.sql();
         }
     },
     UPDATE(SqlUpdatePrism::isPresent) {
         @Override
         public String getSql(ExecutableElement element) {
             var prism = SqlUpdatePrism.getInstanceOn(element);
-            assert prism != null;
-            return Objects.requireNonNullElse(prism.sql(), prism.value());
+            return prism.sql().isBlank() ? prism.value() : prism.sql();
         }
 
         @Override
@@ -40,8 +38,7 @@ public enum QueryMethodKind {
         @Override
         public String getSql(ExecutableElement element) {
             var prism = SqlBatchPrism.getInstanceOn(element);
-            assert prism != null;
-            return Objects.requireNonNullElse(prism.sql(), prism.value());
+            return prism.sql().isBlank() ? prism.value() : prism.sql();
         }
 
         @Override
