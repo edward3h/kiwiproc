@@ -38,6 +38,11 @@ dependencyResolutionManagement {
 
             library("jspecify", "org.jspecify:jspecify:0.3.0")
 
+            library("guava", "com.google.guava:guava:32.1.3-jre")
+            library("compile-testing", "com.google.testing.compile:compile-testing:0.21.0")
+            library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
+
+            bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }
     }
 }
