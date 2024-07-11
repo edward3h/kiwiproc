@@ -2,7 +2,7 @@
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
-            version("avaje-json", "1.7")
+            version("avaje-json", "1.12")
             version("jstachio", "1.3.2")
             version("junit", "5.10.0")
             version("recordbuilder", "37")
