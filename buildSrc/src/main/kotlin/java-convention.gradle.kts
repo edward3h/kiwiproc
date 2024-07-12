@@ -22,6 +22,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     testImplementation("com.google.truth:truth:1.1.5")
-    testImplementation("com.google.truth.extensions:truth-java8-extension:1.1.5")
+    testImplementation("com.google.truth.extensions:truth-java8-extension:1.4.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
