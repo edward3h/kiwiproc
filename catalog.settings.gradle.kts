@@ -3,7 +3,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             version("avaje-json", "1.7")
-            version("jstachio", "1.3.2")
+            version("jstachio", "1.3.6")
             version("junit", "5.10.0")
             version("recordbuilder", "37")
             version("mapstruct", "1.5.5.Final")
