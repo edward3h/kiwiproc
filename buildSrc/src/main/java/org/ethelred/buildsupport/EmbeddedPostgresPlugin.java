@@ -13,8 +13,8 @@ public abstract class EmbeddedPostgresPlugin implements Plugin<Project> {
         project.getGradle().getSharedServices().registerIfAbsent("embeddedPostgres", EmbeddedPostgresService.class);
 
         var processorConfigTask = project.getTasks().register("processorConfig", ProcessorConfigTask.class, task -> {
-            task.getConfigFile().set(project.getLayout().getBuildDirectory().file("config.json"));
-            task.getApplicationConfigFile().convention(project.getLayout().getBuildDirectory().file("resources/test/application-test.yml"));
+            task.getConfigFile().set(project.getLayout().getBuildDirectory().file("processorConfig/config.json"));
+            task.getApplicationConfigFile().convention(project.getLayout().getBuildDirectory().file("processorConfig/application-test.yml"));
             task.getDependencyInjectionStyle().convention("JAKARTA");
             task.getLiquibaseChangelog().convention(project.getLayout().getProjectDirectory().file("src/main/resources/changelog.xml"));
         });

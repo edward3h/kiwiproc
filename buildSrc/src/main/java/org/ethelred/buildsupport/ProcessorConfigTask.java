@@ -19,7 +19,7 @@ public abstract class ProcessorConfigTask extends DefaultTask {
     abstract RegularFileProperty getConfigFile();
 
     @OutputFile
-    abstract RegularFileProperty getApplicationConfigFile();
+    public abstract RegularFileProperty getApplicationConfigFile();
 
     @InputFile
     abstract RegularFileProperty getLiquibaseChangelog();
