@@ -3,7 +3,7 @@ import org.ethelred.buildsupport.ProcessorConfigTask
 plugins {
     id("java-convention")
     id("org.ethelred.embeddedpostgres")
-    id("io.micronaut.library") version "4.4.0"
+    id("io.micronaut.library") version "4.4.2"
 }
 
 micronaut {
