@@ -55,6 +55,7 @@ public abstract class ProcessorConfigTask extends DefaultTask {
         var outputPath = getConfigFile().get().getAsFile().toPath();
         try {
             Files.writeString(outputPath, config, StandardCharsets.UTF_8);
+            getLogger().info("Wrote {}", outputPath);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -69,6 +70,7 @@ public abstract class ProcessorConfigTask extends DefaultTask {
             outputPath = getApplicationConfigFile().get().getAsFile().toPath();
             try {
                 Files.writeString(outputPath, applicationConfig, StandardCharsets.UTF_8);
+                getLogger().info("Wrote {}", outputPath);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
