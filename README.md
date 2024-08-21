@@ -1,6 +1,6 @@
-# Query Helper*
+# Kiwiproc
 
-*Please help come up with a better name.
+_Under development:_ there are many use cases yet to be implemented.
 
 ## Overview
 
