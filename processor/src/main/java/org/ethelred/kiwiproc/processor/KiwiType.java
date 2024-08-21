@@ -1,2 +1,14 @@
-package org.ethelred.kiwiproc.processor;public interface KiwiType {
+package org.ethelred.kiwiproc.processor;
+
+/**
+ * Simplified view of type for parameters and return.
+ */
+public sealed interface KiwiType permits ContainerType, RecordType, SimpleType, UnsupportedType, VoidType {
+    static KiwiType unsupported() {
+        return new UnsupportedType();
+    }
+
+    String packageName();
+
+    String className();
 }

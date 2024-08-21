@@ -8,5 +8,5 @@ public interface Batch<T extends Batchable<T>> extends AutoCloseable {
 
     BatchId addBatch(DAORunnable<T> consumer) throws SQLException;
 
-    record BatchId(String id){}
+    record BatchId(String id) {}
 }

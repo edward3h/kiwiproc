@@ -1,27 +1,11 @@
 package org.ethelred.kiwiproc.processor;
 
-import java.util.Objects;
+public record TypeMapping(SimpleType source, SimpleType target) {
 
-public record TypeMapping(String source, String target) {
-    public static final TypeMapping VOID = new TypeMapping("void", "void");
-
-    public boolean isIdentity() {
-        return Objects.equals(source, target);
-    }
-
-    public String methodName() {
-        var builder = new StringBuilder("to");
-        boolean up = true;
-        for(var c: target.toCharArray()) {
-            if (!Character.isJavaIdentifierPart(c)) {
-                up = true;
-            } else if (up) {
-                builder.append(Character.toUpperCase(c));
-                up = false;
-            } else {
-                builder.append(c);
-            }
+    public static TypeMapping of(KiwiType source, KiwiType target) {
+        if (source instanceof SimpleType simpleSource && target instanceof SimpleType simpleTarget) {
+            return new TypeMapping(simpleSource, simpleTarget);
         }
-        return builder.toString();
+        throw new IllegalArgumentException("TypeMapping requires simple types (%s) -> (%s)".formatted(source, target));
     }
 }

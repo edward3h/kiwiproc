@@ -1,10 +1,5 @@
 package org.ethelred.kiwiproc.impl;
 
-import org.ethelred.kiwiproc.api.Batch;
-import org.ethelred.kiwiproc.api.Batchable;
-import org.ethelred.kiwiproc.api.DAORunnable;
-import org.ethelred.kiwiproc.exception.UncheckedSQLException;
-
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
@@ -12,21 +7,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.ethelred.kiwiproc.api.Batch;
+import org.ethelred.kiwiproc.api.Batchable;
+import org.ethelred.kiwiproc.api.DAORunnable;
+import org.ethelred.kiwiproc.exception.UncheckedSQLException;
 
-public abstract class AbstractBatch<T extends Batchable<T>> implements Batch<T>
-{
+public abstract class AbstractBatch<T extends Batchable<T>> implements Batch<T> {
     private final Map<BatchId, PreparedStatement> batches = new ConcurrentHashMap<>();
 
-    protected AbstractBatch(){}
+    protected AbstractBatch() {}
 
     protected abstract DeferredContext<T> newBatchContext();
+
     @Override
     public BatchId addBatch(DAORunnable<T> consumer) throws SQLException {
         var context = newBatchContext();
         var toAdd = context.run(consumer);
-        toAdd.setter().accept(
-                batches.computeIfAbsent(toAdd.batchId(), b -> toAdd.prepare().get())
-        );
+        toAdd.setter().accept(batches.computeIfAbsent(toAdd.batchId(), b -> toAdd.prepare()
+                .get()));
         return toAdd.batchId();
     }
 
@@ -46,8 +44,7 @@ public abstract class AbstractBatch<T extends Batchable<T>> implements Batch<T>
     @Override
     public Map<BatchId, int[]> execute() throws SQLException {
         try {
-            return batches.entrySet()
-                    .stream()
+            return batches.entrySet().stream()
                     .map(this::executeOne)
                     .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
         } catch (UncheckedSQLException e) {
@@ -59,10 +56,7 @@ public abstract class AbstractBatch<T extends Batchable<T>> implements Batch<T>
         try {
             var stmt = batchIdPreparedStatementEntry.getValue();
             var result = stmt.executeBatch();
-            return Map.entry(
-                    batchIdPreparedStatementEntry.getKey(),
-                    result
-            );
+            return Map.entry(batchIdPreparedStatementEntry.getKey(), result);
         } catch (SQLException e) {
             throw new UncheckedSQLException(e);
         }
@@ -72,5 +66,6 @@ public abstract class AbstractBatch<T extends Batchable<T>> implements Batch<T>
         DeferredAddBatch run(DAORunnable<T> daoRunnable) throws SQLException;
     }
 
-    protected record DeferredAddBatch(BatchId batchId, Supplier<PreparedStatement> prepare, Consumer<PreparedStatement> setter){}
+    protected record DeferredAddBatch(
+            BatchId batchId, Supplier<PreparedStatement> prepare, Consumer<PreparedStatement> setter) {}
 }

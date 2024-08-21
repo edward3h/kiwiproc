@@ -1,176 +1,233 @@
 package org.ethelred.kiwiproc.processor;
 
 import com.karuslabs.utilitary.Logger;
+import java.util.*;
+import javax.lang.model.element.Element;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 
-import javax.lang.model.element.Name;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.*;
+public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes) {
 
-import javax.lang.model.util.SimpleTypeVisitor14;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.time.LocalDate;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
+    private static final KiwiType UPDATE_RETURN_TYPE = SimpleType.ofClass(int.class);
+    private static final KiwiType BATCH_RETURN_TYPE = new ContainerType(ValidContainerType.ARRAY, UPDATE_RETURN_TYPE);
 
-public class TypeValidator {
-    public static final Set<Class<?>> BASIC_TYPES = Set.of(String.class, BigInteger.class, BigDecimal.class, LocalDate.class, Date.class);
-    private final TypeUtils typeUtils;
-    private final Logger logger;
-
-    public TypeValidator(TypeUtils typeUtils, Logger logger) {
-        this.typeUtils = typeUtils;
-        this.logger = logger;
-    }
-    
-    void info(String format, Object... args) {
-        logger.note(null, String.format(format, args));
+    public TypeValidator {
+        element = Objects.requireNonNull(element);
     }
 
-    interface Info {
-        void info(String format, Object... args);
+    public TypeValidator(Logger logger, Element methodElement) {
+        this(logger, methodElement, new CoreTypes());
     }
 
-    public boolean validateParameters(Map<ColumnMetaData, MethodParameterInfo> parameterMapping) {
-        var valid = new AtomicBoolean(true);
-        parameterMapping.forEach(((columnMetaData, methodParameterInfo) -> {
-            TypeMirror type = methodParameterInfo.type();
-            if (!type.accept(new ParameterTypeValidator(), columnMetaData)) {
-                valid.set(false);
-                logger.error(methodParameterInfo.variableElement(), "Unsupported type for parameter '%s': %s".formatted(methodParameterInfo.name(), type));
+    public boolean validateParameters(Map<ColumnMetaData, MethodParameterInfo> parameterMapping, QueryMethodKind kind) {
+        boolean result = true;
+        for (var entry : parameterMapping.entrySet()) {
+            var columnMetaData = entry.getKey();
+            var methodParameterInfo = entry.getValue();
+            var parameterType = methodParameterInfo.type();
+            if (kind == QueryMethodKind.BATCH && parameterType instanceof ContainerType containerType) {
+                // unwrap container because it will be iterated for the batch
+                parameterType = containerType.containedType();
             }
-        }));
+            var element = methodParameterInfo.variableElement();
+            KiwiType columnType = SqlTypeMapping.get(columnMetaData).kiwiType();
+            if (!withElement(element).validateSingleParameter(parameterType, columnType)) {
+                result = false;
+            }
+        }
+        if (kind == QueryMethodKind.BATCH
+                && parameterMapping.values().stream()
+                        .map(MethodParameterInfo::type)
+                        .anyMatch(t -> t instanceof ContainerType)) {
+            result = false;
+            logger.error(element, "SqlBatch method must have at least one iterable parameter");
+        }
 
-        return valid.get();
+        return result;
     }
 
-    public boolean validateReturn(List<ColumnMetaData> columnMetaData, TypeMirror returnType) {
-        return new ReturnTypeValidator().visit(returnType, new ReturnTypeContext(TypeLevel.Container, columnMetaData, this::info));
+    private TypeValidator withElement(Element element) {
+        return new TypeValidator(logger, element, coreTypes);
     }
 
-    enum TypeLevel { Container, Component, Value}
-
-    record ReturnTypeContext(TypeLevel level, List<ColumnMetaData> columnMetaData, Info info) {
-
-        public boolean single() {
-            return columnMetaData.size() == 1;
-        }
-
-        public ReturnTypeContext withLevel(TypeLevel level) {
-            return new ReturnTypeContext(level, columnMetaData, info);
-        }
-
-        public boolean container() {
-            return level == TypeLevel.Container;
-        }
-
-        public ReturnTypeContext asComponent() {
-            return withLevel(TypeLevel.Component);
-        }
-
-        public boolean component() {
-            return level == TypeLevel.Component;
-        }
-
-        public ReturnTypeContext asValue() {
-            return withLevel(TypeLevel.Value);
-        }
-
-        public boolean hasColumn(Name simpleName) {
-            info.info("hasColumn(%s) %s", simpleName, columnMetaData.stream().map(ColumnMetaData::name).toList());
-            return columnMetaData.stream().anyMatch(cmd -> cmd.name().equalsIgnoreCase(simpleName.toString()));
-        }
-    }
-
-    class ReturnTypeValidator extends SimpleTypeVisitor14<Boolean, ReturnTypeContext> {
-        public ReturnTypeValidator() {
-            super(false);
-        }
-
-
-
-        @Override
-        public Boolean visitPrimitive(PrimitiveType t, ReturnTypeContext returnTypeContext) {
-            info("Return type validate %s, level %s", t, returnTypeContext.level);
-            return returnTypeContext.single() || returnTypeContext.level == TypeLevel.Value;
-        }
-
-        @Override
-        public Boolean visitArray(ArrayType t, ReturnTypeContext returnTypeContext) {
-            info("Return type validate %s, level %s", t, returnTypeContext.level);
-            return returnTypeContext.container() && visit(t.getComponentType(), returnTypeContext.asComponent());
-        }
-
-        @Override
-        public Boolean visitDeclared(DeclaredType t, ReturnTypeContext returnTypeContext) {
-            info("Return type validate %s, level %s", t, returnTypeContext.level);
-            try {
-                var isBoxed = visitPrimitive(typeUtils.unboxedType(t), returnTypeContext); // succeeds if type is a boxed primitive
-                info("Boxed %s", t);
-                return isBoxed;
-            } catch (IllegalArgumentException ignored) {
-                // not a boxed type
-            }
-            if (BASIC_TYPES.stream().anyMatch(bt -> typeUtils.isSameType(t, typeUtils.type(bt)))) {
-                info("Basic type %s", t);
-                return returnTypeContext.single() || returnTypeContext.level == TypeLevel.Value;
-            }
-            if (Stream.of(ContainerType.values()).map(ContainerType::javaType).anyMatch(bt -> typeUtils.isSameType(typeUtils.erasure(t), typeUtils.erasure(typeUtils.type(bt))))) {
-                var typeArguments = t.getTypeArguments();
-                info("Container %s args %s level %s", typeUtils.erasure(t), typeArguments, returnTypeContext.level);
-                return returnTypeContext.container() && typeArguments.size() == 1 && visit(typeArguments.get(0), returnTypeContext.asComponent());
-            }
-            if (typeUtils.isRecord(t) && !returnTypeContext.single() && (returnTypeContext.container() || returnTypeContext.component())) {
-                info("Record %s", t);
-                var asValue = returnTypeContext.asValue();
-                return typeUtils.recordComponents(t).stream().allMatch(c -> asValue.hasColumn(c.getSimpleName()) && visit(c.asType(), asValue));
-            }
-            info("Unsupported return type %s", t);
+    private boolean validateSingleParameter(KiwiType parameterType, KiwiType columnType) {
+        if (!validateGeneral(parameterType)) {
+            logger.error(element, "Unsupported type %s for parameter %s".formatted(parameterType, simpleName()));
             return false;
         }
-
-
+        if (!validateCompatible(parameterType, columnType)) {
+            logger.error(
+                    element,
+                    "Parameter type %s is not compatible with SQL type %s for parameter %s"
+                            .formatted(parameterType, columnType, simpleName()));
+            return false;
+        }
+        return true;
     }
 
-    class ParameterTypeValidator extends SimpleTypeVisitor14<Boolean, ColumnMetaData> {
-        protected ParameterTypeValidator() {
-            super(false);
-        }
+    private CharSequence simpleName() {
+        return element == null ? "unknown element" : element.getSimpleName();
+    }
 
-        @Override
-        public Boolean visitPrimitive(PrimitiveType t, ColumnMetaData columnMetaData) {
+    /**
+     * Check whether we know how to convert "from" to "to".
+     * This operation is not necessarily commutative.
+     * @param from
+     * @param to
+     * @return
+     */
+    private boolean validateCompatible(KiwiType from, KiwiType to) {
+        if (from.equals(to)) {
+            // shortcut
             return true;
         }
-
-        @Override
-        public Boolean visitArray(ArrayType t, ColumnMetaData columnMetaData) {
-            return visit(t.getComponentType(), columnMetaData);
+        if (from instanceof ContainerType fromContainer && to instanceof ContainerType toContainer) {
+            // we can convert any container into a different one, since they are all effectively equivalent to Iterable.
+            return validateCompatible(fromContainer.containedType(), toContainer.containedType());
         }
+        if (to instanceof ContainerType toContainer) {
+            // we can convert a single value to a container by wrapping
+            return validateCompatible(from, ((ContainerType) to).containedType());
+        }
+        if (from instanceof ContainerType containerType
+                && containerType.type() == ValidContainerType.OPTIONAL
+                && to instanceof SimpleType simpleType) {
+            // an Optional can be converted to a nullable simple type
+            // TODO how to interact with Record?
+            return simpleType.isNullable() && validateCompatible(containerType.containedType(), simpleType);
+        }
+        if (from instanceof RecordType fromRecord && to instanceof RecordType toRecord) {
+            // Component names must match, and types must be compatible. Order is not relevant in this context.
+            var toComponents = toRecord.components();
+            return fromRecord.components().stream().allMatch(e -> {
+                var toComponentType = toComponents.stream()
+                        .filter(toComponent -> e.name().equals(toComponent.name()))
+                        .findFirst()
+                        .orElse(null);
+                return toComponentType != null && validateCompatible(e.type(), toComponentType.type());
+            });
+        }
+        if (from instanceof SimpleType fromType
+                && !fromType.isNullable()
+                && to instanceof SimpleType toType
+                && toType.isNullable()) {
+            // non-null can be converted to nullable
+            return validateCompatible(fromType.withIsNullable(true), toType);
+        }
+        if (from instanceof SimpleType fromType && to instanceof SimpleType toType) {
+            return validateSimpleCompatible(fromType, toType);
+        }
+        return false;
+    }
 
-        @Override
-        public Boolean visitDeclared(DeclaredType t, ColumnMetaData columnMetaData) {
-            try {
-                typeUtils.unboxedType(t); // succeeds if type is a boxed primitive
-                return true;
-            } catch (IllegalArgumentException ignored) {
-
-            }
-            if (BASIC_TYPES.stream()
-                    .anyMatch(bt -> typeUtils.isSameType(t, typeUtils.type(bt)))) {
-                return true;
-            }
-            if (typeUtils.isSubtype(t, typeUtils.type(Iterable.class))) {
-                var typeArguments = t.getTypeArguments();
-                return typeArguments.size() == 1 && visit(typeArguments.get(0), columnMetaData);
-            }
-            if (typeUtils.isRecord(t) && t.asElement() instanceof TypeElement typeElement) {
-                var rc = typeElement.getRecordComponents();
-                return !rc.isEmpty()
-                        && rc.stream().allMatch(recordComponentElement -> visit(recordComponentElement.asType(), columnMetaData));
-            }
+    private boolean validateSimpleCompatible(SimpleType fromType, SimpleType toType) {
+        if (fromType.equals(toType)) {
+            // shortcut
+            return true;
+        }
+        if (fromType.isNullable() != toType.isNullable()) {
+            // nullability must match. (See validateCompatible for non-null -> null)
             return false;
         }
+        if (toType.equals(CoreTypes.STRING_TYPE.withIsNullable(toType.isNullable()))) {
+            // anything can be converted to String
+            return true;
+        }
+        var typeLookup = coreTypes.lookup(fromType, toType);
+        if (typeLookup.hasWarning()) {
+            logger.warn(element, typeLookup.warning());
+        }
+        return typeLookup.isValid();
+        // TODO user defined mappings
+    }
+
+    /**
+     * Common check for the expected hierarchy.
+     * @param type
+     * @return
+     */
+    private boolean validateGeneral(KiwiType type) {
+        // switch record pattern not available in Java 17 :-(
+        if (type instanceof SimpleType || type instanceof VoidType) {
+            return true;
+        }
+        if (type instanceof ContainerType ct) {
+            var contained = ct.containedType();
+            return ((contained instanceof RecordType) || (contained instanceof SimpleType))
+                    && validateGeneral(contained);
+        }
+        if (type instanceof RecordType rt) {
+            var componentTypes = rt.components();
+            return componentTypes.stream().allMatch(t -> t.type() instanceof SimpleType);
+        }
+        return false;
+    }
+
+    private boolean reportError(String message) {
+        logger.error(element, message);
+        return false;
+    }
+
+    private void info(String message) {
+        logger.note(element, message);
+    }
+
+    private void debug(String message) {
+        info("DEBUG: " + message);
+    }
+
+    public boolean validateReturn(List<ColumnMetaData> columnMetaData, KiwiType returnType, QueryMethodKind kind) {
+        if (returnType instanceof VoidType && kind != QueryMethodKind.QUERY) {
+            return true;
+        }
+        if (kind == QueryMethodKind.UPDATE) {
+            return validateCompatible(UPDATE_RETURN_TYPE, returnType)
+                    || reportError("SqlUpdate return type must be compatible with int");
+        }
+        if (kind == QueryMethodKind.BATCH) {
+            return validateCompatible(BATCH_RETURN_TYPE, returnType)
+                    || reportError("SqlBatch return type must be compatible with int[]");
+        }
+        // below clauses apply to kind QUERY
+        if (returnType instanceof ContainerType containerType) {
+            // any container is acceptable
+            debug("Return type Container %s.%s".formatted(containerType.packageName(), containerType.className()));
+            return validateReturn(columnMetaData, containerType.containedType(), kind);
+        }
+        if (columnMetaData.size() == 1 && returnType instanceof SimpleType simpleType) {
+            debug("Return type simple %s.%s".formatted(simpleType.packageName(), simpleType.className()));
+            // a single column result maps to a simple type
+            var first = columnMetaData.get(0);
+            KiwiType columnType = SqlTypeMapping.get(first).kiwiType();
+            return validateCompatible(columnType, simpleType);
+        }
+        if (returnType instanceof RecordType recordType) {
+            debug("Return type record %s.%s".formatted(recordType.packageName(), recordType.className()));
+            var components = recordType.components();
+            return columnMetaData.stream().allMatch(cmd -> {
+                        var componentType = components.stream()
+                                .filter(toComponent -> cmd.name().equals(toComponent.name()))
+                                .findFirst()
+                                .orElse(null);
+                        KiwiType columnType = SqlTypeMapping.get(cmd).kiwiType();
+                        return (componentType != null
+                                        && componentType.type() instanceof SimpleType simpleType
+                                        && validateCompatible(columnType, simpleType))
+                                || reportError("Missing or incompatible component type %s for column %s type %s"
+                                        .formatted(componentType, cmd.name(), columnType));
+                    })
+                    && components.stream().allMatch(cmp -> {
+                        var cmd = columnMetaData.stream()
+                                .filter(col -> col.name().equals(cmp.name()))
+                                .findFirst()
+                                .orElse(null);
+                        var colType =
+                                cmd == null ? null : SqlTypeMapping.get(cmd).kiwiType();
+                        return (cmd != null && validateCompatible(colType, cmp.type()))
+                                || reportError("Missing or incompatible column type %s for component %s type %s"
+                                        .formatted(colType, cmp.name(), cmp.type()));
+                    });
+        }
+
+        return false;
     }
 }

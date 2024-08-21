@@ -1,34 +1,30 @@
 package org.ethelred.kiwiproc.meta;
 
+import java.sql.*;
 import org.jspecify.annotations.Nullable;
 import org.postgresql.core.BaseConnection;
 
-import java.sql.*;
-
 public record ColumnMetaData(
-        int index,
-        String name,
-        boolean nullable,
-        JDBCType sqlType,
-        String dbType,
-        String javaType,
-        @Nullable JDBCType componentType
+        int index, String name, boolean nullable, JDBCType sqlType, @Nullable JDBCType componentType
         // TODO precision/scale?
-) {
-    public static ColumnMetaData from(Connection connection, int index, ResultSetMetaData resultSetMetaData) throws SQLException {
+        ) {
+    public static ColumnMetaData from(Connection connection, int index, ResultSetMetaData resultSetMetaData)
+            throws SQLException {
         return new ColumnMetaData(
                 index,
                 resultSetMetaData.getColumnName(index),
-                resultSetMetaData.isNullable(index) != ResultSetMetaData.columnNoNulls, // for results, treat 'unknown' as 'nullable' since caller may need to handle null case
+                resultSetMetaData.isNullable(index)
+                        != ResultSetMetaData
+                                .columnNoNulls, // for results, treat 'unknown' as 'nullable' since caller may need to
+                // handle null case
                 JDBCType.valueOf(resultSetMetaData.getColumnType(index)),
-                resultSetMetaData.getColumnTypeName(index),
-                resultSetMetaData.getColumnClassName(index),
-                componentType(connection, resultSetMetaData.getColumnType(index), resultSetMetaData.getColumnTypeName(index))
-        );
+                componentType(
+                        connection,
+                        resultSetMetaData.getColumnType(index),
+                        resultSetMetaData.getColumnTypeName(index)));
     }
 
-    @Nullable
-    private static JDBCType componentType(Connection connection, int columnType, String columnTypeName) {
+    @Nullable private static JDBCType componentType(Connection connection, int columnType, String columnTypeName) {
         if (columnType != Types.ARRAY) {
             return null;
         }
@@ -44,16 +40,19 @@ public record ColumnMetaData(
         return null;
     }
 
-    public static ColumnMetaData from(Connection connection, int index, ParameterMetaData parameterMetaData) throws SQLException {
+    public static ColumnMetaData from(Connection connection, int index, ParameterMetaData parameterMetaData)
+            throws SQLException {
         return new ColumnMetaData(
                 index,
                 "parameter", // does not have a name in metadata, will be associated by index outside this scope
-                parameterMetaData.isNullable(index) == ParameterMetaData.parameterNullable, // for parameters, treat 'unknown' as 'not null' since DB might not accept a null
+                parameterMetaData.isNullable(index)
+                        == ParameterMetaData
+                                .parameterNullable, // for parameters, treat 'unknown' as 'not null' since DB might not
+                // accept a null
                 JDBCType.valueOf(parameterMetaData.getParameterType(index)),
-                parameterMetaData.getParameterTypeName(index),
-                parameterMetaData.getParameterClassName(index),
-                componentType(connection,parameterMetaData.getParameterType(index), parameterMetaData.getParameterTypeName(index))
-        );
+                componentType(
+                        connection,
+                        parameterMetaData.getParameterType(index),
+                        parameterMetaData.getParameterTypeName(index)));
     }
-
 }

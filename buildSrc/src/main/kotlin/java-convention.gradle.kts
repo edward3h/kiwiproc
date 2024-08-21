@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    id("com.diffplug.spotless")
 }
 
 repositories {
@@ -24,4 +25,14 @@ dependencies {
     testImplementation("com.google.truth:truth:1.1.5")
     testImplementation("com.google.truth.extensions:truth-java8-extension:1.1.5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+spotless {
+    java {
+        cleanthat()
+        importOrder()
+        removeUnusedImports()
+        palantirJavaFormat()
+        formatAnnotations()
+    }
 }

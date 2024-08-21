@@ -14,6 +14,7 @@ public abstract class EmbeddedPostgresPlugin implements Plugin<Project> {
 
         var processorConfigTask = project.getTasks().register("processorConfig", ProcessorConfigTask.class, task -> {
             task.getConfigFile().set(project.getLayout().getBuildDirectory().file("config.json"));
+            task.getApplicationConfigFile().convention(project.getLayout().getBuildDirectory().file("resources/test/application-test.yml"));
             task.getDependencyInjectionStyle().convention("JAKARTA");
             task.getLiquibaseChangelog().convention(project.getLayout().getProjectDirectory().file("src/main/resources/changelog.xml"));
         });

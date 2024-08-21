@@ -1,8 +1,8 @@
 @GeneratePrism(DAO.class)
 @GeneratePrism(SqlQuery.class)
-        @GeneratePrism(SqlUpdate.class)
-        @GeneratePrism(SqlBatch.class)
-        @NullMarked
+@GeneratePrism(SqlUpdate.class)
+@GeneratePrism(SqlBatch.class)
+@NullMarked
 package org.ethelred.kiwiproc.processor;
 
 import io.avaje.prism.GeneratePrism;

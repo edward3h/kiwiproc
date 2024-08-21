@@ -1,15 +1,15 @@
 package org.ethelred.kiwiproc.meta;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import javax.sql.DataSource;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
 import org.jspecify.annotations.Nullable;
 import org.postgresql.ds.PGSimpleDataSource;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-
 public class DatabaseWrapper {
     @Nullable private Boolean valid;
+
     private DatabaseWrapperException error;
     private DataSource dataSource;
 
@@ -17,7 +17,7 @@ public class DatabaseWrapper {
         if (dataSourceConfig == null) {
             valid = false;
             error = new DatabaseWrapperException("No config found for data source name %s".formatted(name));
-        } else if(invalidDriver(dataSourceConfig.driverClassName())) {
+        } else if (invalidDriver(dataSourceConfig.driverClassName())) {
             valid = false;
             error = new DatabaseWrapperException("Sorry, I only support Postgres at the moment.");
         } else {
@@ -31,7 +31,9 @@ public class DatabaseWrapper {
     }
 
     private boolean invalidDriver(@Nullable String driverClassName) {
-        return driverClassName != null && !driverClassName.isBlank() && !"org.postgresql.Driver".equals(driverClassName);
+        return driverClassName != null
+                && !driverClassName.isBlank()
+                && !"org.postgresql.Driver".equals(driverClassName);
     }
 
     public boolean isValid() {
@@ -41,8 +43,7 @@ public class DatabaseWrapper {
         return valid;
     }
 
-    public DatabaseWrapperException getError()
-    {
+    public DatabaseWrapperException getError() {
         return error;
     }
 
@@ -53,7 +54,8 @@ public class DatabaseWrapper {
     @SuppressWarnings("SqlSourceToSinkFlow")
     public QueryMetaData getQueryMetaData(String sql) throws SQLException {
         System.err.printf("getQueryMetaData(%s)%n", sql);
-        try (var connection = getConnection(); var statement = connection.prepareStatement(sql)) {
+        try (var connection = getConnection();
+                var statement = connection.prepareStatement(sql)) {
             var builder = QueryMetaDataBuilder.builder();
             var rsmd = statement.getMetaData();
             for (var index = 1; index <= rsmd.getColumnCount(); index++) {
@@ -68,7 +70,9 @@ public class DatabaseWrapper {
     }
 
     private void testConnection() {
-        try (var connection = getConnection(); var st = connection.prepareStatement("SELECT 1 = 1"); var rs = st.executeQuery()) {
+        try (var connection = getConnection();
+                var st = connection.prepareStatement("SELECT 1 = 1");
+                var rs = st.executeQuery()) {
             valid = rs.next();
         } catch (SQLException e) {
             valid = false;

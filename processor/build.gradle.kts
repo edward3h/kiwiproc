@@ -6,7 +6,6 @@ dependencies {
     annotationProcessor(libs.metainfservices)
     annotationProcessor(libs.avaje.prisms)
     annotationProcessor(libs.recordbuilder.processor)
-    annotationProcessor(libs.jstachio.processor)
     implementation(project(":shared"))
     implementation(project(":querymeta"))
     implementation(libs.utilitary)
@@ -15,8 +14,9 @@ dependencies {
     implementation(libs.metainfservices)
     implementation(libs.postgresql)
     implementation(libs.recordbuilder.core)
-    implementation(libs.jstachio.compile)
     implementation(libs.mapstruct.processor)
+    implementation(libs.javapoet)
+    implementation(libs.ethelred.util)
     testAnnotationProcessor(libs.mapstruct.processor)
     testImplementation(project(":runtime"))
     testImplementation(libs.jakarta.inject)
@@ -24,5 +24,4 @@ dependencies {
     testImplementation(libs.embeddedpostgres)
     testImplementation(libs.liquibase.core)
     testImplementation(libs.mapstruct.compile)
-
 }

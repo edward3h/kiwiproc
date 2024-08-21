@@ -4,5 +4,10 @@ import io.avaje.jsonb.Json;
 import org.jspecify.annotations.Nullable;
 
 @Json
-public record DataSourceConfig(String named, String url, String database, String username, @Nullable String password, @Nullable String driverClassName) {
-}
+public record DataSourceConfig(
+        String named,
+        String url,
+        String database,
+        String username,
+        @Nullable String password,
+        @Nullable String driverClassName) {}

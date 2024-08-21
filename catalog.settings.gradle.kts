@@ -3,10 +3,10 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             version("avaje-json", "1.7")
-            version("jstachio", "1.3.2")
             version("junit", "5.10.0")
             version("recordbuilder", "37")
             version("mapstruct", "1.5.5.Final")
+            version("ethelred-util", "2.2")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
             library("avaje-json-processor", "io.avaje", "avaje-jsonb-generator").versionRef("avaje-json")
@@ -20,9 +20,6 @@ dependencyResolutionManagement {
 
             library("utilitary", "com.karuslabs:utilitary:2.0.1")
             library("postgresql", "org.postgresql:postgresql:42.5.1")
-
-            library("jstachio-processor", "io.jstach", "jstachio-apt").versionRef("jstachio")
-            library("jstachio-compile", "io.jstach", "jstachio-annotation").versionRef("jstachio")
 
             library("junit-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit")
             library("junit-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit")
@@ -38,9 +35,13 @@ dependencyResolutionManagement {
 
             library("jspecify", "org.jspecify:jspecify:0.3.0")
 
+            library("javapoet", "com.palantir.javapoet:javapoet:0.2.0")
             library("guava", "com.google.guava:guava:32.1.3-jre")
             library("compile-testing", "com.google.testing.compile:compile-testing:0.21.0")
             library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
+
+            library("ethelred-util", "org.ethelred.util", "common").versionRef("ethelred-util")
+            library("yaml", "org.yaml:snakeyaml:2.2")
 
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }

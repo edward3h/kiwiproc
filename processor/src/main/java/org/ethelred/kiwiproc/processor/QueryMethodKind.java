@@ -1,13 +1,11 @@
 package org.ethelred.kiwiproc.processor;
 
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeMirror;
 
 public enum QueryMethodKind {
     DEFAULT(ExecutableElement::isDefault),
@@ -27,11 +25,12 @@ public enum QueryMethodKind {
 
         @Override
         public boolean validateReturn(TypeUtils typeUtils, TypeMirror returnType) {
-            var result = typeUtils.returnType(returnType);
-            var kind = result.baseTypeKind();
-                return kind == TypeKind.VOID
-                        || (!result.isMultiValued() && (kind == TypeKind.INT || kind == TypeKind.LONG || kind == TypeKind.BOOLEAN));
-
+            //            var result = typeUtils.returnType(returnType);
+            //            var kind = result.baseTypeKind();
+            //                return kind == TypeKind.VOID
+            //                        || (!result.isMultiValued() && (kind == TypeKind.INT || kind == TypeKind.LONG ||
+            // kind == TypeKind.BOOLEAN));
+            return true;
         }
     },
     BATCH(SqlBatchPrism::isPresent) {
@@ -44,11 +43,12 @@ public enum QueryMethodKind {
         @Override
         public boolean validateReturn(TypeUtils typeUtils, TypeMirror returnType) {
 
-                var result = typeUtils.returnType(returnType);
-                var kind = result.baseTypeKind();
-                return kind == TypeKind.VOID
-                        || (result.isMultiValued() && (kind == TypeKind.INT || kind == TypeKind.LONG || kind == TypeKind.BOOLEAN));
-
+            //                var result = typeUtils.returnType(returnType);
+            //                var kind = result.baseTypeKind();
+            //                return kind == TypeKind.VOID
+            //                        || (result.isMultiValued() && (kind == TypeKind.INT || kind == TypeKind.LONG ||
+            // kind == TypeKind.BOOLEAN));
+            return true;
         }
     };
 
@@ -59,9 +59,7 @@ public enum QueryMethodKind {
     }
 
     static Set<QueryMethodKind> forMethod(ExecutableElement methodElement) {
-       return Stream.of(values())
-                .filter(p -> p.isKind.test(methodElement))
-                .collect(Collectors.toSet());
+        return Stream.of(values()).filter(p -> p.isKind.test(methodElement)).collect(Collectors.toSet());
     }
 
     public String getSql(ExecutableElement element) {

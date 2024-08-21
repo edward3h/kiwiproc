@@ -3,10 +3,11 @@ package org.ethelred.kiwiproc.meta;
 import java.util.*;
 import java.util.regex.Pattern;
 
-public record ParsedQuery(String rawSql, String parsedSql, List<String> parameterNames){
-    private static final Pattern PARAMETER_REGEX = Pattern.compile("([^:\\\\]*)((?<![:]):([a-zA-Z0-9_]+))([^:]*)"); // borrowed from micronaut-data
+public record ParsedQuery(String rawSql, String parsedSql, List<String> parameterNames) {
+    private static final Pattern PARAMETER_REGEX =
+            Pattern.compile("([^:\\\\]*)((?<![:]):([a-zA-Z0-9_]+))([^:]*)"); // borrowed from micronaut-data
 
-    public static ParsedQuery parse(String rawSql){
+    public static ParsedQuery parse(String rawSql) {
         var parsedSql = new StringBuilder();
         var indices = new ArrayList<String>();
         var matcher = PARAMETER_REGEX.matcher(rawSql);

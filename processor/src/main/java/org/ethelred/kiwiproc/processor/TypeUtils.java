@@ -2,21 +2,14 @@ package org.ethelred.kiwiproc.processor;
 
 import com.karuslabs.utilitary.Logger;
 import com.karuslabs.utilitary.type.TypeMirrors;
-import org.ethelred.kiwiproc.meta.ColumnMetaData;
-import org.jspecify.annotations.Nullable;
-
+import java.util.List;
+import java.util.Objects;
 import javax.lang.model.element.*;
 import javax.lang.model.type.*;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleTypeVisitor14;
 import javax.lang.model.util.Types;
-import java.math.BigDecimal;
-import java.sql.JDBCType;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public class TypeUtils extends TypeMirrors {
     private final Logger logger;
@@ -50,54 +43,8 @@ public class TypeUtils extends TypeMirrors {
         return new ToStringVisitor().visit(type);
     }
 
-    Optional<TypeMirror> sqlType(ColumnMetaData target) {
-        TypeMirror targetType = null;
-        var baseClass = baseSqlType(target.sqlType());
-        if (baseClass == null) {
-if (target.sqlType() == JDBCType.ARRAY) {
-    baseClass = arraySqlType(target);
-    targetType = type(baseClass);
-}
-        } else if (baseClass.isPrimitive() && target.nullable()) {
-            targetType = box(type(baseClass));
-        } else {
-            targetType = type(baseClass);
-        }
-
-        return Optional.ofNullable(targetType);
-    }
-
-    private Class<?> arraySqlType(ColumnMetaData target) {
-        return null;
-    }
-
-    @Nullable
-    Class<?> baseSqlType(JDBCType jdbcType) {
-        return switch (jdbcType) {
-            case BIT, BOOLEAN -> boolean.class;
-            case BINARY, LONGVARBINARY, VARBINARY -> byte[].class;
-            case CHAR, LONGNVARCHAR, LONGVARCHAR, NCHAR, NVARCHAR, VARCHAR -> String.class;
-            case DATE -> java.sql.Date.class;
-            case DECIMAL -> BigDecimal.class;
-            case DOUBLE -> double.class;
-            case FLOAT, REAL -> float.class;
-            case INTEGER -> int.class;
-            case BIGINT -> long.class;
-            case SMALLINT -> short.class;
-            case TINYINT -> byte.class;
-            case TIME, TIME_WITH_TIMEZONE -> Time.class;
-            case TIMESTAMP, TIMESTAMP_WITH_TIMEZONE -> Timestamp.class;
-            case ARRAY, OTHER -> null; // null means additional checks are required
-            default -> throw new IllegalArgumentException("Unsupported type " + jdbcType);
-        };
-    }
-
-    public ReturnType returnType(TypeMirror returnType) {
-        return new ReturnTypeVisitor(this).visit(returnType).orElseThrow();
-    }
-
-    public @Nullable ContainerType containerType(DeclaredType t) {
-        for (var ct: ContainerType.values()) {
+    public @Nullable ValidContainerType containerType(DeclaredType t) {
+        for (var ct : ValidContainerType.values()) {
             if (is(t, ct.javaType())) {
                 return ct;
             }
@@ -108,7 +55,7 @@ if (target.sqlType() == JDBCType.ARRAY) {
     @Override
     public boolean isSameType(TypeMirror t1, TypeMirror t2) {
         var result = super.isSameType(t1, t2);
-        logger.note(null, "isSameType(%s, %s) = %s".formatted(t1, t2, result));
+        //        logger.note(null, "isSameType(%s, %s) = %s".formatted(t1, t2, result));
         return result;
     }
 
@@ -116,7 +63,44 @@ if (target.sqlType() == JDBCType.ARRAY) {
         return Objects.requireNonNull(asTypeElement(t)).getRecordComponents();
     }
 
-    class ToStringVisitor extends SimpleTypeVisitor14<String,Void> {
+    public boolean isBoxed(DeclaredType t) {
+        try {
+            unboxedType(t);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public boolean isNullable(DeclaredType t) {
+        var annotations = t.getAnnotationMirrors();
+        for (var annotationMirror : annotations) {
+            if (annotationMirror.getAnnotationType().toString().endsWith("Nullable")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public KiwiType kiwiType(TypeMirror type) {
+        return type.accept(new KiwiTypeVisitor(this), null);
+    }
+
+    public String fqcn(DeclaredType t) {
+        var te = (TypeElement) t.asElement();
+        return te.getQualifiedName().toString();
+    }
+
+    public String packageName(DeclaredType t) {
+        return packageName((TypeElement) t.asElement());
+    }
+
+    public String className(DeclaredType t) {
+        var te = (TypeElement) t.asElement();
+        return te.getSimpleName().toString();
+    }
+
+    class ToStringVisitor extends SimpleTypeVisitor14<String, Void> {
         @Override
         protected String defaultAction(TypeMirror e, Void unused) {
             throw new UnsupportedOperationException(String.valueOf(e));
@@ -138,7 +122,7 @@ if (target.sqlType() == JDBCType.ARRAY) {
             if ("java.lang".equals(packageName(te))) {
                 return te.getSimpleName().toString();
             }
-            return String.valueOf(t);//TODO
+            return String.valueOf(t); // TODO
         }
 
         @Override
