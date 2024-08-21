@@ -14,7 +14,7 @@ dependencyResolutionManagement {
 
             library("jakarta-inject", "jakarta.inject:jakarta.inject-api:2.0.1")
 
-            library("jetbrains-annotations", "org.jetbrains:annotations:24.0.1")
+            library("jetbrains-annotations", "org.jetbrains:annotations:24.1.0")
 
             library("metainfservices", "org.kohsuke.metainf-services:metainf-services:1.11")
 
