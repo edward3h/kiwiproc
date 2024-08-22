@@ -5,7 +5,7 @@ dependencyResolutionManagement {
             version("avaje-json", "1.12")
             version("junit", "5.11.0")
             version("recordbuilder", "37")
-            version("mapstruct", "1.5.5.Final")
+            version("mapstruct", "1.6.0")
             version("ethelred-util", "2.2")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
