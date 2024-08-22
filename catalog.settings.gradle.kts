@@ -4,7 +4,7 @@ dependencyResolutionManagement {
         create("libs") {
             version("avaje-json", "1.12")
             version("junit", "5.11.0")
-            version("recordbuilder", "37")
+            version("recordbuilder", "42")
             version("mapstruct", "1.6.0")
             version("ethelred-util", "2.2")
 
