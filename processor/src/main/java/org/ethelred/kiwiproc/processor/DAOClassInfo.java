@@ -1,6 +1,5 @@
 package org.ethelred.kiwiproc.processor;
 
-import io.soabase.recordbuilder.core.RecordBuilderFull;
 import java.util.List;
 import javax.lang.model.element.TypeElement;
 

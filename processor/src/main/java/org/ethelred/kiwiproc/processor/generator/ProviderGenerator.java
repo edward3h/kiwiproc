@@ -7,6 +7,8 @@ import com.palantir.javapoet.*;
 import javax.lang.model.element.Modifier;
 import javax.sql.DataSource;
 import org.ethelred.kiwiproc.processor.DAOClassInfo;
+import org.ethelred.kiwiproc.processor.DAOMethodInfo;
+import org.ethelred.kiwiproc.processor.VoidType;
 import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle;
 
 public class ProviderGenerator {
@@ -43,6 +45,7 @@ public class ProviderGenerator {
                         .singleton())
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(superClass)
+                .addSuperinterface(daoName)
                 .addMethod(constructorSpec);
         var withContextMethod = MethodSpec.methodBuilder("withContext")
                 .addModifiers(Modifier.PROTECTED)
@@ -52,7 +55,22 @@ public class ProviderGenerator {
                 .addStatement("return new $L(daoContext)", classInfo.className("Impl"))
                 .build();
         typeSpecBuilder.addMethod(withContextMethod);
+        for (var methodThing : classInfo.methods()) {
+            typeSpecBuilder.addMethod(buildMethod(methodThing));
+        }
         return JavaFile.builder(classInfo.packageName(), typeSpecBuilder.build())
                 .build();
+    }
+
+    private MethodSpec buildMethod(DAOMethodInfo methodInfo) {
+        var builder = MethodSpec.overriding(methodInfo.methodElement());
+        var signature = methodInfo.signature();
+        var params = String.join(", ", signature.paramNames());
+        if (signature.returnType() instanceof VoidType) {
+            builder.addStatement("run(dao -> dao.$L($L))", signature.methodName(), params);
+        } else {
+            builder.addStatement("return call(dao -> dao.$L($L))", signature.methodName(), params);
+        }
+        return builder.build();
     }
 }

@@ -9,13 +9,13 @@ import java.util.*;
 import javax.lang.model.element.Modifier;
 import org.ethelred.kiwiproc.processor.*;
 
-public class ImplGenerator {
+public class InstanceGenerator {
 
     private final Logger logger;
     private final KiwiTypeConverter kiwiTypeConverter;
     private final CoreTypes coreTypes;
 
-    public ImplGenerator(Logger logger, KiwiTypeConverter kiwiTypeConverter, CoreTypes coreTypes) {
+    public InstanceGenerator(Logger logger, KiwiTypeConverter kiwiTypeConverter, CoreTypes coreTypes) {
         this.logger = logger;
 
         this.kiwiTypeConverter = kiwiTypeConverter;
@@ -40,7 +40,6 @@ public class ImplGenerator {
                 .addSuperinterface(daoName)
                 .addMethod(constructorSpec);
         for (var methodThing : classInfo.methods()) {
-
             typeSpecBuilder.addMethod(buildMethod(methodThing));
         }
         return JavaFile.builder(classInfo.packageName(), typeSpecBuilder.build())
@@ -84,7 +83,8 @@ public class ImplGenerator {
             var conversion = lookupConversion(parameterInfo::element, parameterInfo.mapper());
             builder.addStatement(
                     "var $L = $L", name, conversion.conversionFormat().formatted(parameterInfo.javaAccessor()));
-            var nullableSource = parameterInfo.mapper().source() instanceof SimpleType simpleType && simpleType.isNullable();
+            var nullableSource =
+                    parameterInfo.mapper().source() instanceof SimpleType simpleType && simpleType.isNullable();
             if (nullableSource) {
                 builder.beginControlFlow("if ($L == null)", name)
                         .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())

@@ -1,6 +1,5 @@
 package org.ethelred.kiwiproc.processor;
 
-import io.soabase.recordbuilder.core.RecordBuilderFull;
 import java.math.BigDecimal;
 import java.sql.JDBCType;
 import java.time.*;
@@ -73,10 +72,10 @@ public record SqlTypeMapping(
     }
 
     public KiwiType kiwiType() {
-                if (jdbcType == JDBCType.ARRAY) {
-                    assert componentType != null;
-                    return new SqlArrayType(componentType.kiwiType());
-                }
+        if (jdbcType == JDBCType.ARRAY) {
+            assert componentType != null;
+            return new SqlArrayType(componentType.kiwiType());
+        }
         var resolvedType = baseType;
         if (isNullable) {
             var maybeBoxed = CoreTypes.primitiveToBoxed.getByA(baseType);

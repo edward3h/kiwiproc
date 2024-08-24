@@ -7,10 +7,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
+import org.ethelred.kiwiproc.api.TransactionalDAO;
 import org.jspecify.annotations.Nullable;
 
 @DAO
-public interface PetClinicDAO {
+public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
     @SqlQuery("""
            SELECT id, name FROM types""")
     List<PetType> findPetTypes();
@@ -37,7 +38,7 @@ public interface PetClinicDAO {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-//    @SqlQuery("""
-//            SELECT id, first_name, last_name FROM owners WHERE id = ANY(:ids)""")
-//    List<Owner> findOwnersByIds(List<Integer> ids);
+    //    @SqlQuery("""
+    //            SELECT id, first_name, last_name FROM owners WHERE id = ANY(:ids)""")
+    //    List<Owner> findOwnersByIds(List<Integer> ids);
 }

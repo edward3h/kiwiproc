@@ -239,8 +239,5 @@ public class KiwiProcessor extends AnnotationProcessor {
         var classInfo = builderStage.build();
         poet.generateImpl(classInfo);
         poet.generateProvider(classInfo);
-        if (generatedTransactionManagers.add(dataSourceName)) {
-            poet.generateTransactionManager(new DAODataSourceInfo(dataSourceName, packageName));
-        }
     }
 }

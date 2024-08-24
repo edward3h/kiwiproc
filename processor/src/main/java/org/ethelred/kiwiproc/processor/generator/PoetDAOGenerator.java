@@ -12,10 +12,9 @@ public class PoetDAOGenerator implements DAOGenerator {
     private final Filer filer;
     private final DependencyInjectionStyle dependencyInjectionStyle;
     private final KiwiTypeConverter kiwiTypeConverter;
-    private final ImplGenerator implGenerator;
+    private final InstanceGenerator instanceGenerator;
     private final ProviderGenerator providerGenerator;
     private final CoreTypes coreTypes;
-    private final TransactionManagerGenerator transactionManagerGenerator;
 
     public PoetDAOGenerator(Logger logger, Filer filer, DependencyInjectionStyle dependencyInjectionStyle) {
         this.logger = logger;
@@ -23,9 +22,8 @@ public class PoetDAOGenerator implements DAOGenerator {
         this.dependencyInjectionStyle = dependencyInjectionStyle;
         this.kiwiTypeConverter = new KiwiTypeConverter();
         this.coreTypes = new CoreTypes();
-        this.implGenerator = new ImplGenerator(logger, kiwiTypeConverter, coreTypes);
+        this.instanceGenerator = new InstanceGenerator(logger, kiwiTypeConverter, coreTypes);
         this.providerGenerator = new ProviderGenerator(dependencyInjectionStyle, kiwiTypeConverter);
-        this.transactionManagerGenerator = new TransactionManagerGenerator(dependencyInjectionStyle, kiwiTypeConverter);
     }
 
     @Override
@@ -36,14 +34,8 @@ public class PoetDAOGenerator implements DAOGenerator {
 
     @Override
     public void generateImpl(DAOClassInfo classInfo) {
-        var javaFile = implGenerator.generate(classInfo);
+        var javaFile = instanceGenerator.generate(classInfo);
         writeJavaFile(classInfo::element, javaFile);
-    }
-
-    @Override
-    public void generateTransactionManager(DAODataSourceInfo dataSourceInfo) {
-        var javaFile = transactionManagerGenerator.generate(dataSourceInfo);
-        writeJavaFile(() -> null, javaFile);
     }
 
     private void writeJavaFile(ElementSupplier elementSupplier, JavaFile javaFile) {
