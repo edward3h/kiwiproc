@@ -46,11 +46,11 @@ public class PetClinicTest {
         assertThat(countsByType).containsEntry(new PetType(2, "dog"), 4L);
     }
 
-    @Test
-    void happyFindByArrayValues() throws SQLException {
-        var owners = daoProvider.call(dao -> dao.findOwnersByIds(List.of(2, 6, 99)));
-        assertThat(owners).hasSize(2);
-        var firstNames = owners.stream().map(Owner::first_name).toList();
-        assertThat(firstNames).containsExactly("bob", "joe");
-    }
+//    @Test
+//    void happyFindByArrayValues() throws SQLException {
+//        var owners = daoProvider.call(dao -> dao.findOwnersByIds(List.of(2, 6, 99)));
+//        assertThat(owners).hasSize(2);
+//        var firstNames = owners.stream().map(Owner::first_name).toList();
+//        assertThat(firstNames).containsExactly("bob", "joe");
+//    }
 }

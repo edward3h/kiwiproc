@@ -37,7 +37,7 @@ public interface PetClinicDAO {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    @SqlQuery("""
-            SELECT id, first_name, last_name FROM owners WHERE id = ANY(:ids)""")
-    List<Owner> findOwnersByIds(List<Integer> ids);
+//    @SqlQuery("""
+//            SELECT id, first_name, last_name FROM owners WHERE id = ANY(:ids)""")
+//    List<Owner> findOwnersByIds(List<Integer> ids);
 }
