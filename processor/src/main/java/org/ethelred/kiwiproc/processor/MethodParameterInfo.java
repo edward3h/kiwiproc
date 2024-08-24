@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import javax.lang.model.element.VariableElement;
 import org.jspecify.annotations.Nullable;
 
-@RecordBuilderFull
+@KiwiRecordBuilder
 public record MethodParameterInfo(
         VariableElement variableElement,
         String name,
@@ -41,11 +41,11 @@ public record MethodParameterInfo(
 
     private static Set<MethodParameterInfo> fromSingle(TypeUtils types, VariableElement variableElement) {
         var info = MethodParameterInfoBuilder.builder()
+                .variableElement(variableElement)
                 .name(variableElement.getSimpleName().toString())
                 .type(types.kiwiType(variableElement.asType()))
                 .isRecordComponent(false)
                 .recordParameterName(null)
-                .variableElement(variableElement)
                 .build();
         return Set.of(info);
     }
@@ -55,11 +55,11 @@ public record MethodParameterInfo(
         var components = Objects.requireNonNull(type).getRecordComponents();
         var parameterInfos = components.stream()
                 .map(component -> MethodParameterInfoBuilder.builder()
+                        .variableElement(variableElement)
                         .name(component.getSimpleName().toString())
                         .type(types.kiwiType(component.asType()))
                         .isRecordComponent(true)
                         .recordParameterName(variableElement.getSimpleName().toString())
-                        .variableElement(variableElement)
                         .build())
                 .collect(Collectors.toCollection(HashSet::new));
         parameterInfos.addAll(fromSingle(types, variableElement));

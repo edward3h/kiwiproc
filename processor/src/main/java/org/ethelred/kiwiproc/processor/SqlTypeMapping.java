@@ -8,18 +8,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
+import org.jspecify.annotations.Nullable;
 
-@RecordBuilderFull
+@KiwiRecordBuilder
 public record SqlTypeMapping(
         JDBCType jdbcType,
         Class<?> baseType,
         // empty accessorSuffix indicates to use getObject/setObject
         String accessorSuffix,
         boolean specialCase,
-        boolean isNullable)
+        boolean isNullable,
+        @Nullable SqlTypeMapping componentType)
         implements SqlTypeMappingBuilder.With {
     public SqlTypeMapping(JDBCType jdbcType, Class<?> baseType, String accessorSuffix) {
-        this(jdbcType, baseType, accessorSuffix, false, false);
+        this(jdbcType, baseType, accessorSuffix, false, false, null);
     }
 
     private static final List<SqlTypeMapping> types = List.of(
@@ -40,7 +42,7 @@ public record SqlTypeMapping(
             new SqlTypeMapping(JDBCType.NCHAR, String.class, "String"),
             new SqlTypeMapping(JDBCType.NVARCHAR, String.class, "String"),
             new SqlTypeMapping(JDBCType.LONGNVARCHAR, String.class, "String"),
-            new SqlTypeMapping(JDBCType.ARRAY, java.sql.Array.class, "Array", true, false),
+            new SqlTypeMapping(JDBCType.ARRAY, java.sql.Array.class, "Array", true, false, null),
             // dates and times
             // Use java.time types - recommended for Postgres https://tada.github.io/pljava/use/datetime.html
             new SqlTypeMapping(JDBCType.DATE, LocalDate.class, ""),
@@ -48,34 +50,33 @@ public record SqlTypeMapping(
             new SqlTypeMapping(JDBCType.TIME_WITH_TIMEZONE, OffsetTime.class, ""),
             new SqlTypeMapping(JDBCType.TIMESTAMP, LocalDateTime.class, ""),
             new SqlTypeMapping(JDBCType.TIMESTAMP_WITH_TIMEZONE, OffsetDateTime.class, ""),
-            new SqlTypeMapping(JDBCType.NULL, void.class, "", true, true)
+            new SqlTypeMapping(JDBCType.NULL, void.class, "", true, true, null)
 
             // TODO fill out types as necessary
             );
-    private static final Map<JDBCType, SqlTypeMapping> lookup =
+    private static final Map<JDBCType, SqlTypeMapping> JDBC_TYPE_SQL_TYPE_MAPPING_MAP =
             types.stream().collect(Collectors.toMap(SqlTypeMapping::jdbcType, t -> t));
 
     public static SqlTypeMapping get(ColumnMetaData columnMetaData) {
-        var r = lookup.get(columnMetaData.sqlType());
+        var r = JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(columnMetaData.sqlType());
         if (r == null) {
             throw new IllegalArgumentException("Unsupported JDBCType type " + columnMetaData.sqlType());
+        }
+        if (r.jdbcType == JDBCType.ARRAY) {
+            var component = JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(columnMetaData.componentType());
+            if (component == null) {
+                throw new IllegalArgumentException("No component type found for SQL Array");
+            }
+            r = r.withComponentType(component);
         }
         return r.withIsNullable(columnMetaData.nullable());
     }
 
     public KiwiType kiwiType() {
-        // TODO fix array type handling
-        //        if (jdbcType == JDBCType.ARRAY && columnMetaData.componentType() != null) {
-        //            var componentSql = get(columnMetaData.componentType());
-        //            var containedClass = componentSql.baseType;
-        //            return ContainerTypeBuilder.builder()
-        //                    .type(ValidContainerType.ARRAY)
-        //                    .containedType(SimpleTypeBuilder.builder()
-        //                            .className(containedClass.getName())
-        //                            .isNullable(columnMetaData.nullable())
-        //                            .build())
-        //                    .build();
-        //        }
+                if (jdbcType == JDBCType.ARRAY) {
+                    assert componentType != null;
+                    return new SqlArrayType(componentType.kiwiType());
+                }
         var resolvedType = baseType;
         if (isNullable) {
             var maybeBoxed = CoreTypes.primitiveToBoxed.getByA(baseType);

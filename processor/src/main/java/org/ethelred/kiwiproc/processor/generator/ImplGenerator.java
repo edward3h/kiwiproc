@@ -84,13 +84,14 @@ public class ImplGenerator {
             var conversion = lookupConversion(parameterInfo::element, parameterInfo.mapper());
             builder.addStatement(
                     "var $L = $L", name, conversion.conversionFormat().formatted(parameterInfo.javaAccessor()));
-            if (parameterInfo.mapper().source().isNullable()) {
+            var nullableSource = parameterInfo.mapper().source() instanceof SimpleType simpleType && simpleType.isNullable();
+            if (nullableSource) {
                 builder.beginControlFlow("if ($L == null)", name)
                         .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())
                         .nextControlFlow("else");
             }
             builder.addStatement("statement.$L($L, $L)", parameterInfo.setter(), parameterInfo.index(), name);
-            if (parameterInfo.mapper().source().isNullable()) {
+            if (nullableSource) {
                 builder.endControlFlow();
             }
             parameterNames.add(parameterInfo.javaAccessor());

@@ -29,7 +29,7 @@ public record DAOParameterInfo(
                 // TODO
             }
             var setter = "set" + sqlTypeMapping.accessorSuffix();
-            var mapper = TypeMapping.of(methodParameterInfo.type(), sqlTypeMapping.kiwiType());
+            var mapper = new TypeMapping(methodParameterInfo.type(), sqlTypeMapping.kiwiType());
             result.add(new DAOParameterInfo(
                     columnMetaData.index(),
                     accessor,

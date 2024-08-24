@@ -1,4 +1,6 @@
 package org.ethelred.kiwiproc.test;
 
-public record Owner(int id, String first_name, String last_name) { // TODO should be able to convert names to camel case
+import org.jspecify.annotations.Nullable;
+
+public record Owner(int id, @Nullable String first_name, @Nullable String last_name) { // TODO should be able to convert names to camel case
 }

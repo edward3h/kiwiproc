@@ -11,6 +11,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 public class SqlTypeMappingTest {
 
     Set<JDBCType> unsupportedTypes = Set.of(
+            JDBCType.ARRAY, // special case below
+            // Consider supporting the below, but I haven't seen them used in projects I've worked on.
             JDBCType.BINARY,
             JDBCType.VARBINARY,
             JDBCType.LONGVARBINARY,
@@ -36,5 +38,18 @@ public class SqlTypeMappingTest {
         var columnMetaData = new ColumnMetaData(1, "columnName", false, jdbcType, null);
         var mapping = SqlTypeMapping.get(columnMetaData);
         assertThat(mapping).isNotNull();
+        assertThat(mapping.kiwiType()).isInstanceOf(SimpleType.class);
+    }
+
+    @ParameterizedTest
+    @EnumSource(JDBCType.class)
+    public void sqlMappingIsPresentForArrayType(JDBCType componentType) {
+        if (unsupportedTypes.contains(componentType)) {
+            return;
+        }
+        var columnMetaData = new ColumnMetaData(1, "columnName", false, JDBCType.ARRAY, componentType);
+        var mapping = SqlTypeMapping.get(columnMetaData);
+        assertThat(mapping).isNotNull();
+        assertThat(mapping.kiwiType()).isInstanceOf(SqlArrayType.class);
     }
 }

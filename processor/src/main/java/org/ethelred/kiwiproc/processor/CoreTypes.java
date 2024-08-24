@@ -202,7 +202,10 @@ public class CoreTypes {
     }
 
     public Conversion lookup(TypeMapping mapper) {
-        return lookup(mapper.source(), mapper.target());
+        if (mapper.source() instanceof SimpleType source && mapper.target() instanceof SimpleType target) {
+            return lookup(source, target);
+        }
+        return invalid;
     }
 
     public Conversion lookup(SimpleType source, SimpleType target) {

@@ -4,7 +4,7 @@ import io.soabase.recordbuilder.core.RecordBuilderFull;
 import java.util.List;
 import javax.lang.model.element.TypeElement;
 
-@RecordBuilderFull
+@KiwiRecordBuilder
 public record DAOClassInfo(
         TypeElement element, DAOPrism annotation, String packageName, String daoName, List<DAOMethodInfo> methods) {
     public String dataSourceName() {

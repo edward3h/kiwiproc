@@ -203,14 +203,16 @@ public class KiwiProcessor extends AnnotationProcessor {
                                     dataSourceName, databaseWrapper.getError().getMessage()));
             return;
         }
-        var classBuilder = DAOClassInfoBuilder.builder();
+        DAOClassInfoBuilder.ElementStage elementStage = DAOClassInfoBuilder.builder();
         String daoName = interfaceElement.getSimpleName().toString();
         String packageName = typeUtils.packageName(interfaceElement);
-        classBuilder
+        DAOClassInfoBuilder builderStage = elementStage
                 .element(interfaceElement)
                 .annotation(daoAnn)
+                .packageName(packageName)
                 .daoName(daoName)
-                .packageName(packageName);
+                .methods(new ArrayList<>())
+                .builder();
         for (var methodElement : ElementFilter.methodsIn(Set.copyOf(interfaceElement.getEnclosedElements()))) {
             var kinds = QueryMethodKind.forMethod(methodElement);
             if (kinds.isEmpty()) {
@@ -227,14 +229,14 @@ public class KiwiProcessor extends AnnotationProcessor {
 
             DAOMethodInfo methodInfo = processMethod(daoName, kinds.iterator().next(), databaseWrapper, methodElement);
             if (methodInfo != null) {
-                classBuilder.addMethods(methodInfo);
+                builderStage.addMethods(methodInfo);
             }
         }
-        if (classBuilder.methods().isEmpty()) {
+        if (builderStage.methods().isEmpty()) {
             logger.error(interfaceElement, "No valid Sql or default methods found.");
             return;
         }
-        var classInfo = classBuilder.build();
+        var classInfo = builderStage.build();
         poet.generateImpl(classInfo);
         poet.generateProvider(classInfo);
         if (generatedTransactionManagers.add(dataSourceName)) {

@@ -71,31 +71,36 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
     /**
      * Check whether we know how to convert "from" to "to".
      * This operation is not necessarily commutative.
-     * @param from
-     * @param to
+     * @param source
+     * @param target
      * @return
      */
-    private boolean validateCompatible(KiwiType from, KiwiType to) {
-        if (from.equals(to)) {
+    private boolean validateCompatible(KiwiType source, KiwiType target) {
+        if (source.equals(target)) {
             // shortcut
             return true;
         }
-        if (from instanceof ContainerType fromContainer && to instanceof ContainerType toContainer) {
+        debug("Comparing %s with %s".formatted(source, target));
+        /*
+        We assume that a container may not contain a null. However, for adding to a target container, pretend that the
+        contained type is nullable. We will skip nulls.
+         */
+        if (source instanceof ContainerType fromContainer && target instanceof ContainerType toContainer) {
             // we can convert any container into a different one, since they are all effectively equivalent to Iterable.
             return validateCompatible(fromContainer.containedType(), toContainer.containedType());
         }
-        if (to instanceof ContainerType toContainer) {
+        if (target instanceof ContainerType toContainer) {
             // we can convert a single value to a container by wrapping
-            return validateCompatible(from, ((ContainerType) to).containedType());
+            return validateCompatible(source, toContainer.containedType());
         }
-        if (from instanceof ContainerType containerType
+        if (source instanceof ContainerType containerType
                 && containerType.type() == ValidContainerType.OPTIONAL
-                && to instanceof SimpleType simpleType) {
+                && target instanceof SimpleType simpleType) {
             // an Optional can be converted to a nullable simple type
             // TODO how to interact with Record?
             return simpleType.isNullable() && validateCompatible(containerType.containedType(), simpleType);
         }
-        if (from instanceof RecordType fromRecord && to instanceof RecordType toRecord) {
+        if (source instanceof RecordType fromRecord && target instanceof RecordType toRecord) {
             // Component names must match, and types must be compatible. Order is not relevant in this context.
             var toComponents = toRecord.components();
             return fromRecord.components().stream().allMatch(e -> {
@@ -106,14 +111,14 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
                 return toComponentType != null && validateCompatible(e.type(), toComponentType.type());
             });
         }
-        if (from instanceof SimpleType fromType
+        if (source instanceof SimpleType fromType
                 && !fromType.isNullable()
-                && to instanceof SimpleType toType
+                && target instanceof SimpleType toType
                 && toType.isNullable()) {
             // non-null can be converted to nullable
             return validateCompatible(fromType.withIsNullable(true), toType);
         }
-        if (from instanceof SimpleType fromType && to instanceof SimpleType toType) {
+        if (source instanceof SimpleType fromType && target instanceof SimpleType toType) {
             return validateSimpleCompatible(fromType, toType);
         }
         return false;

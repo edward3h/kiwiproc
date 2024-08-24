@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
 
-@RecordBuilderFull
+@KiwiRecordBuilder
 public record Signature(KiwiType returnType, String methodName, List<DAOResultColumn> params) {
     static Signature fromMethod(TypeUtils typeUtils, ExecutableElement element) {
         List<DAOResultColumn> params = new ArrayList<>();

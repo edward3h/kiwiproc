@@ -6,6 +6,7 @@ import static com.google.common.truth.Truth8.assertThat;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.ethelred.kiwiproc.api.DAOProvider;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,6 @@ public class PetClinicTest {
         assertThat(countsByType).containsEntry(new PetType(2, "dog"), 4L);
     }
 
-    /* TODO not yet supported
     @Test
     void happyFindByArrayValues() throws SQLException {
         var owners = daoProvider.call(dao -> dao.findOwnersByIds(List.of(2, 6, 99)));
@@ -53,6 +53,4 @@ public class PetClinicTest {
         var firstNames = owners.stream().map(Owner::first_name).toList();
         assertThat(firstNames).containsExactly("bob", "joe");
     }
-
-     */
 }

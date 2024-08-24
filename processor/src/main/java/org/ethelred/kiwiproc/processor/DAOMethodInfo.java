@@ -6,7 +6,7 @@ import javax.lang.model.element.ExecutableElement;
 import org.ethelred.kiwiproc.meta.ParsedQuery;
 import org.jspecify.annotations.Nullable;
 
-@RecordBuilderFull
+@KiwiRecordBuilder
 public record DAOMethodInfo(
         ExecutableElement methodElement,
         Signature signature,
