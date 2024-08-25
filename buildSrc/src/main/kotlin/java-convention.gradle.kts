@@ -19,7 +19,7 @@ tasks.named<Test>("test") {
 
 val junitVersion = "5.11.0"
 dependencies {
-    implementation("org.jspecify:jspecify:0.3.0")
+    implementation("org.jspecify:jspecify:1.0.0")
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     testImplementation("com.google.truth:truth:1.1.5")
