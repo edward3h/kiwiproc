@@ -33,7 +33,7 @@ dependencyResolutionManagement {
             library("mapstruct-processor", "org.mapstruct", "mapstruct-processor").versionRef("mapstruct")
             library("mapstruct-compile", "org.mapstruct", "mapstruct").versionRef("mapstruct")
 
-            library("jspecify", "org.jspecify:jspecify:0.3.0")
+            library("jspecify", "org.jspecify:jspecify:1.0.0")
 
             library("javapoet", "com.palantir.javapoet:javapoet:0.2.0")
             library("guava", "com.google.guava:guava:33.3.0-jre")
