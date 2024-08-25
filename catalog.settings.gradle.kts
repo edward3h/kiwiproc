@@ -18,7 +18,7 @@ dependencyResolutionManagement {
 
             library("metainfservices", "org.kohsuke.metainf-services:metainf-services:1.11")
 
-            library("utilitary", "com.karuslabs:utilitary:2.0.1")
+            library("utilitary", "com.karuslabs:utilitary:3.0.0")
             library("postgresql", "org.postgresql:postgresql:42.7.3")
 
             library("junit-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit")
