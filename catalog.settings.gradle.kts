@@ -16,8 +16,6 @@ dependencyResolutionManagement {
 
             library("jetbrains-annotations", "org.jetbrains:annotations:24.1.0")
 
-            library("metainfservices", "org.kohsuke.metainf-services:metainf-services:1.11")
-
             library("utilitary", "com.karuslabs:utilitary:3.0.0")
             library("postgresql", "org.postgresql:postgresql:42.7.4")
 
