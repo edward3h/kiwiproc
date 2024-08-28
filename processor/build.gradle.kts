@@ -3,7 +3,6 @@ plugins {
 }
 
 dependencies {
-    annotationProcessor(libs.metainfservices)
     annotationProcessor(libs.avaje.prisms)
     annotationProcessor(libs.recordbuilder.processor)
     implementation(project(":shared"))
@@ -11,7 +10,6 @@ dependencies {
     implementation(libs.utilitary)
     implementation(libs.avaje.json.asProvider())
     implementation(libs.avaje.prisms)
-    implementation(libs.metainfservices)
     implementation(libs.postgresql)
     implementation(libs.recordbuilder.core)
     implementation(libs.mapstruct.processor)

@@ -28,9 +28,7 @@ import org.ethelred.kiwiproc.processorconfig.DataSourceConfigJsonAdapter;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfigJsonAdapter;
 import org.jspecify.annotations.Nullable;
-import org.kohsuke.MetaInfServices;
 
-@MetaInfServices(Processor.class)
 @SupportedAnnotationTypes({
     "org.ethelred.kiwiproc.annotation.DAO",
     "org.ethelred.kiwiproc.annotation.ResultQuery",
