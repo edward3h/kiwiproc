@@ -16,7 +16,6 @@ dependencies {
     implementation(libs.recordbuilder.core)
     implementation(libs.mapstruct.processor)
     implementation(libs.javapoet)
-    implementation(libs.ethelred.util)
     testAnnotationProcessor(libs.mapstruct.processor)
     testImplementation(project(":runtime"))
     testImplementation(libs.jakarta.inject)

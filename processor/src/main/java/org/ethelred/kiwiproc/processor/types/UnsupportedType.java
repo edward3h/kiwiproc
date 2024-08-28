@@ -1,4 +1,4 @@
-package org.ethelred.kiwiproc.processor;
+package org.ethelred.kiwiproc.processor.types;
 
 public record UnsupportedType() implements KiwiType {
     @Override
@@ -9,5 +9,10 @@ public record UnsupportedType() implements KiwiType {
     @Override
     public String className() {
         throw new UnsupportedOperationException("UnsupportedType.className");
+    }
+
+    @Override
+    public boolean isSimple() {
+        return false;
     }
 }

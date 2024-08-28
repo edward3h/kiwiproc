@@ -6,7 +6,6 @@ dependencyResolutionManagement {
             version("junit", "5.11.0")
             version("recordbuilder", "42")
             version("mapstruct", "1.6.0")
-            version("ethelred-util", "2.2")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
             library("avaje-json-processor", "io.avaje", "avaje-jsonb-generator").versionRef("avaje-json")
@@ -40,7 +39,6 @@ dependencyResolutionManagement {
             library("compile-testing", "com.google.testing.compile:compile-testing:0.21.0")
             library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
 
-            library("ethelred-util", "org.ethelred.util", "common").versionRef("ethelred-util")
             library("yaml", "org.yaml:snakeyaml:2.2")
 
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))

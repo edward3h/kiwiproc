@@ -1,5 +1,7 @@
 package org.ethelred.kiwiproc.processor;
 
+import org.ethelred.kiwiproc.processor.types.KiwiType;
+
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;

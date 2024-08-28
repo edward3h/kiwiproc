@@ -4,10 +4,11 @@ import com.karuslabs.utilitary.Logger;
 import java.util.*;
 import javax.lang.model.element.Element;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
+import org.ethelred.kiwiproc.processor.types.*;
 
 public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes) {
 
-    private static final KiwiType UPDATE_RETURN_TYPE = SimpleType.ofClass(int.class);
+    private static final KiwiType UPDATE_RETURN_TYPE = new PrimitiveKiwiType("int", false);
     private static final KiwiType BATCH_RETURN_TYPE = new ContainerType(ValidContainerType.ARRAY, UPDATE_RETURN_TYPE);
 
     public TypeValidator {
@@ -69,7 +70,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
     }
 
     /**
-     * Check whether we know how to convert "from" to "to".
+     * Check whether we know how to convert "source" to "target".
      * This operation is not necessarily commutative.
      * @param source
      * @param target
@@ -95,10 +96,10 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
         }
         if (source instanceof ContainerType containerType
                 && containerType.type() == ValidContainerType.OPTIONAL
-                && target instanceof SimpleType simpleType) {
+                && target instanceof BasicType basicType) {
             // an Optional can be converted to a nullable simple type
             // TODO how to interact with Record?
-            return simpleType.isNullable() && validateCompatible(containerType.containedType(), simpleType);
+            return basicType.isNullable() && validateCompatible(containerType.containedType(), basicType);
         }
         if (source instanceof RecordType fromRecord && target instanceof RecordType toRecord) {
             // Component names must match, and types must be compatible. Order is not relevant in this context.
@@ -111,20 +112,20 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
                 return toComponentType != null && validateCompatible(e.type(), toComponentType.type());
             });
         }
-        if (source instanceof SimpleType fromType
+        if (source instanceof BasicType fromType
                 && !fromType.isNullable()
-                && target instanceof SimpleType toType
+                && target instanceof BasicType toType
                 && toType.isNullable()) {
             // non-null can be converted to nullable
             return validateCompatible(fromType.withIsNullable(true), toType);
         }
-        if (source instanceof SimpleType fromType && target instanceof SimpleType toType) {
+        if (source instanceof BasicType fromType && target instanceof BasicType toType) {
             return validateSimpleCompatible(fromType, toType);
         }
         return false;
     }
 
-    private boolean validateSimpleCompatible(SimpleType fromType, SimpleType toType) {
+    private boolean validateSimpleCompatible(BasicType fromType, BasicType toType) {
         if (fromType.equals(toType)) {
             // shortcut
             return true;
@@ -152,17 +153,17 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
      */
     private boolean validateGeneral(KiwiType type) {
         // switch record pattern not available in Java 17 :-(
-        if (type instanceof SimpleType || type instanceof VoidType) {
+        if (type instanceof BasicType || type instanceof VoidType) {
             return true;
         }
         if (type instanceof ContainerType ct) {
             var contained = ct.containedType();
-            return ((contained instanceof RecordType) || (contained instanceof SimpleType))
+            return ((contained instanceof RecordType) || (contained instanceof BasicType))
                     && validateGeneral(contained);
         }
         if (type instanceof RecordType rt) {
             var componentTypes = rt.components();
-            return componentTypes.stream().allMatch(t -> t.type() instanceof SimpleType);
+            return componentTypes.stream().allMatch(t -> t.type() instanceof BasicType);
         }
         return false;
     }
@@ -198,12 +199,12 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
             debug("Return type Container %s.%s".formatted(containerType.packageName(), containerType.className()));
             return validateReturn(columnMetaData, containerType.containedType(), kind);
         }
-        if (columnMetaData.size() == 1 && returnType instanceof SimpleType simpleType) {
-            debug("Return type simple %s.%s".formatted(simpleType.packageName(), simpleType.className()));
+        if (columnMetaData.size() == 1 && returnType instanceof BasicType basicType) {
+            debug("Return type simple %s.%s".formatted(basicType.packageName(), basicType.className()));
             // a single column result maps to a simple type
             var first = columnMetaData.get(0);
             KiwiType columnType = SqlTypeMapping.get(first).kiwiType();
-            return validateCompatible(columnType, simpleType);
+            return validateCompatible(columnType, basicType);
         }
         if (returnType instanceof RecordType recordType) {
             debug("Return type record %s.%s".formatted(recordType.packageName(), recordType.className()));
@@ -215,8 +216,8 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
                                 .orElse(null);
                         KiwiType columnType = SqlTypeMapping.get(cmd).kiwiType();
                         return (componentType != null
-                                        && componentType.type() instanceof SimpleType simpleType
-                                        && validateCompatible(columnType, simpleType))
+                                        && componentType.type() instanceof BasicType basicType
+                                        && validateCompatible(columnType, basicType))
                                 || reportError("Missing or incompatible component type %s for column %s type %s"
                                         .formatted(componentType, cmd.name(), columnType));
                     })

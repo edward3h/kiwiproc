@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
+import org.ethelred.kiwiproc.processor.types.BasicType;
+import org.ethelred.kiwiproc.processor.types.KiwiType;
+import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
+import org.ethelred.kiwiproc.processor.types.SqlArrayType;
 import org.jspecify.annotations.Nullable;
 
 @KiwiRecordBuilder
@@ -76,13 +80,9 @@ public record SqlTypeMapping(
             assert componentType != null;
             return new SqlArrayType(componentType.kiwiType());
         }
-        var resolvedType = baseType;
-        if (isNullable) {
-            var maybeBoxed = CoreTypes.primitiveToBoxed.getByA(baseType);
-            if (maybeBoxed.isPresent()) {
-                resolvedType = maybeBoxed.get();
-            }
+        if (CoreTypes.primitiveToBoxed.containsKey(baseType)) {
+            return new PrimitiveKiwiType(baseType().getSimpleName(), isNullable);
         }
-        return SimpleType.ofClass(resolvedType, isNullable);
+        return new BasicType(baseType.getPackageName(), baseType.getSimpleName(), isNullable);
     }
 }

@@ -1,4 +1,4 @@
-package org.ethelred.kiwiproc.processor;
+package org.ethelred.kiwiproc.processor.types;
 
 public record SqlArrayType(KiwiType componentType) implements KiwiType {
     @Override
@@ -9,5 +9,10 @@ public record SqlArrayType(KiwiType componentType) implements KiwiType {
     @Override
     public String className() {
         return "ARRAY";
+    }
+
+    @Override
+    public boolean isSimple() {
+        return true; // kinda
     }
 }

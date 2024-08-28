@@ -1,7 +1,7 @@
 package org.ethelred.kiwiproc.processor;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.ethelred.kiwiproc.processor.SimpleType.ofClass;
+import static org.ethelred.kiwiproc.processor.TestUtils.ofClass;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.karuslabs.utilitary.Logger;
@@ -9,6 +9,7 @@ import java.lang.annotation.Annotation;
 import java.sql.JDBCType;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.annotation.processing.Messager;
@@ -16,6 +17,7 @@ import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
+import org.ethelred.kiwiproc.processor.types.*;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,6 +32,27 @@ public class TypeValidatorTest {
     @AfterEach
     void reset() {
         colCount = 1;
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void testQueryParameter(ColumnMetaData columnMetaData, MethodParameterInfo parameterInfo, boolean expectedResult, @Nullable String message) {
+        var result = validator.validateParameters(Map.of(columnMetaData, parameterInfo), QueryMethodKind.QUERY);
+        assertThat(result).isEqualTo(expectedResult);
+        if (message == null) {
+            assertThat(messages).isEmpty();
+        } else {
+            assertThat(messages).contains(message);
+        }
+    }
+
+    public static Stream<Arguments> testQueryParameter() {
+        return Stream.of(
+                arguments(col(false, JDBCType.INTEGER), new MethodParameterInfo(mockVariableElement(), "x", ofClass(int.class), false, null), true, null),
+                arguments(col(true, JDBCType.INTEGER), new MethodParameterInfo(mockVariableElement(), "x", ofClass(int.class), false, null), true, null),
+                arguments(col(false, JDBCType.INTEGER), new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null), false, "Parameter type Integer/nullable is not compatible with SQL type int/non-null for parameter null"),
+                arguments(col(true, JDBCType.INTEGER), new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null), true, null)
+        );
     }
 
     @ParameterizedTest
@@ -166,6 +189,65 @@ public class TypeValidatorTest {
         };
     }
 
+    private static VariableElement mockVariableElement() {
+        return new VariableElement() {
+            @Override
+            public TypeMirror asType() {
+                return null;
+            }
+
+            @Override
+            public Object getConstantValue() {
+                return null;
+            }
+
+            @Override
+            public ElementKind getKind() {
+                return null;
+            }
+
+            @Override
+            public Set<Modifier> getModifiers() {
+                return Set.of();
+            }
+
+            @Override
+            public Name getSimpleName() {
+                return null;
+            }
+
+            @Override
+            public Element getEnclosingElement() {
+                return null;
+            }
+
+            @Override
+            public List<? extends Element> getEnclosedElements() {
+                return List.of();
+            }
+
+            @Override
+            public List<? extends AnnotationMirror> getAnnotationMirrors() {
+                return List.of();
+            }
+
+            @Override
+            public <A extends Annotation> A getAnnotation(Class<A> annotationType) {
+                return null;
+            }
+
+            @Override
+            public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType) {
+                return null;
+            }
+
+            @Override
+            public <R, P> R accept(ElementVisitor<R, P> v, P p) {
+                return null;
+            }
+        };
+    }
+
     private Logger mockLogger() {
         return new Logger(mockMessager());
     }
@@ -174,6 +256,7 @@ public class TypeValidatorTest {
         return new Messager() {
             @Override
             public void printMessage(Diagnostic.Kind kind, CharSequence msg) {
+                System.out.println(msg);
                 if (kind != Diagnostic.Kind.NOTE) {
                     messages.add(msg.toString());
                 }
