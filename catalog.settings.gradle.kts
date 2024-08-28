@@ -2,23 +2,21 @@
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
-            version("avaje-json", "1.12")
+            version("avaje-json", "2.1")
             version("junit", "5.11.0")
             version("recordbuilder", "42")
             version("mapstruct", "1.6.0")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
             library("avaje-json-processor", "io.avaje", "avaje-jsonb-generator").versionRef("avaje-json")
-            library("avaje-prisms", "io.avaje:avaje-prisms:1.11")
+            library("avaje-prisms", "io.avaje:avaje-prisms:1.31")
 
             library("jakarta-inject", "jakarta.inject:jakarta.inject-api:2.0.1")
 
             library("jetbrains-annotations", "org.jetbrains:annotations:24.1.0")
 
-            library("metainfservices", "org.kohsuke.metainf-services:metainf-services:1.11")
-
-            library("utilitary", "com.karuslabs:utilitary:2.0.1")
-            library("postgresql", "org.postgresql:postgresql:42.7.3")
+            library("utilitary", "com.karuslabs:utilitary:3.0.0")
+            library("postgresql", "org.postgresql:postgresql:42.7.4")
 
             library("junit-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit")
             library("junit-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit")
@@ -32,10 +30,10 @@ dependencyResolutionManagement {
             library("mapstruct-processor", "org.mapstruct", "mapstruct-processor").versionRef("mapstruct")
             library("mapstruct-compile", "org.mapstruct", "mapstruct").versionRef("mapstruct")
 
-            library("jspecify", "org.jspecify:jspecify:0.3.0")
+            library("jspecify", "org.jspecify:jspecify:1.0.0")
 
             library("javapoet", "com.palantir.javapoet:javapoet:0.2.0")
-            library("guava", "com.google.guava:guava:32.1.3-jre")
+            library("guava", "com.google.guava:guava:33.3.0-jre")
             library("compile-testing", "com.google.testing.compile:compile-testing:0.21.0")
             library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
 

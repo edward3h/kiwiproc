@@ -26,13 +26,11 @@ import org.ethelred.kiwiproc.processor.generator.PoetDAOGenerator;
 import org.ethelred.kiwiproc.processor.types.ContainerType;
 import org.ethelred.kiwiproc.processor.types.RecordType;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
+import org.ethelred.kiwiproc.processorconfig.DataSourceConfigJsonAdapter;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
-import org.ethelred.kiwiproc.processorconfig.jsonb.DataSourceConfigJsonAdapter;
-import org.ethelred.kiwiproc.processorconfig.jsonb.ProcessorConfigJsonAdapter;
+import org.ethelred.kiwiproc.processorconfig.ProcessorConfigJsonAdapter;
 import org.jspecify.annotations.Nullable;
-import org.kohsuke.MetaInfServices;
 
-@MetaInfServices(Processor.class)
 @SupportedAnnotationTypes({
     "org.ethelred.kiwiproc.annotation.DAO",
     "org.ethelred.kiwiproc.annotation.ResultQuery",
