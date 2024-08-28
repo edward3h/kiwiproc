@@ -24,9 +24,9 @@ import org.ethelred.kiwiproc.meta.DatabaseWrapper;
 import org.ethelred.kiwiproc.meta.ParsedQuery;
 import org.ethelred.kiwiproc.processor.generator.PoetDAOGenerator;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
+import org.ethelred.kiwiproc.processorconfig.DataSourceConfigJsonAdapter;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
-import org.ethelred.kiwiproc.processorconfig.jsonb.DataSourceConfigJsonAdapter;
-import org.ethelred.kiwiproc.processorconfig.jsonb.ProcessorConfigJsonAdapter;
+import org.ethelred.kiwiproc.processorconfig.ProcessorConfigJsonAdapter;
 import org.jspecify.annotations.Nullable;
 
 @SupportedAnnotationTypes({
