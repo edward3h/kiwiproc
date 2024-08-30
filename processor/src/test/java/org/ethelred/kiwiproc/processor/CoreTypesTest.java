@@ -2,13 +2,13 @@ package org.ethelred.kiwiproc.processor;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.ethelred.kiwiproc.processor.TestUtils.ofClass;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.stream.Stream;
-
 import org.ethelred.kiwiproc.processor.types.BasicType;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
@@ -55,8 +55,12 @@ public class CoreTypesTest {
             KiwiType source, KiwiType target, boolean isValid, boolean isWarning, String conversionFormatContains) {
         var conversion = coreTypes.lookup(source, target);
         //        System.out.println(conversion);
-        assertWithMessage("%s to %s is valid", source, target).that(conversion.isValid()).isEqualTo(isValid);
-        assertWithMessage("%s to %s is warning", source, target).that(conversion.hasWarning()).isEqualTo(isWarning);
+        assertWithMessage("%s to %s is valid", source, target)
+                .that(conversion.isValid())
+                .isEqualTo(isValid);
+        assertWithMessage("%s to %s is warning", source, target)
+                .that(conversion.hasWarning())
+                .isEqualTo(isWarning);
         if (conversion.isValid()) {
             var formatted = conversion.conversionFormat().formatted("value");
             assertThat(formatted).isEqualTo(conversionFormatContains);

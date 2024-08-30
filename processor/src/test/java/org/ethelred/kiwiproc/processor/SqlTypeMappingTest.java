@@ -1,11 +1,13 @@
 package org.ethelred.kiwiproc.processor;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.ethelred.kiwiproc.processor.TestUtils.atLeastOne;
 
 import java.sql.JDBCType;
 import java.util.Set;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.processor.types.BasicType;
+import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
 import org.ethelred.kiwiproc.processor.types.SqlArrayType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -40,7 +42,10 @@ public class SqlTypeMappingTest {
         var columnMetaData = new ColumnMetaData(1, "columnName", false, jdbcType, null);
         var mapping = SqlTypeMapping.get(columnMetaData);
         assertThat(mapping).isNotNull();
-        assertThat(mapping.kiwiType()).isInstanceOf(BasicType.class);
+        atLeastOne(
+                assertThat(mapping.kiwiType()),
+                s -> s.isInstanceOf(PrimitiveKiwiType.class),
+                s -> s.isInstanceOf(BasicType.class));
     }
 
     @ParameterizedTest

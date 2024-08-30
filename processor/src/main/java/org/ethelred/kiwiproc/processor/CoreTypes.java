@@ -1,5 +1,7 @@
 package org.ethelred.kiwiproc.processor;
 
+import static java.util.Map.entry;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -16,16 +18,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.ethelred.kiwiproc.processor.types.BasicType;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
 import org.jspecify.annotations.Nullable;
 
-import static java.util.Map.entry;
-
 public class CoreTypes {
-    public static final BasicType STRING_TYPE = new BasicType(String.class.getPackageName(), String.class.getSimpleName(), false);
+    public static final BasicType STRING_TYPE =
+            new BasicType(String.class.getPackageName(), String.class.getSimpleName(), false);
     public static final Set<Class<?>> BASIC_TYPES = Set.of(
             String.class,
             BigInteger.class,
@@ -34,8 +34,7 @@ public class CoreTypes {
             LocalTime.class,
             OffsetTime.class,
             LocalDateTime.class,
-            OffsetDateTime.class
-    );
+            OffsetDateTime.class);
 
     public record Conversion(boolean isValid, @Nullable String warning, String conversionFormat) {
         public boolean hasWarning() {
@@ -53,7 +52,9 @@ public class CoreTypes {
             entry(float.class, Float.class),
             entry(double.class, Double.class));
 
-    public static final Map<String, String> primitiveToBoxedStrings = primitiveToBoxed.entrySet().stream().map(e -> entry(e.getKey().getSimpleName(), e.getValue().getSimpleName())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    public static final Map<String, String> primitiveToBoxedStrings = primitiveToBoxed.entrySet().stream()
+            .map(e -> entry(e.getKey().getSimpleName(), e.getValue().getSimpleName()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     /*
     The key type can be assigned to any of the value types without casting.
@@ -186,7 +187,7 @@ public class CoreTypes {
     }
 
     public Conversion lookup(TypeMapping mapper) {
-            return lookup(mapper.source(), mapper.target());
+        return lookup(mapper.source(), mapper.target());
     }
 
     public Conversion lookup(KiwiType source, KiwiType target) {

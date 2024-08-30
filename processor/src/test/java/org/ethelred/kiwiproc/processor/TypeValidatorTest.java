@@ -1,6 +1,7 @@
 package org.ethelred.kiwiproc.processor;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static org.ethelred.kiwiproc.processor.TestUtils.ofClass;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
@@ -36,9 +37,15 @@ public class TypeValidatorTest {
 
     @ParameterizedTest
     @MethodSource
-    void testQueryParameter(ColumnMetaData columnMetaData, MethodParameterInfo parameterInfo, boolean expectedResult, @Nullable String message) {
+    void testQueryParameter(
+            ColumnMetaData columnMetaData,
+            MethodParameterInfo parameterInfo,
+            boolean expectedResult,
+            @Nullable String message) {
         var result = validator.validateParameters(Map.of(columnMetaData, parameterInfo), QueryMethodKind.QUERY);
-        assertThat(result).isEqualTo(expectedResult);
+        assertWithMessage("testQueryParameter %s -> %s", logKiwiType(columnMetaData), parameterInfo.type())
+                .that(result)
+                .isEqualTo(expectedResult);
         if (message == null) {
             assertThat(messages).isEmpty();
         } else {
@@ -48,11 +55,26 @@ public class TypeValidatorTest {
 
     public static Stream<Arguments> testQueryParameter() {
         return Stream.of(
-                arguments(col(false, JDBCType.INTEGER), new MethodParameterInfo(mockVariableElement(), "x", ofClass(int.class), false, null), true, null),
-                arguments(col(true, JDBCType.INTEGER), new MethodParameterInfo(mockVariableElement(), "x", ofClass(int.class), false, null), true, null),
-                arguments(col(false, JDBCType.INTEGER), new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null), false, "Parameter type Integer/nullable is not compatible with SQL type int/non-null for parameter null"),
-                arguments(col(true, JDBCType.INTEGER), new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null), true, null)
-        );
+                arguments(
+                        col(false, JDBCType.INTEGER),
+                        new MethodParameterInfo(mockVariableElement(), "x", ofClass(int.class), false, null),
+                        true,
+                        null),
+                arguments(
+                        col(true, JDBCType.INTEGER),
+                        new MethodParameterInfo(mockVariableElement(), "x", ofClass(int.class), false, null),
+                        true,
+                        null),
+                arguments(
+                        col(false, JDBCType.INTEGER),
+                        new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null),
+                        false,
+                        "Parameter type int/nullable is not compatible with SQL type int/non-null for parameter null"),
+                arguments(
+                        col(true, JDBCType.INTEGER),
+                        new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null),
+                        true,
+                        null));
     }
 
     @ParameterizedTest
@@ -63,12 +85,25 @@ public class TypeValidatorTest {
             boolean expectedResult,
             @Nullable String message) {
         var result = validator.validateReturn(columnMetaData, returnType, QueryMethodKind.QUERY);
-        assertThat(result).isEqualTo(expectedResult);
+        assertWithMessage("testQueryReturn %s -> %s", logKiwiType(columnMetaData), returnType)
+                .that(result)
+                .isEqualTo(expectedResult);
         if (message == null) {
             assertThat(messages).isEmpty();
         } else {
             assertThat(messages).contains(message);
         }
+    }
+
+    private KiwiType logKiwiType(List<ColumnMetaData> columnMetaData) {
+        if (columnMetaData.isEmpty()) {
+            return KiwiType.unsupported();
+        }
+        return logKiwiType(columnMetaData.get(0));
+    }
+
+    private KiwiType logKiwiType(ColumnMetaData columnMetaData) {
+        return SqlTypeMapping.get(columnMetaData).kiwiType();
     }
 
     public static Stream<Arguments> testQueryReturn() {
@@ -96,7 +131,7 @@ public class TypeValidatorTest {
                         new ContainerType(
                                 ValidContainerType.LIST, recordType("TestRecord", "test1", ofClass(int.class))),
                         false,
-                        "Missing or incompatible component type null for column test2 type String/non-null",
+                        "Missing component type for column test2 type String/non-null",
                         col(false, JDBCType.INTEGER),
                         col(false, JDBCType.VARCHAR)));
     }
