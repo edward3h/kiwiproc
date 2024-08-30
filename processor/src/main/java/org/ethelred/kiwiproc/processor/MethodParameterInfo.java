@@ -3,6 +3,7 @@ package org.ethelred.kiwiproc.processor;
 import java.util.*;
 import java.util.stream.Collectors;
 import javax.lang.model.element.VariableElement;
+import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.jspecify.annotations.Nullable;
 
 @KiwiRecordBuilder

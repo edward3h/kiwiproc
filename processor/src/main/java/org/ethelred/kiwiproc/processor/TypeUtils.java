@@ -9,6 +9,8 @@ import javax.lang.model.type.*;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleTypeVisitor14;
 import javax.lang.model.util.Types;
+import org.ethelred.kiwiproc.processor.types.KiwiType;
+import org.ethelred.kiwiproc.processor.types.ValidContainerType;
 import org.jspecify.annotations.Nullable;
 
 public class TypeUtils extends TypeMirrors {

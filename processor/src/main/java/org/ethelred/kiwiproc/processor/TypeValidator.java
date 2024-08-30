@@ -4,10 +4,11 @@ import com.karuslabs.utilitary.Logger;
 import java.util.*;
 import javax.lang.model.element.Element;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
+import org.ethelred.kiwiproc.processor.types.*;
 
 public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes) {
 
-    private static final KiwiType UPDATE_RETURN_TYPE = SimpleType.ofClass(int.class);
+    private static final KiwiType UPDATE_RETURN_TYPE = new PrimitiveKiwiType("int", false);
     private static final KiwiType BATCH_RETURN_TYPE = new ContainerType(ValidContainerType.ARRAY, UPDATE_RETURN_TYPE);
 
     public TypeValidator {
@@ -65,11 +66,11 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
     }
 
     private CharSequence simpleName() {
-        return element == null ? "unknown element" : element.getSimpleName();
+        return element.getSimpleName();
     }
 
     /**
-     * Check whether we know how to convert "from" to "to".
+     * Check whether we know how to convert "source" to "target".
      * This operation is not necessarily commutative.
      * @param source
      * @param target
@@ -85,64 +86,61 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
         We assume that a container may not contain a null. However, for adding to a target container, pretend that the
         contained type is nullable. We will skip nulls.
          */
-        if (source instanceof ContainerType fromContainer && target instanceof ContainerType toContainer) {
+        if (source instanceof ContainerType sourceContainer && target instanceof ContainerType targetContainer) {
             // we can convert any container into a different one, since they are all effectively equivalent to Iterable.
-            return validateCompatible(fromContainer.containedType(), toContainer.containedType());
+            return validateCompatible(sourceContainer.containedType(), targetContainer.containedType());
         }
-        if (target instanceof ContainerType toContainer) {
+        if (target instanceof ContainerType targetContainer) {
             // we can convert a single value to a container by wrapping
-            return validateCompatible(source, toContainer.containedType());
+            return validateCompatible(source, targetContainer.containedType());
         }
         if (source instanceof ContainerType containerType
                 && containerType.type() == ValidContainerType.OPTIONAL
-                && target instanceof SimpleType simpleType) {
+                && target.isSimple()) {
             // an Optional can be converted to a nullable simple type
-            // TODO how to interact with Record?
-            return simpleType.isNullable() && validateCompatible(containerType.containedType(), simpleType);
+            // targetDO how to interact with Record?
+            return target.isNullable() && validateCompatible(containerType.containedType(), target);
         }
-        if (source instanceof RecordType fromRecord && target instanceof RecordType toRecord) {
+        if (source instanceof RecordType sourceRecord && target instanceof RecordType targetRecord) {
             // Component names must match, and types must be compatible. Order is not relevant in this context.
-            var toComponents = toRecord.components();
-            return fromRecord.components().stream().allMatch(e -> {
-                var toComponentType = toComponents.stream()
-                        .filter(toComponent -> e.name().equals(toComponent.name()))
+            var targetComponents = targetRecord.components();
+            return sourceRecord.components().stream().allMatch(e -> {
+                var targetComponentType = targetComponents.stream()
+                        .filter(targetComponent -> e.name().equals(targetComponent.name()))
                         .findFirst()
                         .orElse(null);
-                return toComponentType != null && validateCompatible(e.type(), toComponentType.type());
+                return targetComponentType != null && validateCompatible(e.type(), targetComponentType.type());
             });
         }
-        if (source instanceof SimpleType fromType
-                && !fromType.isNullable()
-                && target instanceof SimpleType toType
-                && toType.isNullable()) {
+        if (source.isSimple() && !source.isNullable() && target.isSimple() && target.isNullable()) {
             // non-null can be converted to nullable
-            return validateCompatible(fromType.withIsNullable(true), toType);
+            return validateCompatible(source.withIsNullable(true), target);
         }
-        if (source instanceof SimpleType fromType && target instanceof SimpleType toType) {
-            return validateSimpleCompatible(fromType, toType);
+        if (source.isSimple() && target.isSimple()) {
+            return validateSimpleCompatible(source, target);
         }
         return false;
     }
 
-    private boolean validateSimpleCompatible(SimpleType fromType, SimpleType toType) {
-        if (fromType.equals(toType)) {
+    private boolean validateSimpleCompatible(KiwiType source, KiwiType target) {
+        if (source.equals(target)) {
             // shortcut
             return true;
         }
-        if (fromType.isNullable() != toType.isNullable()) {
+        if (source.isNullable() != target.isNullable()) {
             // nullability must match. (See validateCompatible for non-null -> null)
             return false;
         }
-        if (toType.equals(CoreTypes.STRING_TYPE.withIsNullable(toType.isNullable()))) {
+        if (target.equals(CoreTypes.STRING_TYPE.withIsNullable(target.isNullable()))) {
             // anything can be converted to String
             return true;
         }
-        var typeLookup = coreTypes.lookup(fromType, toType);
+        var typeLookup = coreTypes.lookup(source, target);
         if (typeLookup.hasWarning()) {
             logger.warn(element, typeLookup.warning());
         }
         return typeLookup.isValid();
-        // TODO user defined mappings
+        // targetDO user defined mappings
     }
 
     /**
@@ -152,17 +150,16 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
      */
     private boolean validateGeneral(KiwiType type) {
         // switch record pattern not available in Java 17 :-(
-        if (type instanceof SimpleType || type instanceof VoidType) {
+        if (type.isSimple() || type instanceof VoidType) {
             return true;
         }
         if (type instanceof ContainerType ct) {
             var contained = ct.containedType();
-            return ((contained instanceof RecordType) || (contained instanceof SimpleType))
-                    && validateGeneral(contained);
+            return ((contained instanceof RecordType) || (contained.isSimple())) && validateGeneral(contained);
         }
         if (type instanceof RecordType rt) {
             var componentTypes = rt.components();
-            return componentTypes.stream().allMatch(t -> t.type() instanceof SimpleType);
+            return componentTypes.stream().allMatch(t -> t.type().isSimple());
         }
         return false;
     }
@@ -198,26 +195,28 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
             debug("Return type Container %s.%s".formatted(containerType.packageName(), containerType.className()));
             return validateReturn(columnMetaData, containerType.containedType(), kind);
         }
-        if (columnMetaData.size() == 1 && returnType instanceof SimpleType simpleType) {
-            debug("Return type simple %s.%s".formatted(simpleType.packageName(), simpleType.className()));
+        if (columnMetaData.size() == 1 && returnType.isSimple()) {
+            debug("Return type simple %s.%s".formatted(returnType.packageName(), returnType.className()));
             // a single column result maps to a simple type
             var first = columnMetaData.get(0);
             KiwiType columnType = SqlTypeMapping.get(first).kiwiType();
-            return validateCompatible(columnType, simpleType);
+            return validateCompatible(columnType, returnType);
         }
         if (returnType instanceof RecordType recordType) {
             debug("Return type record %s.%s".formatted(recordType.packageName(), recordType.className()));
             var components = recordType.components();
             return columnMetaData.stream().allMatch(cmd -> {
                         var componentType = components.stream()
-                                .filter(toComponent -> cmd.name().equals(toComponent.name()))
+                                .filter(targetComponent -> cmd.name().equals(targetComponent.name()))
                                 .findFirst()
                                 .orElse(null);
                         KiwiType columnType = SqlTypeMapping.get(cmd).kiwiType();
-                        return (componentType != null
-                                        && componentType.type() instanceof SimpleType simpleType
-                                        && validateCompatible(columnType, simpleType))
-                                || reportError("Missing or incompatible component type %s for column %s type %s"
+                        if (componentType == null) {
+                            return reportError(
+                                    "Missing component type for column %s type %s".formatted(cmd.name(), columnType));
+                        }
+                        return componentType.type().isSimple() && validateCompatible(columnType, componentType.type())
+                                || reportError("Incompatible component type %s for column %s type %s"
                                         .formatted(componentType, cmd.name(), columnType));
                     })
                     && components.stream().allMatch(cmp -> {

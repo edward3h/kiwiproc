@@ -1,6 +1,6 @@
 package org.ethelred.kiwiproc.processor;
 
-import static org.ethelred.util.collect.BiMap.entry;
+import static java.util.Map.entry;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -18,11 +18,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.ethelred.util.collect.BiMap;
+import org.ethelred.kiwiproc.processor.types.BasicType;
+import org.ethelred.kiwiproc.processor.types.KiwiType;
+import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
 import org.jspecify.annotations.Nullable;
 
 public class CoreTypes {
-    public static final SimpleType STRING_TYPE = SimpleType.ofClass(String.class);
+    public static final BasicType STRING_TYPE =
+            new BasicType(String.class.getPackageName(), String.class.getSimpleName(), false);
     public static final Set<Class<?>> BASIC_TYPES = Set.of(
             String.class,
             BigInteger.class,
@@ -39,7 +42,7 @@ public class CoreTypes {
         }
     }
 
-    public static final BiMap<Class<?>, Class<?>> primitiveToBoxed = BiMap.ofEntries(
+    public static final Map<Class<?>, Class<?>> primitiveToBoxed = Map.ofEntries(
             entry(boolean.class, Boolean.class),
             entry(byte.class, Byte.class),
             entry(char.class, Character.class),
@@ -48,6 +51,10 @@ public class CoreTypes {
             entry(long.class, Long.class),
             entry(float.class, Float.class),
             entry(double.class, Double.class));
+
+    public static final Map<String, String> primitiveToBoxedStrings = primitiveToBoxed.entrySet().stream()
+            .map(e -> entry(e.getKey().getSimpleName(), e.getValue().getSimpleName()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     /*
     The key type can be assigned to any of the value types without casting.
@@ -68,7 +75,7 @@ public class CoreTypes {
     }
 
     private final Conversion invalid = new Conversion(false, null, "invalid");
-    Map<Class<?>, SimpleType> coreTypes;
+    Map<Class<?>, KiwiType> coreTypes;
     Map<TypeMapping, Conversion> coreMappings;
 
     public CoreTypes() {
@@ -91,20 +98,20 @@ public class CoreTypes {
     }
 
     private void addPrimitiveParseMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
-        primitiveToBoxed.keysA().forEach(target -> {
+        primitiveToBoxed.keySet().forEach(target -> {
             String warning = "possible NumberFormatException parsing String to %s".formatted(target.getName());
-            Class<?> boxed = primitiveToBoxed.getByA(target).orElseThrow();
+            Class<?> boxed = primitiveToBoxed.get(target);
             // String -> primitive
             TypeMapping t = new TypeMapping(STRING_TYPE, coreTypes.get(target));
             Conversion c = new Conversion(
                     true,
                     warning,
                     "%s.parse%s(%%s)".formatted(boxed.getSimpleName(), Util.capitalizeFirst(target.getSimpleName())));
-            entries.add(Map.entry(t, c));
+            entries.add(entry(t, c));
             // String -> boxed
             t = new TypeMapping(STRING_TYPE, coreTypes.get(boxed));
             c = new Conversion(true, warning, "%s.valueOf(%%s)".formatted(boxed.getSimpleName()));
-            entries.add(Map.entry(t, c));
+            entries.add(entry(t, c));
         });
     }
 
@@ -116,11 +123,6 @@ public class CoreTypes {
             Stream.of(byte.class, short.class, int.class, long.class, float.class, double.class)
                     .forEach(source -> {
                         entries.add(mappingEntry(source, big, null, "%s.valueOf(%%s)".formatted(big.getSimpleName())));
-                        entries.add(mappingEntry(
-                                primitiveToBoxed.getByA(source).orElseThrow(),
-                                big,
-                                null,
-                                "%s.valueOf(%%s)".formatted(big.getSimpleName())));
                     });
 
             // String -> Big
@@ -132,46 +134,27 @@ public class CoreTypes {
                     .forEach(target -> {
                         String w = "possible lossy conversion from %s to %s".formatted(big.getName(), target.getName());
                         entries.add(mappingEntry(big, target, w, "%%s.%sValue()".formatted(target.getName())));
-                        entries.add(mappingEntry(
-                                big,
-                                primitiveToBoxed.getByA(target).orElseThrow(),
-                                w,
-                                "%%s.%sValue()".formatted(target.getName())));
                     });
         });
     }
 
     private void addPrimitiveMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
-        // boxing - is assignment
-        primitiveToBoxed.mapByA().forEach((source, target) -> entries.add(mappingEntry(source, target, null, "%s")));
-
         // primitive safe assignments
         assignableFrom.forEach((source, targets) -> {
             targets.forEach(target -> {
                 // primitive
                 entries.add(mappingEntry(source, target, null, "%s"));
-                // also boxing
-                entries.add(mappingEntry(source, primitiveToBoxed.getByA(target).orElseThrow(), null, "%s"));
-                // also boxing both
-                entries.add(mappingEntry(
-                        primitiveToBoxed.getByA(source).orElseThrow(),
-                        primitiveToBoxed.getByA(target).orElseThrow(),
-                        null,
-                        "%s"));
             });
         });
 
         // primitive lossy assignments
-        primitiveToBoxed.keysA().forEach(source -> {
-            primitiveToBoxed.keysA().forEach(target -> {
+        primitiveToBoxed.keySet().forEach(source -> {
+            primitiveToBoxed.keySet().forEach(target -> {
                 if (!source.equals(target) && !isAssignable(source, target)) {
                     String warning =
                             "possible lossy conversion from %s to %s".formatted(source.getName(), target.getName());
                     String conversionFormat = "(%s) %%s".formatted(target.getName());
                     entries.add(mappingEntry(source, target, warning, conversionFormat));
-                    // also boxing
-                    entries.add(mappingEntry(
-                            source, primitiveToBoxed.getByA(target).orElseThrow(), warning, conversionFormat));
                 }
             });
         });
@@ -183,14 +166,16 @@ public class CoreTypes {
         var toType = Objects.requireNonNull(coreTypes.get(target));
         var mapping = new TypeMapping(fromType, toType);
         var lookup = new Conversion(true, warning, conversionFormat);
-        return Map.entry(mapping, lookup);
+        return entry(mapping, lookup);
     }
 
-    private Map<Class<?>, SimpleType> defineTypes() {
-        Map<Class<?>, SimpleType> builder = new LinkedHashMap<>(32);
-        primitiveToBoxed.keysA().forEach(c -> builder.put(c, SimpleType.ofClass(c)));
-        primitiveToBoxed.keysB().forEach(c -> builder.put(c, SimpleType.ofClass(c, true)));
-        BASIC_TYPES.forEach(c -> builder.put(c, SimpleType.ofClass(c)));
+    private Map<Class<?>, KiwiType> defineTypes() {
+        Map<Class<?>, KiwiType> builder = new LinkedHashMap<>(32);
+        primitiveToBoxed.forEach((key, value) -> {
+            builder.put(key, new PrimitiveKiwiType(key.getSimpleName(), false));
+            builder.put(value, new PrimitiveKiwiType(key.getSimpleName(), true));
+        });
+        BASIC_TYPES.forEach(c -> builder.put(c, new BasicType(c.getPackageName(), c.getSimpleName(), false)));
         return Map.copyOf(builder);
     }
 
@@ -202,13 +187,10 @@ public class CoreTypes {
     }
 
     public Conversion lookup(TypeMapping mapper) {
-        if (mapper.source() instanceof SimpleType source && mapper.target() instanceof SimpleType target) {
-            return lookup(source, target);
-        }
-        return invalid;
+        return lookup(mapper.source(), mapper.target());
     }
 
-    public Conversion lookup(SimpleType source, SimpleType target) {
+    public Conversion lookup(KiwiType source, KiwiType target) {
         if (source.equals(target) || source.withIsNullable(true).equals(target)) {
             return new Conversion(true, null, "%s");
         }

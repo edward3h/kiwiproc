@@ -1,4 +1,4 @@
-package org.ethelred.kiwiproc.processor;
+package org.ethelred.kiwiproc.processor.types;
 
 public record VoidType() implements KiwiType {
 
@@ -10,5 +10,10 @@ public record VoidType() implements KiwiType {
     @Override
     public String className() {
         return "void";
+    }
+
+    @Override
+    public boolean isSimple() {
+        return false;
     }
 }

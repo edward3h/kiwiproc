@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.*;
 import javax.lang.model.element.Modifier;
 import org.ethelred.kiwiproc.processor.*;
+import org.ethelred.kiwiproc.processor.types.BasicType;
 
 public class InstanceGenerator {
 
@@ -84,7 +85,7 @@ public class InstanceGenerator {
             builder.addStatement(
                     "var $L = $L", name, conversion.conversionFormat().formatted(parameterInfo.javaAccessor()));
             var nullableSource =
-                    parameterInfo.mapper().source() instanceof SimpleType simpleType && simpleType.isNullable();
+                    parameterInfo.mapper().source() instanceof BasicType simpleType && simpleType.isNullable();
             if (nullableSource) {
                 builder.beginControlFlow("if ($L == null)", name)
                         .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())

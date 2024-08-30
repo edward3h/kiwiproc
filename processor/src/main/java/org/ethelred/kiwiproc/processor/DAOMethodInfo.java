@@ -3,6 +3,8 @@ package org.ethelred.kiwiproc.processor;
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
 import org.ethelred.kiwiproc.meta.ParsedQuery;
+import org.ethelred.kiwiproc.processor.types.ContainerType;
+import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.jspecify.annotations.Nullable;
 
 @KiwiRecordBuilder

@@ -1,4 +1,4 @@
-package org.ethelred.kiwiproc.processor;
+package org.ethelred.kiwiproc.processor.types;
 
 import java.lang.reflect.Array;
 import java.util.Collection;

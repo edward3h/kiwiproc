@@ -4,8 +4,8 @@ import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
 import java.util.Map;
-import org.ethelred.kiwiproc.processor.ContainerType;
-import org.ethelred.kiwiproc.processor.KiwiType;
+import org.ethelred.kiwiproc.processor.types.ContainerType;
+import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle;
 
 public class KiwiTypeConverter {

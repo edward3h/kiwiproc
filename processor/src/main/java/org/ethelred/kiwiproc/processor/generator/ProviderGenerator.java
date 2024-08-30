@@ -8,7 +8,7 @@ import javax.lang.model.element.Modifier;
 import javax.sql.DataSource;
 import org.ethelred.kiwiproc.processor.DAOClassInfo;
 import org.ethelred.kiwiproc.processor.DAOMethodInfo;
-import org.ethelred.kiwiproc.processor.VoidType;
+import org.ethelred.kiwiproc.processor.types.VoidType;
 import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle;
 
 public class ProviderGenerator {

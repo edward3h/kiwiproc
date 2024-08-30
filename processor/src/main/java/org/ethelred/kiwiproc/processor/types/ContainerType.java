@@ -1,4 +1,4 @@
-package org.ethelred.kiwiproc.processor;
+package org.ethelred.kiwiproc.processor.types;
 
 public record ContainerType(ValidContainerType type, KiwiType containedType) implements KiwiType {
 
@@ -10,5 +10,10 @@ public record ContainerType(ValidContainerType type, KiwiType containedType) imp
     @Override
     public String className() {
         return type.javaType().getSimpleName();
+    }
+
+    @Override
+    public boolean isSimple() {
+        return false;
     }
 }
