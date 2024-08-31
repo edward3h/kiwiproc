@@ -37,7 +37,7 @@ dependencyResolutionManagement {
             library("compile-testing", "com.google.testing.compile:compile-testing:0.21.0")
             library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
 
-            library("yaml", "org.yaml:snakeyaml:2.2")
+            library("yaml", "org.yaml:snakeyaml:2.3")
 
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }
