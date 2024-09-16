@@ -77,7 +77,7 @@ public class TypeValidatorTest {
                         true,
                         null),
                 arguments(
-                        col(true, JDBCType.ARRAY, new ArrayComponent(JDBCType.INTEGER, "_int4")),
+                        col(true, JDBCType.ARRAY, new ArrayComponent(JDBCType.INTEGER, "ignored")),
                         new MethodParameterInfo(
                                 mockVariableElement(),
                                 "x",

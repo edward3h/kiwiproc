@@ -1,6 +1,7 @@
 package org.ethelred.kiwiproc.meta;
 
 import java.sql.*;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.postgresql.core.BaseConnection;
 
@@ -34,7 +35,9 @@ public record ColumnMetaData(
             var typeInfo = pgConnection.getTypeInfo();
             var oid = typeInfo.getPGType(columnTypeName);
             var componentOid = typeInfo.getPGArrayElement(oid);
-            return new ArrayComponent(JDBCType.valueOf(typeInfo.getSQLType(componentOid)), columnTypeName);
+            return new ArrayComponent(
+                    JDBCType.valueOf(typeInfo.getSQLType(componentOid)),
+                    Objects.requireNonNull(typeInfo.getPGType(componentOid)));
         } catch (SQLException ignored) {
 
         }

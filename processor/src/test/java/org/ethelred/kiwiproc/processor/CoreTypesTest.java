@@ -7,12 +7,10 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.sql.JDBCType;
 import java.time.LocalDate;
 import java.util.stream.Stream;
-import org.ethelred.kiwiproc.processor.types.BasicType;
-import org.ethelred.kiwiproc.processor.types.KiwiType;
-import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
-import org.ethelred.kiwiproc.processor.types.UnsupportedType;
+import org.ethelred.kiwiproc.processor.types.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -84,6 +82,12 @@ public class CoreTypesTest {
                 arguments(ofClass(double.class), ofClass(Short.class, true), true, true, "(short) value"),
                 arguments(ofClass(double.class), ofClass(BigDecimal.class), true, false, "BigDecimal.valueOf(value)"),
                 arguments(ofClass(String.class), ofClass(int.class), true, true, "Integer.parseInt(value)"),
-                arguments(ofClass(String.class), ofClass(Integer.class, true), true, true, "Integer.valueOf(value)"));
+                arguments(ofClass(String.class), ofClass(Integer.class, true), true, true, "Integer.valueOf(value)"),
+                arguments(
+                        new ContainerType(ValidContainerType.LIST, ofClass(Integer.class, true)),
+                        new SqlArrayType(ofClass(int.class), JDBCType.INTEGER, "ignored"),
+                        true,
+                        false,
+                        "fail"));
     }
 }

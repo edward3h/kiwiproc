@@ -75,7 +75,8 @@ public record SqlTypeMapping(
             if (component == null) {
                 throw new IllegalArgumentException("No component type found for SQL Array");
             }
-            r = r.withComponentType(component);
+            r = r.withComponentType(component)
+                    .withComponentDbType(columnMetaData.componentType().dbType());
         }
         return r.withIsNullable(columnMetaData.nullable());
     }

@@ -217,7 +217,7 @@ public class CoreTypes {
     }
 
     private Conversion toSqlArray(ContainerType ct, SqlArrayType sat) {
-        var elementConversion = lookup(ct.containedType(), sat.containedType());
+        var elementConversion = lookup(ct.containedType().withIsNullable(false), sat.containedType());
         if (!elementConversion.isValid()) {
             return elementConversion;
         }

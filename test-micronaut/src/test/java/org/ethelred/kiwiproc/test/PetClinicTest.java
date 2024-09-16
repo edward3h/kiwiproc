@@ -49,6 +49,6 @@ public class PetClinicTest {
         var owners = dao.findOwnersByIds(List.of(2, 6, 99));
         assertThat(owners).hasSize(2);
         var firstNames = owners.stream().map(Owner::first_name).toList();
-        assertThat(firstNames).containsExactly("bob", "joe");
+        assertThat(firstNames).containsExactly("Betty", "Jean");
     }
 }

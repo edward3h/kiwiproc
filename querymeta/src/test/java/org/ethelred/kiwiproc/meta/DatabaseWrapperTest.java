@@ -75,7 +75,7 @@ public class DatabaseWrapperTest {
         assertThat(queryMetaData.parameters()).hasSize(1);
         assertThat(queryMetaData.parameters().get(0))
                 .isEqualTo(new ColumnMetaData(
-                        1, "parameter", false, JDBCType.ARRAY, new ArrayComponent(JDBCType.INTEGER, "_int4")));
+                        1, "parameter", false, JDBCType.ARRAY, new ArrayComponent(JDBCType.INTEGER, "int4")));
         assertThat(queryMetaData.resultColumns()).hasSize(4);
         assertThat(queryMetaData.resultColumns().get(0))
                 .isEqualTo(new ColumnMetaData(1, "test_id", false, JDBCType.INTEGER, null));
