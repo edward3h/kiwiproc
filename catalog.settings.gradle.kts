@@ -5,7 +5,7 @@ dependencyResolutionManagement {
             version("avaje-json", "2.1")
             version("junit", "5.11.0")
             version("recordbuilder", "42")
-            version("mapstruct", "1.6.0")
+            version("mapstruct", "1.6.1")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
             library("avaje-json-processor", "io.avaje", "avaje-jsonb-generator").versionRef("avaje-json")
@@ -25,7 +25,7 @@ dependencyResolutionManagement {
             library("recordbuilder-core", "io.soabase.record-builder", "record-builder-core").versionRef("recordbuilder")
 
             library("embeddedpostgres", "io.zonky.test:embedded-postgres:2.0.7")
-            library("liquibase-core", "org.liquibase:liquibase-core:4.29.1")
+            library("liquibase-core", "org.liquibase:liquibase-core:4.29.2")
 
             library("mapstruct-processor", "org.mapstruct", "mapstruct-processor").versionRef("mapstruct")
             library("mapstruct-compile", "org.mapstruct", "mapstruct").versionRef("mapstruct")
@@ -37,7 +37,7 @@ dependencyResolutionManagement {
             library("compile-testing", "com.google.testing.compile:compile-testing:0.21.0")
             library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
 
-            library("yaml", "org.yaml:snakeyaml:2.2")
+            library("yaml", "org.yaml:snakeyaml:2.3")
 
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }
