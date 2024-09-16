@@ -74,7 +74,8 @@ public class DatabaseWrapperTest {
         var queryMetaData = getQueryMetaData("SELECT * FROM test_table where test_id = ANY(?)");
         assertThat(queryMetaData.parameters()).hasSize(1);
         assertThat(queryMetaData.parameters().get(0))
-                .isEqualTo(new ColumnMetaData(1, "parameter", false, JDBCType.ARRAY, JDBCType.INTEGER));
+                .isEqualTo(new ColumnMetaData(
+                        1, "parameter", false, JDBCType.ARRAY, new ArrayComponent(JDBCType.INTEGER, "int4")));
         assertThat(queryMetaData.resultColumns()).hasSize(4);
         assertThat(queryMetaData.resultColumns().get(0))
                 .isEqualTo(new ColumnMetaData(1, "test_id", false, JDBCType.INTEGER, null));

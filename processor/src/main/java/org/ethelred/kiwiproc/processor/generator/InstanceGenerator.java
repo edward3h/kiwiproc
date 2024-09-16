@@ -8,17 +8,17 @@ import java.sql.SQLException;
 import java.util.*;
 import javax.lang.model.element.Modifier;
 import org.ethelred.kiwiproc.processor.*;
-import org.ethelred.kiwiproc.processor.types.BasicType;
 
 public class InstanceGenerator {
 
     private final Logger logger;
     private final KiwiTypeConverter kiwiTypeConverter;
     private final CoreTypes coreTypes;
+    private final Set<String> parameterNames = new HashSet<>();
+    private final Map<String, String> patchedNames = new HashMap<>();
 
     public InstanceGenerator(Logger logger, KiwiTypeConverter kiwiTypeConverter, CoreTypes coreTypes) {
         this.logger = logger;
-
         this.kiwiTypeConverter = kiwiTypeConverter;
         this.coreTypes = coreTypes;
     }
@@ -48,6 +48,8 @@ public class InstanceGenerator {
     }
 
     private MethodSpec buildMethod(DAOMethodInfo methodInfo) {
+        parameterNames.clear();
+        patchedNames.clear();
         var methodSpecBuilder = MethodSpec.overriding(methodInfo.methodElement());
         methodSpecBuilder.addStatement("var connection = context.getConnection()");
         methodSpecBuilder.beginControlFlow(
@@ -78,19 +80,17 @@ public class InstanceGenerator {
 
     private CodeBlock queryMethodBody(DAOMethodInfo methodInfo) {
         var builder = CodeBlock.builder();
-        Set<String> parameterNames = new HashSet<>();
         methodInfo.parameterMapping().forEach(parameterInfo -> {
             var name = "param" + parameterInfo.index();
             var conversion = lookupConversion(parameterInfo::element, parameterInfo.mapper());
-            builder.addStatement(
-                    "var $L = $L", name, conversion.conversionFormat().formatted(parameterInfo.javaAccessor()));
-            var nullableSource =
-                    parameterInfo.mapper().source() instanceof BasicType simpleType && simpleType.isNullable();
-            if (nullableSource) {
-                builder.beginControlFlow("if ($L == null)", name)
-                        .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())
-                        .nextControlFlow("else");
-            }
+            buildConversion(builder, conversion, name, parameterInfo.javaAccessor(), true);
+            var nullableSource = parameterInfo.mapper().source().isNullable();
+            //            if (nullableSource) {
+            //                builder.beginControlFlow("if ($L == null)", name)
+            //                        .addStatement("statement.setNull($L, $L)", parameterInfo.index(),
+            // parameterInfo.sqlType())
+            //                        .nextControlFlow("else");
+            //            }
             builder.addStatement("statement.$L($L, $L)", parameterInfo.setter(), parameterInfo.index(), name);
             if (nullableSource) {
                 builder.endControlFlow();
@@ -109,13 +109,9 @@ public class InstanceGenerator {
             TypeMapping mapping = singleColumn.asTypeMapping();
             var conversion = lookupConversion(methodInfo::methodElement, mapping);
             builder.addStatement(
-                            "var rawValue = rs.get$L($S)",
-                            singleColumn.sqlTypeMapping().accessorSuffix(),
-                            singleColumn.name())
-                    .addStatement(
-                            "var value = $L", conversion.conversionFormat().formatted("rawValue"));
+                    "var rawValue = rs.get$L($S)", singleColumn.sqlTypeMapping().accessorSuffix(), singleColumn.name());
+            buildConversion(builder, conversion, "value", "rawValue", true);
         } else if (!multipleColumns.isEmpty()) {
-            Map<String, String> patchedNames = new HashMap<>();
             multipleColumns.forEach(daoResultColumn -> {
                 var conversion = lookupConversion(methodInfo::methodElement, daoResultColumn.asTypeMapping());
                 String rawName = daoResultColumn.name() + "Raw";
@@ -132,9 +128,8 @@ public class InstanceGenerator {
                             .addStatement("$L = null", rawName)
                             .endControlFlow();
                 }
-                var varName = patchName(parameterNames, patchedNames, daoResultColumn.name());
-                builder.addStatement(
-                        "var $L = $L", varName, conversion.conversionFormat().formatted(rawName));
+                var varName = patchName(daoResultColumn.name());
+                buildConversion(builder, conversion, varName, rawName, true);
             });
             var params = multipleColumns.stream()
                     .map(p -> CodeBlock.of("$L", patchedNames.get(p.name())))
@@ -157,7 +152,42 @@ public class InstanceGenerator {
         return builder.build();
     }
 
-    private String patchName(Set<String> parameterNames, Map<String, String> patchedNames, String name) {
+    private void buildConversion(
+            CodeBlock.Builder builder, Conversion conversion, String assignee, String accessor, boolean withVar) {
+        var insertVar = withVar ? "var " : "";
+        if (conversion instanceof AssignmentConversion) {
+            /* e.g.
+            var param1 = id;
+             */
+            builder.addStatement("$L$L = $L", insertVar, assignee, accessor);
+        } else if (conversion instanceof StringFormatConversion sfc) {
+            /* e.g.
+            var param1 = (int) id;
+             */
+            builder.addStatement(
+                    "$L$L = $L", insertVar, assignee, sfc.conversionFormat().formatted(accessor));
+        } else if (conversion instanceof ToSqlArrayConversion sac) {
+            /* e.g.
+            Object[] elementObjects = listParam.toArray();
+            var param1 = connection.createArrayOf("_int4", elementObjects);
+             */
+            String elementObjects = patchName("elementObjects");
+            builder.addStatement(
+                    "Object[] $L = $L",
+                    elementObjects,
+                    String.format(sac.ct().type().toObjectArrayTemplate(), accessor));
+            builder.addStatement(
+                    "$L$L = connection.createArrayOf($S, $L)",
+                    insertVar,
+                    assignee,
+                    sac.sat().dbType(),
+                    elementObjects);
+        } else {
+            logger.error(null, "Unsupported Conversion %s".formatted(conversion)); // TODO add Element
+        }
+    }
+
+    private String patchName(String name) {
         return patchedNames.computeIfAbsent(name, k -> {
             var newName = k;
             while (parameterNames.contains(newName)) {
@@ -167,7 +197,7 @@ public class InstanceGenerator {
         });
     }
 
-    CoreTypes.Conversion lookupConversion(ElementSupplier elementSupplier, TypeMapping t) {
+    Conversion lookupConversion(ElementSupplier elementSupplier, TypeMapping t) {
         var element = elementSupplier.getElement();
         var conversion = coreTypes.lookup(t);
         if (!conversion.isValid()) {

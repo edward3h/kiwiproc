@@ -18,9 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.ethelred.kiwiproc.processor.types.BasicType;
-import org.ethelred.kiwiproc.processor.types.KiwiType;
-import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
+import org.ethelred.kiwiproc.processor.types.*;
 import org.jspecify.annotations.Nullable;
 
 public class CoreTypes {
@@ -35,12 +33,6 @@ public class CoreTypes {
             OffsetTime.class,
             LocalDateTime.class,
             OffsetDateTime.class);
-
-    public record Conversion(boolean isValid, @Nullable String warning, String conversionFormat) {
-        public boolean hasWarning() {
-            return warning != null;
-        }
-    }
 
     public static final Map<Class<?>, Class<?>> primitiveToBoxed = Map.ofEntries(
             entry(boolean.class, Boolean.class),
@@ -74,19 +66,19 @@ public class CoreTypes {
         return assignableFrom.getOrDefault(source, Set.of()).contains(target);
     }
 
-    private final Conversion invalid = new Conversion(false, null, "invalid");
+    private final Conversion invalid = new InvalidConversion();
     Map<Class<?>, KiwiType> coreTypes;
-    Map<TypeMapping, Conversion> coreMappings;
+    Map<TypeMapping, StringFormatConversion> simpleMappings;
 
     public CoreTypes() {
         coreTypes = defineTypes();
-        coreMappings = defineMappings();
+        simpleMappings = defineMappings();
         //        System.out.println(
         //                coreMappings.entrySet().stream().map(Object::toString).collect(Collectors.joining("\n")));
     }
 
-    private Map<TypeMapping, Conversion> defineMappings() {
-        List<Map.Entry<TypeMapping, Conversion>> entries = new ArrayList<>(200);
+    private Map<TypeMapping, StringFormatConversion> defineMappings() {
+        List<Map.Entry<TypeMapping, StringFormatConversion>> entries = new ArrayList<>(200);
 
         addPrimitiveMappings(entries);
         addPrimitiveParseMappings(entries);
@@ -97,27 +89,26 @@ public class CoreTypes {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
     }
 
-    private void addPrimitiveParseMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
+    private void addPrimitiveParseMappings(Collection<Map.Entry<TypeMapping, StringFormatConversion>> entries) {
         primitiveToBoxed.keySet().forEach(target -> {
             String warning = "possible NumberFormatException parsing String to %s".formatted(target.getName());
             Class<?> boxed = primitiveToBoxed.get(target);
             // String -> primitive
             TypeMapping t = new TypeMapping(STRING_TYPE, coreTypes.get(target));
-            Conversion c = new Conversion(
-                    true,
+            StringFormatConversion c = new StringFormatConversion(
                     warning,
                     "%s.parse%s(%%s)".formatted(boxed.getSimpleName(), Util.capitalizeFirst(target.getSimpleName())));
             entries.add(entry(t, c));
             // String -> boxed
             t = new TypeMapping(STRING_TYPE, coreTypes.get(boxed));
-            c = new Conversion(true, warning, "%s.valueOf(%%s)".formatted(boxed.getSimpleName()));
+            c = new StringFormatConversion(warning, "%s.valueOf(%%s)".formatted(boxed.getSimpleName()));
             entries.add(entry(t, c));
         });
     }
 
-    private void addDateTimeMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {}
+    private void addDateTimeMappings(Collection<Map.Entry<TypeMapping, StringFormatConversion>> entries) {}
 
-    private void addBigNumberMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
+    private void addBigNumberMappings(Collection<Map.Entry<TypeMapping, StringFormatConversion>> entries) {
         List.of(BigInteger.class, BigDecimal.class).forEach(big -> {
             // primitive -> Big
             Stream.of(byte.class, short.class, int.class, long.class, float.class, double.class)
@@ -138,7 +129,7 @@ public class CoreTypes {
         });
     }
 
-    private void addPrimitiveMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
+    private void addPrimitiveMappings(Collection<Map.Entry<TypeMapping, StringFormatConversion>> entries) {
         // primitive safe assignments
         assignableFrom.forEach((source, targets) -> {
             targets.forEach(target -> {
@@ -160,12 +151,12 @@ public class CoreTypes {
         });
     }
 
-    private Map.Entry<TypeMapping, Conversion> mappingEntry(
+    private Map.Entry<TypeMapping, StringFormatConversion> mappingEntry(
             Class<?> source, Class<?> target, @Nullable String warning, String conversionFormat) {
         var fromType = Objects.requireNonNull(coreTypes.get(source));
         var toType = Objects.requireNonNull(coreTypes.get(target));
         var mapping = new TypeMapping(fromType, toType);
-        var lookup = new Conversion(true, warning, conversionFormat);
+        var lookup = new StringFormatConversion(warning, conversionFormat);
         return entry(mapping, lookup);
     }
 
@@ -192,23 +183,45 @@ public class CoreTypes {
 
     public Conversion lookup(KiwiType source, KiwiType target) {
         if (source.equals(target) || source.withIsNullable(true).equals(target)) {
-            return new Conversion(true, null, "%s");
+            return new AssignmentConversion();
+        }
+        if (source instanceof ContainerType ct && target instanceof SqlArrayType sat) {
+            return toSqlArray(ct, sat);
+        }
+        if (source instanceof SqlArrayType sat && target instanceof ContainerType ct) {
+            return fromSqlArray(sat, ct);
         }
         // special case String
-        Conversion stringConversion = null;
+        StringFormatConversion stringConversion = null;
         if (STRING_TYPE.equals(target) || STRING_TYPE.withIsNullable(true).equals(target)) {
-            stringConversion = new Conversion(true, null, "String.valueOf(%s)");
+            stringConversion = new StringFormatConversion(null, "String.valueOf(%s)");
         }
         var result = firstNonNull(
                 stringConversion,
-                coreMappings.get(new TypeMapping(source, target)),
-                coreMappings.get(new TypeMapping(source, target.withIsNullable(false))),
-                coreMappings.get(new TypeMapping(source.withIsNullable(false), target.withIsNullable(false))),
+                simpleMappings.get(new TypeMapping(source, target)),
+                simpleMappings.get(new TypeMapping(source, target.withIsNullable(false))),
+                simpleMappings.get(new TypeMapping(source.withIsNullable(false), target.withIsNullable(false))),
                 invalid);
         if (result.isValid() && source.isNullable()) {
-            result = new Conversion(true, result.warning(), nullWrap(result.conversionFormat()));
+            result = new NullableSourceConversion(result);
         }
         return result;
+    }
+
+    private Conversion fromSqlArray(SqlArrayType sat, ContainerType ct) {
+        var elementConversion = lookup(sat.containedType(), ct.containedType());
+        if (!elementConversion.isValid()) {
+            return elementConversion;
+        }
+        return new FromSqlArrayConversion(sat, ct, elementConversion);
+    }
+
+    private Conversion toSqlArray(ContainerType ct, SqlArrayType sat) {
+        var elementConversion = lookup(ct.containedType().withIsNullable(false), sat.containedType());
+        if (!elementConversion.isValid()) {
+            return elementConversion;
+        }
+        return new ToSqlArrayConversion(ct, sat, elementConversion);
     }
 
     private Conversion firstNonNull(@Nullable Conversion... conversions) {
@@ -218,10 +231,5 @@ public class CoreTypes {
             }
         }
         throw new NullPointerException();
-    }
-
-    private String nullWrap(String conversionFormat) {
-        conversionFormat = conversionFormat.replace("%s", "%<s");
-        return "%s == null ? null : " + conversionFormat;
     }
 }

@@ -8,6 +8,4 @@ public record RecordType(String packageName, String className, List<RecordTypeCo
     public boolean isSimple() {
         return false;
     }
-
-    public record RecordTypeComponent(String name, KiwiType type) {}
 }

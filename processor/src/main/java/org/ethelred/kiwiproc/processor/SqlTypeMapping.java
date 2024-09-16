@@ -21,10 +21,11 @@ public record SqlTypeMapping(
         String accessorSuffix,
         boolean specialCase,
         boolean isNullable,
-        @Nullable SqlTypeMapping componentType)
+        @Nullable SqlTypeMapping componentType,
+        @Nullable String componentDbType)
         implements SqlTypeMappingBuilder.With {
     public SqlTypeMapping(JDBCType jdbcType, Class<?> baseType, String accessorSuffix) {
-        this(jdbcType, baseType, accessorSuffix, false, false, null);
+        this(jdbcType, baseType, accessorSuffix, false, false, null, null);
     }
 
     private static final List<SqlTypeMapping> types = List.of(
@@ -45,7 +46,7 @@ public record SqlTypeMapping(
             new SqlTypeMapping(JDBCType.NCHAR, String.class, "String"),
             new SqlTypeMapping(JDBCType.NVARCHAR, String.class, "String"),
             new SqlTypeMapping(JDBCType.LONGNVARCHAR, String.class, "String"),
-            new SqlTypeMapping(JDBCType.ARRAY, java.sql.Array.class, "Array", true, false, null),
+            new SqlTypeMapping(JDBCType.ARRAY, java.sql.Array.class, "Array", true, false, null, null),
             // dates and times
             // Use java.time types - recommended for Postgres https://tada.github.io/pljava/use/datetime.html
             new SqlTypeMapping(JDBCType.DATE, LocalDate.class, ""),
@@ -53,7 +54,7 @@ public record SqlTypeMapping(
             new SqlTypeMapping(JDBCType.TIME_WITH_TIMEZONE, OffsetTime.class, ""),
             new SqlTypeMapping(JDBCType.TIMESTAMP, LocalDateTime.class, ""),
             new SqlTypeMapping(JDBCType.TIMESTAMP_WITH_TIMEZONE, OffsetDateTime.class, ""),
-            new SqlTypeMapping(JDBCType.NULL, void.class, "", true, true, null)
+            new SqlTypeMapping(JDBCType.NULL, void.class, "", true, true, null, null)
 
             // TODO fill out types as necessary
             );
@@ -66,11 +67,16 @@ public record SqlTypeMapping(
             throw new IllegalArgumentException("Unsupported JDBCType type " + columnMetaData.sqlType());
         }
         if (r.jdbcType == JDBCType.ARRAY) {
-            var component = JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(columnMetaData.componentType());
+            if (columnMetaData.componentType() == null) {
+                throw new IllegalArgumentException("No component type provided for SQL Array");
+            }
+            var component = JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(
+                    columnMetaData.componentType().jdbcType());
             if (component == null) {
                 throw new IllegalArgumentException("No component type found for SQL Array");
             }
-            r = r.withComponentType(component);
+            r = r.withComponentType(component)
+                    .withComponentDbType(columnMetaData.componentType().dbType());
         }
         return r.withIsNullable(columnMetaData.nullable());
     }
@@ -78,7 +84,7 @@ public record SqlTypeMapping(
     public KiwiType kiwiType() {
         if (jdbcType == JDBCType.ARRAY) {
             assert componentType != null;
-            return new SqlArrayType(componentType.kiwiType());
+            return new SqlArrayType(componentType.kiwiType(), componentType.jdbcType, componentDbType);
         }
         if (CoreTypes.primitiveToBoxed.containsKey(baseType)) {
             return new PrimitiveKiwiType(baseType().getSimpleName(), isNullable);

@@ -11,10 +11,6 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
     private static final KiwiType UPDATE_RETURN_TYPE = new PrimitiveKiwiType("int", false);
     private static final KiwiType BATCH_RETURN_TYPE = new ContainerType(ValidContainerType.ARRAY, UPDATE_RETURN_TYPE);
 
-    public TypeValidator {
-        element = Objects.requireNonNull(element);
-    }
-
     public TypeValidator(Logger logger, Element methodElement) {
         this(logger, methodElement, new CoreTypes());
     }
@@ -82,13 +78,15 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
             return true;
         }
         debug("Comparing %s with %s".formatted(source, target));
-        /*
-        We assume that a container may not contain a null. However, for adding to a target container, pretend that the
-        contained type is nullable. We will skip nulls.
-         */
-        if (source instanceof ContainerType sourceContainer && target instanceof ContainerType targetContainer) {
-            // we can convert any container into a different one, since they are all effectively equivalent to Iterable.
-            return validateCompatible(sourceContainer.containedType(), targetContainer.containedType());
+
+        // check for a valid conversion
+        // don't fail on invalid conversion because there are other possible cases
+        Conversion c = coreTypes.lookup(source, target);
+        if (c.isValid()) {
+            if (c.hasWarning()) {
+                warn(Objects.requireNonNull(c.warning()));
+            }
+            return true;
         }
         if (target instanceof ContainerType targetContainer) {
             // we can convert a single value to a container by wrapping
@@ -98,49 +96,10 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
                 && containerType.type() == ValidContainerType.OPTIONAL
                 && target.isSimple()) {
             // an Optional can be converted to a nullable simple type
-            // targetDO how to interact with Record?
+            // TODO how to interact with Record?
             return target.isNullable() && validateCompatible(containerType.containedType(), target);
         }
-        if (source instanceof RecordType sourceRecord && target instanceof RecordType targetRecord) {
-            // Component names must match, and types must be compatible. Order is not relevant in this context.
-            var targetComponents = targetRecord.components();
-            return sourceRecord.components().stream().allMatch(e -> {
-                var targetComponentType = targetComponents.stream()
-                        .filter(targetComponent -> e.name().equals(targetComponent.name()))
-                        .findFirst()
-                        .orElse(null);
-                return targetComponentType != null && validateCompatible(e.type(), targetComponentType.type());
-            });
-        }
-        if (source.isSimple() && !source.isNullable() && target.isSimple() && target.isNullable()) {
-            // non-null can be converted to nullable
-            return validateCompatible(source.withIsNullable(true), target);
-        }
-        if (source.isSimple() && target.isSimple()) {
-            return validateSimpleCompatible(source, target);
-        }
         return false;
-    }
-
-    private boolean validateSimpleCompatible(KiwiType source, KiwiType target) {
-        if (source.equals(target)) {
-            // shortcut
-            return true;
-        }
-        if (source.isNullable() != target.isNullable()) {
-            // nullability must match. (See validateCompatible for non-null -> null)
-            return false;
-        }
-        if (target.equals(CoreTypes.STRING_TYPE.withIsNullable(target.isNullable()))) {
-            // anything can be converted to String
-            return true;
-        }
-        var typeLookup = coreTypes.lookup(source, target);
-        if (typeLookup.hasWarning()) {
-            logger.warn(element, typeLookup.warning());
-        }
-        return typeLookup.isValid();
-        // targetDO user defined mappings
     }
 
     /**
@@ -156,6 +115,10 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
         if (type instanceof ContainerType ct) {
             var contained = ct.containedType();
             return ((contained instanceof RecordType) || (contained.isSimple())) && validateGeneral(contained);
+        }
+        if (type instanceof SqlArrayType sqlArrayType) {
+            var contained = sqlArrayType.containedType();
+            return contained.isSimple() && validateGeneral(contained);
         }
         if (type instanceof RecordType rt) {
             var componentTypes = rt.components();
@@ -175,6 +138,10 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
 
     private void debug(String message) {
         info("DEBUG: " + message);
+    }
+
+    private void warn(String message) {
+        logger.warn(element, message);
     }
 
     public boolean validateReturn(List<ColumnMetaData> columnMetaData, KiwiType returnType, QueryMethodKind kind) {

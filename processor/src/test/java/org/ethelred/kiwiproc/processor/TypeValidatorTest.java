@@ -17,6 +17,7 @@ import javax.annotation.processing.Messager;
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
+import org.ethelred.kiwiproc.meta.ArrayComponent;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.processor.types.*;
 import org.jspecify.annotations.Nullable;
@@ -43,7 +44,7 @@ public class TypeValidatorTest {
             boolean expectedResult,
             @Nullable String message) {
         var result = validator.validateParameters(Map.of(columnMetaData, parameterInfo), QueryMethodKind.QUERY);
-        assertWithMessage("testQueryParameter %s -> %s", logKiwiType(columnMetaData), parameterInfo.type())
+        assertWithMessage("testQueryParameter %s -> %s", parameterInfo.type(), logKiwiType(columnMetaData))
                 .that(result)
                 .isEqualTo(expectedResult);
         if (message == null) {
@@ -73,6 +74,16 @@ public class TypeValidatorTest {
                 arguments(
                         col(true, JDBCType.INTEGER),
                         new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null),
+                        true,
+                        null),
+                arguments(
+                        col(true, JDBCType.ARRAY, new ArrayComponent(JDBCType.INTEGER, "ignored")),
+                        new MethodParameterInfo(
+                                mockVariableElement(),
+                                "x",
+                                new ContainerType(ValidContainerType.LIST, ofClass(Integer.class, true)),
+                                false,
+                                null),
                         true,
                         null));
     }
@@ -137,8 +148,7 @@ public class TypeValidatorTest {
     }
 
     private static KiwiType recordType(String className, String componentName, KiwiType componentType) {
-        return new RecordType(
-                "test", className, List.of(new RecordType.RecordTypeComponent(componentName, componentType)));
+        return new RecordType("test", className, List.of(new RecordTypeComponent(componentName, componentType)));
     }
 
     private static KiwiType recordType(
@@ -151,8 +161,8 @@ public class TypeValidatorTest {
                 "test",
                 className,
                 List.of(
-                        new RecordType.RecordTypeComponent(componentName, componentType),
-                        new RecordType.RecordTypeComponent(componentName2, componentType2)));
+                        new RecordTypeComponent(componentName, componentType),
+                        new RecordTypeComponent(componentName2, componentType2)));
     }
 
     static Arguments testCase(
@@ -162,7 +172,7 @@ public class TypeValidatorTest {
         return result;
     }
 
-    static ColumnMetaData col(boolean nullable, JDBCType type, @Nullable JDBCType componentType) {
+    static ColumnMetaData col(boolean nullable, JDBCType type, @Nullable ArrayComponent componentType) {
         return new ColumnMetaData(colCount, "test" + colCount++, nullable, type, componentType);
     }
 

@@ -16,4 +16,9 @@ public record ContainerType(ValidContainerType type, KiwiType containedType) imp
     public boolean isSimple() {
         return false;
     }
+
+    @Override
+    public String toString() {
+        return className() + "<" + containedType + ">";
+    }
 }
