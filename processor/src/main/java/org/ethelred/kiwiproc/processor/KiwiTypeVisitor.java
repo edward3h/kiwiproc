@@ -42,10 +42,10 @@ public class KiwiTypeVisitor extends SimpleTypeVisitor14<KiwiType, Void> {
             }
         }
         if (utils.isRecord(t)) {
-            var componentTypes = new ArrayList<RecordType.RecordTypeComponent>();
+            var componentTypes = new ArrayList<RecordTypeComponent>();
             for (var component : utils.recordComponents(t)) {
-                componentTypes.add(new RecordType.RecordTypeComponent(
-                        component.getSimpleName().toString(), visit(component.asType())));
+                componentTypes.add(
+                        new RecordTypeComponent(component.getSimpleName().toString(), visit(component.asType())));
             }
             return new RecordType(utils.packageName(t), utils.className(t), List.copyOf(componentTypes));
         }

@@ -5,6 +5,7 @@ import static com.google.common.truth.Truth.assertThat;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
@@ -43,11 +44,11 @@ public class PetClinicTest {
         assertThat(countsByType).containsEntry(new PetType(2, "dog"), 4L);
     }
 
-    //    @Test
-    //    void happyFindByArrayValues() throws SQLException {
-    //        var owners = transactionalDao.call(dao -> dao.findOwnersByIds(List.of(2, 6, 99)));
-    //        assertThat(owners).hasSize(2);
-    //        var firstNames = owners.stream().map(Owner::first_name).toList();
-    //        assertThat(firstNames).containsExactly("bob", "joe");
-    //    }
+    @Test
+    void happyFindByArrayValues() throws SQLException {
+        var owners = dao.findOwnersByIds(List.of(2, 6, 99));
+        assertThat(owners).hasSize(2);
+        var firstNames = owners.stream().map(Owner::first_name).toList();
+        assertThat(firstNames).containsExactly("bob", "joe");
+    }
 }

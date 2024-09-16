@@ -62,8 +62,10 @@ public class CoreTypesTest {
                 .that(conversion.hasWarning())
                 .isEqualTo(isWarning);
         if (conversion.isValid()) {
-            var formatted = conversion.conversionFormat().formatted("value");
-            assertThat(formatted).isEqualTo(conversionFormatContains);
+            if (conversion instanceof StringFormatConversion sfc) {
+                var formatted = sfc.conversionFormat().formatted("value");
+                assertThat(formatted).isEqualTo(conversionFormatContains);
+            }
         }
     }
 

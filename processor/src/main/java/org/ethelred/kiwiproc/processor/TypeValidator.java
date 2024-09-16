@@ -86,9 +86,15 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
         We assume that a container may not contain a null. However, for adding to a target container, pretend that the
         contained type is nullable. We will skip nulls.
          */
-        if (source instanceof ContainerType sourceContainer && target instanceof ContainerType targetContainer) {
-            // we can convert any container into a different one, since they are all effectively equivalent to Iterable.
-            return validateCompatible(sourceContainer.containedType(), targetContainer.containedType());
+        if (source instanceof ContainerType sourceContainer && target instanceof SqlArrayType targetContainer) {
+            // we can convert any container into a SQL array, since they are all effectively equivalent to Iterable.
+            return validateCompatible(
+                    sourceContainer.containedType().withIsNullable(false), targetContainer.containedType());
+        }
+        if (source instanceof SqlArrayType sourceContainer && target instanceof ContainerType targetContainer) {
+            // vice versa
+            return validateCompatible(
+                    sourceContainer.containedType().withIsNullable(false), targetContainer.containedType());
         }
         if (target instanceof ContainerType targetContainer) {
             // we can convert a single value to a container by wrapping
@@ -100,17 +106,6 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
             // an Optional can be converted to a nullable simple type
             // targetDO how to interact with Record?
             return target.isNullable() && validateCompatible(containerType.containedType(), target);
-        }
-        if (source instanceof RecordType sourceRecord && target instanceof RecordType targetRecord) {
-            // Component names must match, and types must be compatible. Order is not relevant in this context.
-            var targetComponents = targetRecord.components();
-            return sourceRecord.components().stream().allMatch(e -> {
-                var targetComponentType = targetComponents.stream()
-                        .filter(targetComponent -> e.name().equals(targetComponent.name()))
-                        .findFirst()
-                        .orElse(null);
-                return targetComponentType != null && validateCompatible(e.type(), targetComponentType.type());
-            });
         }
         if (source.isSimple() && !source.isNullable() && target.isSimple() && target.isNullable()) {
             // non-null can be converted to nullable
@@ -156,6 +151,10 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
         if (type instanceof ContainerType ct) {
             var contained = ct.containedType();
             return ((contained instanceof RecordType) || (contained.isSimple())) && validateGeneral(contained);
+        }
+        if (type instanceof SqlArrayType sqlArrayType) {
+            var contained = sqlArrayType.containedType();
+            return contained.isSimple() && validateGeneral(contained);
         }
         if (type instanceof RecordType rt) {
             var componentTypes = rt.components();

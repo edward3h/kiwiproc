@@ -5,9 +5,10 @@ import org.jspecify.annotations.Nullable;
 import org.postgresql.core.BaseConnection;
 
 public record ColumnMetaData(
-        int index, String name, boolean nullable, JDBCType sqlType, @Nullable JDBCType componentType
+        int index, String name, boolean nullable, JDBCType sqlType, @Nullable ArrayComponent componentType
         // TODO precision/scale?
         ) {
+
     public static ColumnMetaData from(Connection connection, int index, ResultSetMetaData resultSetMetaData)
             throws SQLException {
         return new ColumnMetaData(
@@ -24,7 +25,7 @@ public record ColumnMetaData(
                         resultSetMetaData.getColumnTypeName(index)));
     }
 
-    @Nullable private static JDBCType componentType(Connection connection, int columnType, String columnTypeName) {
+    @Nullable private static ArrayComponent componentType(Connection connection, int columnType, String columnTypeName) {
         if (columnType != Types.ARRAY) {
             return null;
         }
@@ -33,7 +34,7 @@ public record ColumnMetaData(
             var typeInfo = pgConnection.getTypeInfo();
             var oid = typeInfo.getPGType(columnTypeName);
             var componentOid = typeInfo.getPGArrayElement(oid);
-            return JDBCType.valueOf(typeInfo.getSQLType(componentOid));
+            return new ArrayComponent(JDBCType.valueOf(typeInfo.getSQLType(componentOid)), columnTypeName);
         } catch (SQLException ignored) {
 
         }
