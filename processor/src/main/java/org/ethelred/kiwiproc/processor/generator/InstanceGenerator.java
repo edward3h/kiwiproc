@@ -4,7 +4,6 @@ import static org.ethelred.kiwiproc.processor.generator.RuntimeTypes.*;
 
 import com.karuslabs.utilitary.Logger;
 import com.palantir.javapoet.*;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -89,7 +88,8 @@ public class InstanceGenerator {
         methodInfo.parameterMapping().forEach(parameterInfo -> {
             var name = "param" + parameterInfo.index();
             var conversion = lookupConversion(parameterInfo::element, parameterInfo.mapper());
-            buildConversion(builder, conversion, parameterInfo.mapper().target(), name, parameterInfo.javaAccessor(), true);
+            buildConversion(
+                    builder, conversion, parameterInfo.mapper().target(), name, parameterInfo.javaAccessor(), true);
             var nullableSource = parameterInfo.mapper().source().isNullable();
             //            if (nullableSource) {
             //                builder.beginControlFlow("if ($L == null)", name)
@@ -122,7 +122,8 @@ public class InstanceGenerator {
                 String rawName = daoResultColumn.name() + "Raw";
                 builder.addStatement(
                         "$T $L = rs.get$L($S)",
-                        kiwiTypeConverter.fromKiwiType(daoResultColumn.sqlTypeMapping().kiwiType()),
+                        kiwiTypeConverter.fromKiwiType(
+                                daoResultColumn.sqlTypeMapping().kiwiType()),
                         rawName,
                         daoResultColumn.sqlTypeMapping().accessorSuffix(),
                         daoResultColumn.name());
@@ -132,7 +133,8 @@ public class InstanceGenerator {
                             .endControlFlow();
                 }
                 var varName = patchName(daoResultColumn.name());
-                buildConversion(builder, conversion, daoResultColumn.asTypeMapping().target(), varName, rawName, true);
+                buildConversion(
+                        builder, conversion, daoResultColumn.asTypeMapping().target(), varName, rawName, true);
             });
             var params = multipleColumns.stream()
                     .map(p -> CodeBlock.of("$L", patchedNames.get(p.name())))
@@ -163,7 +165,12 @@ public class InstanceGenerator {
     }
 
     private void buildConversion(
-            CodeBlock.Builder builder, Conversion conversion, KiwiType targetType, String assignee, String accessor, boolean withVar) {
+            CodeBlock.Builder builder,
+            Conversion conversion,
+            KiwiType targetType,
+            String assignee,
+            String accessor,
+            boolean withVar) {
         var insertVar = withVar ? "var " : "";
         if (conversion instanceof AssignmentConversion) {
             /* e.g.
@@ -238,7 +245,7 @@ public class InstanceGenerator {
         } else if (conversion instanceof NullableSourceConversion nsc) {
             builder.addStatement("$T $L = null", kiwiTypeConverter.fromKiwiType(targetType), assignee)
                     .beginControlFlow("if ($L != null)", accessor);
-            buildConversion(builder, nsc.conversion(), targetType,assignee, accessor, false);
+            buildConversion(builder, nsc.conversion(), targetType, assignee, accessor, false);
             builder.endControlFlow();
         } else {
             logger.error(null, "Unsupported Conversion %s".formatted(conversion)); // TODO add Element
