@@ -182,7 +182,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
                             return reportError(
                                     "Missing component type for column %s type %s".formatted(cmd.name(), columnType));
                         }
-                        return componentType.type().isSimple() && validateCompatible(columnType, componentType.type())
+                        return validateCompatible(columnType, componentType.type())
                                 || reportError("Incompatible component type %s for column %s type %s"
                                         .formatted(componentType, cmd.name(), columnType));
                     })

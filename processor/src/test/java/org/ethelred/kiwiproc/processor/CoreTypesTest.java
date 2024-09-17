@@ -85,7 +85,8 @@ public class CoreTypesTest {
                 arguments(ofClass(String.class), ofClass(Integer.class, true), true, true, "Integer.valueOf(value)"),
                 arguments(
                         new ContainerType(ValidContainerType.LIST, ofClass(Integer.class, true)),
-                        new SqlArrayType(ofClass(int.class), JDBCType.INTEGER, "ignored"),
+                        new SqlArrayType(
+                                ofClass(int.class), new SqlTypeMapping(JDBCType.INTEGER, int.class, "Int"), "ignored"),
                         true,
                         false,
                         "fail"));

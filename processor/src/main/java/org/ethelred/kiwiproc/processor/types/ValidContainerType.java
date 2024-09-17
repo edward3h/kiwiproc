@@ -10,24 +10,28 @@ public enum ValidContainerType {
     ARRAY(
             Array.class,
             """
-            l.toArray(new %s[l.size()])
+            l.toArray(new $componentClass:T[$listVariable:L.size()])
             """,
             """
-                    java.util.Arrays.copyOf(%s, %<s.length, Object[].class)
+                    java.util.stream.Stream.of($containerVariable:L)
                     """),
-    ITERABLE(Iterable.class),
+    ITERABLE(
+            Iterable.class,
+            """
+            List.copyOf($listVariable:L)""",
+            """
+                    java.util.stream.StreamSupport.stream($containerVariable:L.spliterator(), false)
+                    """),
     COLLECTION(Collection.class),
     LIST(List.class),
     SET(Set.class, """
-            new java.util.LinkedHashSet<>(l)
+            new java.util.LinkedHashSet<>($listVariable:L)
             """),
     OPTIONAL(
             Optional.class,
             """
-            l.isEmpty() ? Optional.empty() : Optional.of(l.get(0))
-            """,
-            """
-                    %s.stream().toArray()""");
+            $listVariable:L.isEmpty() ? Optional.empty() : Optional.of($listVariable:L.get(0))
+            """);
 
     private final Class<?> javaType;
 
@@ -36,20 +40,20 @@ public enum ValidContainerType {
     }
 
     private final String fromListTemplate;
-    private final String toObjectArrayTemplate;
+    private final String toStreamTemplate;
 
-    ValidContainerType(Class<?> javaType, String fromListTemplate, String toObjectArrayTemplate) {
+    ValidContainerType(Class<?> javaType, String fromListTemplate, String toStreamTemplate) {
         this.javaType = javaType;
         this.fromListTemplate = fromListTemplate;
-        this.toObjectArrayTemplate = toObjectArrayTemplate;
+        this.toStreamTemplate = toStreamTemplate;
     }
 
     ValidContainerType(Class<?> javaType) {
-        this(javaType, "List.copyOf(l)", "%s.toArray()");
+        this(javaType, "List.copyOf($listVariable:L)", "$containerVariable:L.stream()");
     }
 
     ValidContainerType(Class<?> javaType, String fromListTemplate) {
-        this(javaType, fromListTemplate, "%s.toArray()");
+        this(javaType, fromListTemplate, "$containerVariable:L.stream()");
     }
 
     public boolean isMultiValued() {
@@ -65,7 +69,7 @@ public enum ValidContainerType {
         return javaType().getName();
     }
 
-    public String toObjectArrayTemplate() {
-        return toObjectArrayTemplate;
+    public String toStreamTemplate() {
+        return toStreamTemplate;
     }
 }

@@ -84,7 +84,7 @@ public record SqlTypeMapping(
     public KiwiType kiwiType() {
         if (jdbcType == JDBCType.ARRAY) {
             assert componentType != null;
-            return new SqlArrayType(componentType.kiwiType(), componentType.jdbcType, componentDbType);
+            return new SqlArrayType(componentType.kiwiType(), componentType, componentDbType);
         }
         if (CoreTypes.primitiveToBoxed.containsKey(baseType)) {
             return new PrimitiveKiwiType(baseType().getSimpleName(), isNullable);
