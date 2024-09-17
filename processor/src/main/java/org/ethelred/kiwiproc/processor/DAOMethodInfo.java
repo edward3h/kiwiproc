@@ -32,19 +32,4 @@ public record DAOMethodInfo(
         }
         return true;
     }
-
-    public String fromList() {
-        if (signature.returnType() instanceof ContainerType containerType) {
-            var container = containerType.type();
-            var template = container.fromListTemplate();
-            if (template.contains("%s")) { // hacky
-                return template.formatted(containerType.containedType());
-            } else {
-                return template;
-            }
-        }
-        return """
-                l.empty() ? null: l.get(0)
-                """;
-    }
 }

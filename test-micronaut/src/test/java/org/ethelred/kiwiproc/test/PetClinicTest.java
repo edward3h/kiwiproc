@@ -51,4 +51,11 @@ public class PetClinicTest {
         var firstNames = owners.stream().map(Owner::first_name).toList();
         assertThat(firstNames).containsExactly("Betty", "Jean");
     }
+
+    @Test
+    void happyOwnersWithPets() {
+        var ownersPets = dao.findOwnersAndPets();
+        assertThat(ownersPets).hasSize(10);
+        assertThat(ownersPets).contains(new OwnerPets("Eduardo", List.of("Rosy", "Jewel")));
+    }
 }

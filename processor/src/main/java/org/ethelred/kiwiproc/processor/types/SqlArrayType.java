@@ -1,16 +1,17 @@
 package org.ethelred.kiwiproc.processor.types;
 
-import java.sql.JDBCType;
+import org.ethelred.kiwiproc.processor.SqlTypeMapping;
 
-public record SqlArrayType(KiwiType containedType, JDBCType componentType, String dbType) implements KiwiType {
+public record SqlArrayType(KiwiType containedType, SqlTypeMapping componentType, String componentDbType)
+        implements KiwiType {
     @Override
     public String packageName() {
-        return "";
+        return "java.sql";
     }
 
     @Override
     public String className() {
-        return "ARRAY";
+        return "Array";
     }
 
     @Override

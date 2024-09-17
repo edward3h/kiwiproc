@@ -144,7 +144,20 @@ public class TypeValidatorTest {
                         false,
                         "Missing component type for column test2 type String/non-null",
                         col(false, JDBCType.INTEGER),
-                        col(false, JDBCType.VARCHAR)));
+                        col(false, JDBCType.VARCHAR)),
+                testCase(
+                        new ContainerType(
+                                ValidContainerType.LIST,
+                                recordType(
+                                        "TestRecord",
+                                        "test1",
+                                        ofClass(String.class),
+                                        "test2",
+                                        new ContainerType(ValidContainerType.LIST, ofClass(String.class)))),
+                        true,
+                        null,
+                        col(false, JDBCType.VARCHAR),
+                        col(false, JDBCType.ARRAY, new ArrayComponent(JDBCType.VARCHAR, "ignored"))));
     }
 
     private static KiwiType recordType(String className, String componentName, KiwiType componentType) {

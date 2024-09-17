@@ -29,7 +29,8 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
 
     @SqlQuery(
             """
-            SELECT t.id, t.name, count(*) FROM types t JOIN pets p ON t.id = p.type_id GROUP BY 1,2""")
+            SELECT t.id, t.name, count(*)
+            FROM types t JOIN pets p ON t.id = p.type_id GROUP BY 1,2""")
     List<PetTypeWithCount> getPetTypesWithCountList();
 
     default Map<PetType, Long> getPetTypesWithCount() {
@@ -41,4 +42,11 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
     @SqlQuery("""
                 SELECT id, first_name, last_name FROM owners WHERE id = ANY(:ids)""")
     List<Owner> findOwnersByIds(List<Integer> ids);
+
+    @SqlQuery(
+            """
+            SELECT o.first_name AS owner_first_name, array_agg(p.name) as pet_names
+            FROM owners o JOIN pets p ON o.id = p.owner_id
+            GROUP BY 1""")
+    List<OwnerPets> findOwnersAndPets();
 }
