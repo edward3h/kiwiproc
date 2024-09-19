@@ -49,11 +49,12 @@ public record SqlTypeMapping(
             new SqlTypeMapping(JDBCType.ARRAY, java.sql.Array.class, "Array", true, false, null, null),
             // dates and times
             // Use java.time types - recommended for Postgres https://tada.github.io/pljava/use/datetime.html
-            new SqlTypeMapping(JDBCType.DATE, LocalDate.class, ""),
-            new SqlTypeMapping(JDBCType.TIME, LocalTime.class, ""),
-            new SqlTypeMapping(JDBCType.TIME_WITH_TIMEZONE, OffsetTime.class, ""),
-            new SqlTypeMapping(JDBCType.TIMESTAMP, LocalDateTime.class, ""),
-            new SqlTypeMapping(JDBCType.TIMESTAMP_WITH_TIMEZONE, OffsetDateTime.class, ""),
+            // https://jdbc.postgresql.org/documentation/query/#using-java-8-date-and-time-classes
+            new SqlTypeMapping(JDBCType.DATE, LocalDate.class, "Object"),
+            new SqlTypeMapping(JDBCType.TIME, LocalTime.class, "Object"),
+            new SqlTypeMapping(JDBCType.TIME_WITH_TIMEZONE, OffsetTime.class, "Object"),
+            new SqlTypeMapping(JDBCType.TIMESTAMP, LocalDateTime.class, "Object"),
+            new SqlTypeMapping(JDBCType.TIMESTAMP_WITH_TIMEZONE, OffsetDateTime.class, "Object"),
             new SqlTypeMapping(JDBCType.NULL, void.class, "", true, true, null, null)
 
             // TODO fill out types as necessary

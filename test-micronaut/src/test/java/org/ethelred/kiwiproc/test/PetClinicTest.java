@@ -5,6 +5,8 @@ import static com.google.common.truth.Truth.assertThat;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -57,5 +59,19 @@ public class PetClinicTest {
         var ownersPets = dao.findOwnersAndPets();
         assertThat(ownersPets).hasSize(10);
         assertThat(ownersPets).contains(new OwnerPets("Eduardo", List.of("Rosy", "Jewel")));
+    }
+
+    @Test
+    void happyAddVisit() {
+        var visitId =
+                dao.addVisit(new PetClinicDAO.Visit("Jewel", LocalDate.of(2025, Month.JUNE, 13), "Some text here."));
+        assertThat(visitId).isPresent();
+        visitId.ifPresent(id -> {
+            assertThat(id).isEqualTo(5);
+
+            var visit = dao.getVisitById(id);
+            assertThat(visit).isNotNull();
+            assertThat(visit.description()).contains("Some text");
+        });
     }
 }

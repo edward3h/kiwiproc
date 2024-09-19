@@ -1,5 +1,6 @@
 package org.ethelred.kiwiproc.test;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,4 +50,20 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
             FROM owners o JOIN pets p ON o.id = p.owner_id
             GROUP BY 1""")
     List<OwnerPets> findOwnersAndPets();
+
+    record Visit(String pet_name, @Nullable LocalDate visit_date, String description) {}
+
+    @SqlQuery(
+            """
+            INSERT INTO visits (pet_id, visit_date, description)
+            SELECT p.id as pet_id, :visit_date, :description FROM pets p WHERE p.name = :pet_name
+            RETURNING id""")
+    Optional<Integer> addVisit(Visit visit);
+
+    @SqlQuery(
+            """
+            SELECT p.name as pet_name, v.visit_date, v.description
+            FROM pets p JOIN visits v ON p.id = v.pet_id
+            WHERE v.id = :id""")
+    @Nullable Visit getVisitById(int id);
 }

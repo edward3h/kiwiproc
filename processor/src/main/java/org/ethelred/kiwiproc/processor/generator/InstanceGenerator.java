@@ -91,12 +91,11 @@ public class InstanceGenerator {
             buildConversion(
                     builder, conversion, parameterInfo.mapper().target(), name, parameterInfo.javaAccessor(), true);
             var nullableSource = parameterInfo.mapper().source().isNullable();
-            //            if (nullableSource) {
-            //                builder.beginControlFlow("if ($L == null)", name)
-            //                        .addStatement("statement.setNull($L, $L)", parameterInfo.index(),
-            // parameterInfo.sqlType())
-            //                        .nextControlFlow("else");
-            //            }
+            if (nullableSource) {
+                builder.beginControlFlow("if ($L == null)", name)
+                        .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())
+                        .nextControlFlow("else");
+            }
             builder.addStatement("statement.$L($L, $L)", parameterInfo.setter(), parameterInfo.index(), name);
             if (nullableSource) {
                 builder.endControlFlow();
@@ -120,13 +119,17 @@ public class InstanceGenerator {
             multipleColumns.forEach(daoResultColumn -> {
                 var conversion = lookupConversion(methodInfo::methodElement, daoResultColumn.asTypeMapping());
                 String rawName = daoResultColumn.name() + "Raw";
-                builder.addStatement(
-                        "$T $L = rs.get$L($S)",
-                        kiwiTypeConverter.fromKiwiType(
-                                daoResultColumn.sqlTypeMapping().kiwiType()),
-                        rawName,
-                        daoResultColumn.sqlTypeMapping().accessorSuffix(),
-                        daoResultColumn.name());
+                String accessorSuffix = daoResultColumn.sqlTypeMapping().accessorSuffix();
+                TypeName typeName = kiwiTypeConverter.fromKiwiType(
+                        daoResultColumn.sqlTypeMapping().kiwiType());
+                if ("Object".equals(accessorSuffix)) { // hacky
+
+                    builder.addStatement(
+                            "$1T $2L = rs.getObject($3S, $1T.class)", typeName, rawName, daoResultColumn.name());
+                } else {
+                    builder.addStatement(
+                            "$T $L = rs.get$L($S)", typeName, rawName, accessorSuffix, daoResultColumn.name());
+                }
                 if (daoResultColumn.sqlTypeMapping().isNullable()) {
                     builder.beginControlFlow("if (rs.wasNull())")
                             .addStatement("$L = null", rawName)

@@ -50,9 +50,8 @@ public record ColumnMetaData(
                 index,
                 "parameter", // does not have a name in metadata, will be associated by index outside this scope
                 parameterMetaData.isNullable(index)
-                        == ParameterMetaData
-                                .parameterNullable, // for parameters, treat 'unknown' as 'not null' since DB might not
-                // accept a null
+                        != ParameterMetaData
+                                .parameterNoNulls, // Postgres does not report nullability of parameters, so be lenient
                 JDBCType.valueOf(parameterMetaData.getParameterType(index)),
                 componentType(
                         connection,
