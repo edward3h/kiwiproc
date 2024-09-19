@@ -101,6 +101,17 @@ public class DatabaseWrapperTest {
     }
 
     @Test
+    public void insertUpdateWithParameterMetaData() throws SQLException {
+        var queryMetaData = getQueryMetaData("INSERT INTO test_table (test_id, notes) VALUES(?, ?)");
+        assertThat(queryMetaData.parameters()).hasSize(2);
+        assertThat(queryMetaData.parameters().get(0))
+                .isEqualTo(new ColumnMetaData(1, "parameter", true, JDBCType.INTEGER, null));
+        assertThat(queryMetaData.parameters().get(1))
+                .isEqualTo(new ColumnMetaData(2, "parameter", true, JDBCType.VARCHAR, null));
+        assertThat(queryMetaData.resultColumns()).hasSize(0);
+    }
+
+    @Test
     public void insertParameterBehaviour() throws SQLException {
         var wrapper = getDatabaseWrapper();
         try (var connection = wrapper.getConnection();

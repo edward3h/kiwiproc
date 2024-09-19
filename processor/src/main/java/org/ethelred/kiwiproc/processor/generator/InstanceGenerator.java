@@ -11,6 +11,7 @@ import javax.lang.model.element.Modifier;
 import org.ethelred.kiwiproc.processor.*;
 import org.ethelred.kiwiproc.processor.types.ContainerType;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
+import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
 
 public class InstanceGenerator {
 
@@ -76,32 +77,22 @@ public class InstanceGenerator {
     }
 
     private CodeBlock updateMethodBody(DAOMethodInfo methodInfo) {
-        return CodeBlock.of("//TODO");
+        var builder = builderWithParameters(methodInfo);
+        builder.addStatement("var rawResult = statement.executeUpdate()");
+        KiwiType returnType = methodInfo.signature().returnType();
+        var conversion = lookupConversion(
+                methodInfo::methodElement, new TypeMapping(new PrimitiveKiwiType("int", false), returnType));
+        buildConversion(builder, conversion, returnType, "result", "rawResult", true);
+        builder.addStatement("return result");
+        return builder.build();
     }
 
     private CodeBlock batchMethodBody(DAOMethodInfo methodInfo) {
-        return CodeBlock.of("//TODO");
+        return CodeBlock.of("//TODO\n");
     }
 
     private CodeBlock queryMethodBody(DAOMethodInfo methodInfo) {
-        var builder = CodeBlock.builder();
-        methodInfo.parameterMapping().forEach(parameterInfo -> {
-            var name = "param" + parameterInfo.index();
-            var conversion = lookupConversion(parameterInfo::element, parameterInfo.mapper());
-            buildConversion(
-                    builder, conversion, parameterInfo.mapper().target(), name, parameterInfo.javaAccessor(), true);
-            var nullableSource = parameterInfo.mapper().source().isNullable();
-            if (nullableSource) {
-                builder.beginControlFlow("if ($L == null)", name)
-                        .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())
-                        .nextControlFlow("else");
-            }
-            builder.addStatement("statement.$L($L, $L)", parameterInfo.setter(), parameterInfo.index(), name);
-            if (nullableSource) {
-                builder.endControlFlow();
-            }
-            parameterNames.add(parameterInfo.javaAccessor());
-        });
+        var builder = builderWithParameters(methodInfo);
         var listVariable = patchName("l");
         TypeName componentClass = kiwiTypeConverter.fromKiwiType(methodInfo.resultComponentType());
         builder.addStatement("var rs = statement.executeQuery()")
@@ -165,6 +156,28 @@ public class InstanceGenerator {
             builder.addStatement("return $1L.isEmpty() ? null : $1L.get(0)", listVariable);
         }
         return builder.build();
+    }
+
+    private CodeBlock.Builder builderWithParameters(DAOMethodInfo methodInfo) {
+        var builder = CodeBlock.builder();
+        methodInfo.parameterMapping().forEach(parameterInfo -> {
+            var name = "param" + parameterInfo.index();
+            var conversion = lookupConversion(parameterInfo::element, parameterInfo.mapper());
+            buildConversion(
+                    builder, conversion, parameterInfo.mapper().target(), name, parameterInfo.javaAccessor(), true);
+            var nullableSource = parameterInfo.mapper().source().isNullable();
+            if (nullableSource) {
+                builder.beginControlFlow("if ($L == null)", name)
+                        .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())
+                        .nextControlFlow("else");
+            }
+            builder.addStatement("statement.$L($L, $L)", parameterInfo.setter(), parameterInfo.index(), name);
+            if (nullableSource) {
+                builder.endControlFlow();
+            }
+            parameterNames.add(parameterInfo.javaAccessor());
+        });
+        return builder;
     }
 
     private void buildConversion(

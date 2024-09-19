@@ -58,8 +58,10 @@ public class DatabaseWrapper {
                 var statement = connection.prepareStatement(sql)) {
             var builder = QueryMetaDataBuilder.builder();
             var rsmd = statement.getMetaData();
-            for (var index = 1; index <= rsmd.getColumnCount(); index++) {
-                builder.addResultColumns(ColumnMetaData.from(connection, index, rsmd));
+            if (rsmd != null) { // null for update, batch
+                for (var index = 1; index <= rsmd.getColumnCount(); index++) {
+                    builder.addResultColumns(ColumnMetaData.from(connection, index, rsmd));
+                }
             }
             var pmd = statement.getParameterMetaData();
             for (var index = 1; index <= pmd.getParameterCount(); index++) {

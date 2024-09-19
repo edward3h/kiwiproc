@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
+import org.ethelred.kiwiproc.annotation.SqlUpdate;
 import org.ethelred.kiwiproc.api.TransactionalDAO;
 import org.jspecify.annotations.Nullable;
 
@@ -66,4 +67,10 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
             FROM pets p JOIN visits v ON p.id = v.pet_id
             WHERE v.id = :id""")
     @Nullable Visit getVisitById(int id);
+
+    @SqlUpdate("""
+            UPDATE visits
+            SET description = :description
+            WHERE id = :id""")
+    int setVisitDescription(int id, String description);
 }
