@@ -12,6 +12,7 @@ import org.ethelred.kiwiproc.processor.*;
 import org.ethelred.kiwiproc.processor.types.ContainerType;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
+import org.ethelred.kiwiproc.processor.types.VoidType;
 
 public class InstanceGenerator {
 
@@ -80,10 +81,12 @@ public class InstanceGenerator {
         var builder = builderWithParameters(methodInfo);
         builder.addStatement("var rawResult = statement.executeUpdate()");
         KiwiType returnType = methodInfo.signature().returnType();
-        var conversion = lookupConversion(
-                methodInfo::methodElement, new TypeMapping(new PrimitiveKiwiType("int", false), returnType));
-        buildConversion(builder, conversion, returnType, "result", "rawResult", true);
-        builder.addStatement("return result");
+        if (!(returnType instanceof VoidType)) {
+            var conversion = lookupConversion(
+                    methodInfo::methodElement, new TypeMapping(new PrimitiveKiwiType("int", false), returnType));
+            buildConversion(builder, conversion, returnType, "result", "rawResult", true);
+            builder.addStatement("return result");
+        }
         return builder.build();
     }
 

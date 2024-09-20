@@ -1,7 +1,6 @@
 package org.ethelred.kiwiproc.processor;
 
-import static org.ethelred.kiwiproc.processor.QueryMethodKind.DEFAULT;
-import static org.ethelred.kiwiproc.processor.QueryMethodKind.QUERY;
+import static org.ethelred.kiwiproc.processor.QueryMethodKind.*;
 
 import com.karuslabs.utilitary.AnnotationProcessor;
 import io.avaje.jsonb.JsonType;
@@ -22,6 +21,7 @@ import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.meta.DatabaseWrapper;
 import org.ethelred.kiwiproc.meta.ParsedQuery;
+import org.ethelred.kiwiproc.meta.QueryMetaData;
 import org.ethelred.kiwiproc.processor.generator.PoetDAOGenerator;
 import org.ethelred.kiwiproc.processor.types.ContainerType;
 import org.ethelred.kiwiproc.processor.types.RecordType;
@@ -120,8 +120,15 @@ public class KiwiProcessor extends AnnotationProcessor {
             String daoName, QueryMethodKind kind, DatabaseWrapper databaseWrapper, ExecutableElement methodElement)
             throws SQLException {
         var parsedSql = ParsedQuery.parse(kind.getSql(methodElement));
-        var queryMetaData = databaseWrapper.getQueryMetaData(parsedSql.parsedSql());
-        var parameterInfo = MethodParameterInfo.fromElements(typeUtils, methodElement.getParameters());
+        QueryMetaData queryMetaData;
+        try {
+            queryMetaData = databaseWrapper.getQueryMetaData(parsedSql.parsedSql());
+        } catch (SQLException e) {
+            logger.error(methodElement, "\n" + e.getMessage());
+            return null;
+        }
+        var parameterInfo =
+                MethodParameterInfo.fromElements(Objects.requireNonNull(typeUtils), methodElement.getParameters());
         Map<ColumnMetaData, MethodParameterInfo> parameterMapping =
                 mapParameters(methodElement, parsedSql.parameterNames(), queryMetaData.parameters(), parameterInfo);
         var typeValidator = new TypeValidator(logger, methodElement);
@@ -222,9 +229,13 @@ public class KiwiProcessor extends AnnotationProcessor {
             } else if (kinds.size() > 1) {
                 logger.error(methodElement, "May only have one Sql annotation, or be default.");
             }
-            var kind = kinds.iterator().next();
+            var kind = kinds.iterator().next(); // get first element
             if (kind == DEFAULT) {
                 continue;
+            }
+
+            if (kind == BATCH) {
+                logger.error(methodElement, "@SqlBatch is not supported yet. It is planned for Milestone 2.");
             }
 
             DAOMethodInfo methodInfo = processMethod(daoName, kinds.iterator().next(), databaseWrapper, methodElement);

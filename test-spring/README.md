@@ -1,0 +1,1 @@
+Spring testing is planned for Milestone 2.

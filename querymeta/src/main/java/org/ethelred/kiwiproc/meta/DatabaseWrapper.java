@@ -2,12 +2,15 @@ package org.ethelred.kiwiproc.meta;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
 import org.jspecify.annotations.Nullable;
 import org.postgresql.ds.PGSimpleDataSource;
 
 public class DatabaseWrapper {
+    private static final Pattern SQL_EXCEPTION_POSITION = Pattern.compile("Position: (\\d+)", Pattern.MULTILINE);
+
     @Nullable private Boolean valid;
 
     private DatabaseWrapperException error;
@@ -68,7 +71,36 @@ public class DatabaseWrapper {
                 builder.addParameters(ColumnMetaData.from(connection, index, pmd));
             }
             return builder.build();
+        } catch (SQLException e) {
+            var matcher = SQL_EXCEPTION_POSITION.matcher(e.getMessage());
+            if (matcher.find()) {
+                var position = Integer.parseInt(matcher.group(
+                        1)); // NumberFormatException is not expected because the pattern extracts only digits.
+                var newMessage = insertPosition(position, sql, e.getMessage());
+                throw new SQLException(newMessage, e);
+            }
+            throw e;
         }
+    }
+
+    private String insertPosition(int position, String sql, String message) {
+        var buf = new StringBuilder();
+        int accumulatedSqlLength = 0;
+        int lastLineLength = 0;
+        for (var line : sql.split("\\R")) {
+            int before = accumulatedSqlLength;
+            accumulatedSqlLength += line.length() + 1;
+            lastLineLength = line.length();
+            buf.append(line).append("\n");
+            if (before <= position && accumulatedSqlLength >= position) {
+                buf.append(" ".repeat(position - before - 1)).append("^").append("\n");
+            }
+        }
+        if (position > accumulatedSqlLength) {
+            buf.append(" ".repeat(lastLineLength)).append("^\n");
+        }
+        buf.append(message);
+        return buf.toString();
     }
 
     private void testConnection() {

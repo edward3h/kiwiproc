@@ -73,4 +73,9 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
             SET description = :description
             WHERE id = :id""")
     int setVisitDescription(int id, String description);
+
+    @SqlUpdate("""
+            INSERT INTO vets(first_name, last_name)
+            VALUES (:firstName, :lastName)""")
+    void addVet(String firstName, String lastName);
 }
