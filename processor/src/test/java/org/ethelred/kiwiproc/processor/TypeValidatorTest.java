@@ -67,11 +67,6 @@ public class TypeValidatorTest {
                         true,
                         null),
                 arguments(
-                        col(false, JDBCType.INTEGER),
-                        new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null),
-                        false,
-                        "Parameter type int/nullable is not compatible with SQL type int/non-null for parameter null"),
-                arguments(
                         col(true, JDBCType.INTEGER),
                         new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null),
                         true,

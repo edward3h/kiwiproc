@@ -190,84 +190,91 @@ public class InstanceGenerator {
             String assignee,
             String accessor,
             boolean withVar) {
-        var insertVar = withVar ? "var " : "";
-        if (conversion instanceof AssignmentConversion) {
-            /* e.g.
-            var param1 = id;
-             */
-            builder.addStatement("$L$L = $L", insertVar, assignee, accessor);
-        } else if (conversion instanceof StringFormatConversion sfc) {
-            /* e.g.
-            var param1 = (int) id;
-             */
-            builder.addStatement(
-                    "$L$L = $L", insertVar, assignee, sfc.conversionFormat().formatted(accessor));
-        } else if (conversion instanceof ToSqlArrayConversion sac) {
-            /* e.g.
-            Object[] elementObjects = listParam.stream()
-                .map(x -> (int) x)
-                .toArray();
-            var param1 = connection.createArrayOf("int4", elementObjects);
-             */
-            Conversion elementConversion = sac.elementConversion();
-            String elementObjects = patchName("elementObjects");
-            String lambdaValue = patchName("value");
-            builder.add("Object[] $L = ", elementObjects)
-                    .addNamed(sac.ct().type().toStreamTemplate(), Map.of("containerVariable", accessor))
-                    .indent()
-                    .add("\n.map($L -> {\n", lambdaValue)
-                    .indent();
-            buildConversion(builder, elementConversion, sac.sat().containedType(), "tmp", lambdaValue, true);
-            builder.addStatement("return tmp")
-                    .unindent()
-                    .add("})\n.toArray();\n")
-                    .unindent();
-            builder.addStatement(
-                    "$L$L = connection.createArrayOf($S, $L)",
-                    insertVar,
-                    assignee,
-                    sac.sat().componentDbType(),
-                    elementObjects);
-        } else if (conversion instanceof FromSqlArrayConversion sac) {
-            /* e.g.
-            ResultSet arrayRS = rawValue.getResultSet();
-            List<String> arrayList = new ArrayList<>();
-            while (arrayRs.next()) {
-                var rawItemValue = arrayRs.getString(2);
-                var itemValue = rawItemValue;
-                arrayList.add(itemValue);
-             }
-             var value = List.copyOf(arrayList);
-             */
-            var arrayRS = patchName("arrayRS");
-            var arrayList = patchName("arrayList");
-            var rawItemValue = patchName("rawItemValue");
-            var itemValue = patchName("itemValue");
-            TypeName componentClass = kiwiTypeConverter.fromKiwiType(sac.ct().containedType());
-            builder.addStatement("$T $L = $L.getResultSet()", ResultSet.class, arrayRS, accessor)
-                    .addStatement("List<$T> $L = new $T<>()", componentClass, arrayList, ArrayList.class)
-                    .beginControlFlow("while ($L.next())", arrayRS)
-                    // Array.getResultSet() returns 2 columns: 1 is the index, 2 is the value
-                    .addStatement(
-                            "var $L = $L.get$L(2)",
-                            rawItemValue,
-                            arrayRS,
-                            sac.sat().componentType().accessorSuffix());
-            buildConversion(builder, sac.elementConversion(), sac.ct().containedType(), itemValue, rawItemValue, true);
-            builder.addStatement("$L.add($L)", arrayList, itemValue)
-                    .endControlFlow()
-                    .add("$L$L = ", insertVar, assignee)
-                    .addNamed(
-                            sac.ct().type().fromListTemplate(),
-                            Map.of("componentClass", componentClass, "listVariable", arrayList))
-                    .addStatement("");
-        } else if (conversion instanceof NullableSourceConversion nsc) {
-            builder.addStatement("$T $L = null", kiwiTypeConverter.fromKiwiType(targetType), assignee)
-                    .beginControlFlow("if ($L != null)", accessor);
-            buildConversion(builder, nsc.conversion(), targetType, assignee, accessor, false);
-            builder.endControlFlow();
-        } else {
-            logger.error(null, "Unsupported Conversion %s".formatted(conversion)); // TODO add Element
+        try {
+            var insertVar =
+                    withVar ? CodeBlock.of("$T ", kiwiTypeConverter.fromKiwiType(targetType)) : CodeBlock.of("");
+            if (conversion instanceof AssignmentConversion) {
+                /* e.g.
+                var param1 = id;
+                 */
+                builder.addStatement("$L$L = $L", insertVar, assignee, accessor);
+            } else if (conversion instanceof StringFormatConversion sfc) {
+                /* e.g.
+                var param1 = (int) id;
+                 */
+                builder.add("$L$L =", insertVar, assignee)
+                        .addStatement(sfc.conversionFormat(), sfc.withAccessor(accessor));
+            } else if (conversion instanceof ToSqlArrayConversion sac) {
+                /* e.g.
+                Object[] elementObjects = listParam.stream()
+                    .map(x -> (int) x)
+                    .toArray();
+                var param1 = connection.createArrayOf("int4", elementObjects);
+                 */
+                Conversion elementConversion = sac.elementConversion();
+                String elementObjects = patchName("elementObjects");
+                String lambdaValue = patchName("value");
+                builder.add("Object[] $L = ", elementObjects)
+                        .addNamed(sac.ct().type().toStreamTemplate(), Map.of("containerVariable", accessor))
+                        .indent()
+                        .add("\n.map($L -> {\n", lambdaValue)
+                        .indent();
+                buildConversion(builder, elementConversion, sac.sat().containedType(), "tmp", lambdaValue, true);
+                builder.addStatement("return tmp")
+                        .unindent()
+                        .add("})\n.toArray();\n")
+                        .unindent();
+                builder.addStatement(
+                        "$L$L = connection.createArrayOf($S, $L)",
+                        insertVar,
+                        assignee,
+                        sac.sat().componentDbType(),
+                        elementObjects);
+            } else if (conversion instanceof FromSqlArrayConversion sac) {
+                /* e.g.
+                ResultSet arrayRS = rawValue.getResultSet();
+                List<String> arrayList = new ArrayList<>();
+                while (arrayRs.next()) {
+                    var rawItemValue = arrayRs.getString(2);
+                    var itemValue = rawItemValue;
+                    arrayList.add(itemValue);
+                 }
+                 var value = List.copyOf(arrayList);
+                 */
+                var arrayRS = patchName("arrayRS");
+                var arrayList = patchName("arrayList");
+                var rawItemValue = patchName("rawItemValue");
+                var itemValue = patchName("itemValue");
+                TypeName componentClass =
+                        kiwiTypeConverter.fromKiwiType(sac.ct().containedType());
+                builder.addStatement("$T $L = $L.getResultSet()", ResultSet.class, arrayRS, accessor)
+                        .addStatement("List<$T> $L = new $T<>()", componentClass, arrayList, ArrayList.class)
+                        .beginControlFlow("while ($L.next())", arrayRS)
+                        // Array.getResultSet() returns 2 columns: 1 is the index, 2 is the value
+                        .addStatement(
+                                "var $L = $L.get$L(2)",
+                                rawItemValue,
+                                arrayRS,
+                                sac.sat().componentType().accessorSuffix());
+                buildConversion(
+                        builder, sac.elementConversion(), sac.ct().containedType(), itemValue, rawItemValue, true);
+                builder.addStatement("$L.add($L)", arrayList, itemValue)
+                        .endControlFlow()
+                        .add("$L$L = ", insertVar, assignee)
+                        .addNamed(
+                                sac.ct().type().fromListTemplate(),
+                                Map.of("componentClass", componentClass, "listVariable", arrayList))
+                        .addStatement("");
+            } else if (conversion instanceof NullableSourceConversion nsc) {
+                builder.addStatement("$T $L = null", kiwiTypeConverter.fromKiwiType(targetType), assignee)
+                        .beginControlFlow("if ($L != null)", accessor);
+                buildConversion(builder, nsc.conversion(), targetType, assignee, accessor, false);
+                builder.endControlFlow();
+            } else {
+                logger.error(null, "Unsupported Conversion %s".formatted(conversion)); // TODO add Element
+            }
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Error in conversion " + conversion, e);
         }
     }
 

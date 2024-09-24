@@ -9,6 +9,10 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.sql.JDBCType;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.ethelred.kiwiproc.processor.types.*;
 import org.junit.jupiter.api.Test;
@@ -20,7 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * Don't exhaustively test every type and mapping, just some examples.
  */
 public class CoreTypesTest {
-    CoreTypes coreTypes = new CoreTypes();
+    static CoreTypes coreTypes = new CoreTypes();
 
     @Test
     void typeFromClass() {
@@ -61,7 +65,7 @@ public class CoreTypesTest {
                 .isEqualTo(isWarning);
         if (conversion.isValid()) {
             if (conversion instanceof StringFormatConversion sfc) {
-                var formatted = sfc.conversionFormat().formatted("value");
+                var formatted = sfc.conversionFormat().replaceAll("\\$\\d*N", "value");
                 assertThat(formatted).isEqualTo(conversionFormatContains);
             }
         }
@@ -78,11 +82,11 @@ public class CoreTypesTest {
                         true,
                         false,
                         "value == null ? null : value"),
-                arguments(ofClass(double.class), ofClass(short.class), true, true, "(short) value"),
-                arguments(ofClass(double.class), ofClass(Short.class, true), true, true, "(short) value"),
-                arguments(ofClass(double.class), ofClass(BigDecimal.class), true, false, "BigDecimal.valueOf(value)"),
-                arguments(ofClass(String.class), ofClass(int.class), true, true, "Integer.parseInt(value)"),
-                arguments(ofClass(String.class), ofClass(Integer.class, true), true, true, "Integer.valueOf(value)"),
+                arguments(ofClass(double.class), ofClass(short.class), true, true, "($T) value"),
+                arguments(ofClass(double.class), ofClass(Short.class, true), true, true, "($T) value"),
+                arguments(ofClass(double.class), ofClass(BigDecimal.class), true, false, "$T.valueOf(value)"),
+                arguments(ofClass(String.class), ofClass(int.class), true, true, "$T.parse$L(value)"),
+                arguments(ofClass(String.class), ofClass(Integer.class, true), true, true, "$T.valueOf(value)"),
                 arguments(
                         new ContainerType(ValidContainerType.LIST, ofClass(Integer.class, true)),
                         new SqlArrayType(
@@ -91,4 +95,85 @@ public class CoreTypesTest {
                         false,
                         "fail"));
     }
+
+    @ParameterizedTest
+    @MethodSource
+    public void allSimpleConversions(TypeMapping mapping) {
+        var conversion = coreTypes.lookup(mapping);
+        assertThat(conversion).isNotNull();
+        assertThat(conversion.isValid()).isTrue();
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    public void inverseConversions(TypeMapping mapping) {
+        assertThat(expectedMappings().contains(mapping));
+    }
+
+    public static Stream<Arguments> inverseConversions() {
+        return coreTypes.simpleMappings.keySet().stream().map(Arguments::arguments);
+    }
+
+    public static Stream<Arguments> allSimpleConversions() {
+        return expectedMappings().stream().map(Arguments::arguments);
+    }
+
+    static Set<TypeMapping> expectedMappings() {
+        var types = simpleTypes();
+        return types.stream()
+                .flatMap(t1 -> types.stream().map(t2 -> new TypeMapping(t1, t2)))
+                .filter(INCLUDE)
+                .collect(Collectors.toSet());
+    }
+
+    static Set<KiwiType> simpleTypes() {
+        Set<KiwiType> types = new LinkedHashSet<>();
+        CoreTypes.primitiveToBoxed.keySet().forEach(c -> types.add(new PrimitiveKiwiType(c.getSimpleName(), false)));
+        CoreTypes.BASIC_TYPES.forEach(c -> types.add(new BasicType(c.getPackageName(), c.getSimpleName(), false)));
+        return types;
+    }
+
+    static boolean exclude(TypeMapping typeMapping) {
+        var source = typeMapping.source();
+        var target = typeMapping.target();
+        if (source.className().matches("char")) {
+            return target.className().matches(".*(Big|Date|Time).*");
+        }
+        if (target.className().matches("char")) {
+            return source.className().matches(".*(Big|Date|Time).*");
+        }
+        if (source.className().matches("boolean")) {
+            return target.className().matches(".*(BigDecimal|Date|Time).*");
+        }
+        if (target.className().matches("boolean")) {
+            return source.className().matches(".*(BigDecimal|Date|Time).*");
+        }
+        if ("long".equals(target.className())) {
+            return Set.of("OffsetTime", "LocalTime").contains(source.className());
+        }
+        if (target instanceof PrimitiveKiwiType || target.className().startsWith("Big")) {
+            return source.className().matches(".*(Date|Time).*");
+        }
+        if (source instanceof PrimitiveKiwiType || source.className().startsWith("Big")) {
+            return target.className().matches(".*(Date|Time).*");
+        }
+        var key = typeMapping.source().className() + "|" + typeMapping.target().className();
+        return otherExcludeKeys.contains(key);
+    }
+
+    static Set<String> otherExcludeKeys = Set.of(
+            "LocalDate|OffsetTime",
+            "OffsetTime|LocalDate",
+            "LocalDateTime|OffsetTime",
+            "LocalTime|LocalDate",
+            "OffsetDateTime|LocalTime",
+            "LocalDateTime|OffsetDateTime", // TODO?
+            "LocalTime|OffsetDateTime",
+            "LocalDate|LocalTime",
+            "OffsetTime|LocalDateTime",
+            "OffsetTime|OffsetDateTime",
+            "LocalTime|LocalDateTime",
+            "LocalTime|OffsetTime");
+
+    static Predicate<TypeMapping> INCLUDE = typeMapping -> !exclude(typeMapping);
 }

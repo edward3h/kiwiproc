@@ -4,11 +4,7 @@ import static java.util.Map.entry;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.OffsetTime;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -53,12 +49,18 @@ public class CoreTypes {
     Primitive type mappings that are NOT in this map require a cast and a "lossy converson" warning.
      */
     private static final Map<Class<?>, Set<Class<?>>> assignableFrom = Map.of(
-            byte.class, Set.of(short.class, int.class, long.class, float.class, double.class),
-            char.class, Set.of(int.class, long.class, float.class, double.class),
-            short.class, Set.of(int.class, long.class, float.class, double.class),
-            int.class, Set.of(long.class, float.class, double.class),
-            long.class, Set.of(float.class, double.class),
-            float.class, Set.of(double.class));
+            byte.class, Set.of(byte.class, short.class, int.class, long.class, float.class, double.class),
+            char.class, Set.of(char.class, int.class, long.class, float.class, double.class),
+            short.class, Set.of(short.class, int.class, long.class, float.class, double.class),
+            int.class, Set.of(int.class, long.class, float.class, double.class),
+            long.class, Set.of(long.class, float.class, double.class),
+            float.class, Set.of(float.class, double.class));
+
+    private record ClassEntry(Class<?> first, Class<?> second) {}
+
+    private static final Map<Class<?>, Set<Class<?>>> assignableTo = assignableFrom.entrySet().stream()
+            .flatMap(e -> e.getValue().stream().map(v -> new ClassEntry(v, e.getKey())))
+            .collect(Collectors.groupingBy(ce -> ce.first, Collectors.mapping(ce -> ce.second, Collectors.toSet())));
 
     // boxing a primitive type is also assignable
     // unboxing is invalid in Kiwiproc, since it would convert a nullable to non-null
@@ -68,7 +70,7 @@ public class CoreTypes {
 
     private final Conversion invalid = new InvalidConversion();
     Map<Class<?>, KiwiType> coreTypes;
-    Map<TypeMapping, StringFormatConversion> simpleMappings;
+    Map<TypeMapping, Conversion> simpleMappings;
 
     public CoreTypes() {
         coreTypes = defineTypes();
@@ -77,8 +79,8 @@ public class CoreTypes {
         //                coreMappings.entrySet().stream().map(Object::toString).collect(Collectors.joining("\n")));
     }
 
-    private Map<TypeMapping, StringFormatConversion> defineMappings() {
-        List<Map.Entry<TypeMapping, StringFormatConversion>> entries = new ArrayList<>(200);
+    private Map<TypeMapping, Conversion> defineMappings() {
+        List<Map.Entry<TypeMapping, Conversion>> entries = new ArrayList<>(200);
 
         addPrimitiveMappings(entries);
         addPrimitiveParseMappings(entries);
@@ -89,52 +91,115 @@ public class CoreTypes {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
     }
 
-    private void addPrimitiveParseMappings(Collection<Map.Entry<TypeMapping, StringFormatConversion>> entries) {
+    private void addPrimitiveParseMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
         primitiveToBoxed.keySet().forEach(target -> {
+            if (target.equals(boolean.class)) {
+                return; // special case below
+            }
             String warning = "possible NumberFormatException parsing String to %s".formatted(target.getName());
             Class<?> boxed = primitiveToBoxed.get(target);
             // String -> primitive
             TypeMapping t = new TypeMapping(STRING_TYPE, coreTypes.get(target));
             StringFormatConversion c = new StringFormatConversion(
-                    warning,
-                    "%s.parse%s(%%s)".formatted(boxed.getSimpleName(), Util.capitalizeFirst(target.getSimpleName())));
+                    warning, "$T.parse$L($N)", boxed, Util.capitalizeFirst(target.getSimpleName()));
             entries.add(entry(t, c));
             // String -> boxed
             t = new TypeMapping(STRING_TYPE, coreTypes.get(boxed));
-            c = new StringFormatConversion(warning, "%s.valueOf(%%s)".formatted(boxed.getSimpleName()));
+            c = new StringFormatConversion(warning, "$T.valueOf($N)", boxed);
             entries.add(entry(t, c));
         });
+
+        TypeMapping t = new TypeMapping(STRING_TYPE, coreTypes.get(boolean.class));
+        String format =
+                """
+                ($1N.matches("\\d+") && !"0".equals($1N)) || Boolean.parseBoolean($1N)
+                """;
+        entries.add(entry(t, new StringFormatConversion(null, format)));
     }
 
-    private void addDateTimeMappings(Collection<Map.Entry<TypeMapping, StringFormatConversion>> entries) {}
+    private void addDateTimeMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
+        String usesSystemDefaultZoneId = "uses system default ZoneId";
+        List.of(LocalDate.class, LocalTime.class, OffsetTime.class, LocalDateTime.class, OffsetDateTime.class)
+                .forEach(dtClass -> {
+                    entries.add(mappingEntry(
+                            String.class,
+                            dtClass,
+                            "possible DateTimeParseException parsing String to %s".formatted(dtClass.getSimpleName()),
+                            "$T.parse($N)",
+                            dtClass));
 
-    private void addBigNumberMappings(Collection<Map.Entry<TypeMapping, StringFormatConversion>> entries) {
+                    entries.add(mappingEntry(
+                            long.class,
+                            dtClass,
+                            usesSystemDefaultZoneId,
+                            "$1T.ofInstant($2T.ofEpochMilli($4N), $3T.systemDefault())",
+                            dtClass,
+                            Instant.class,
+                            ZoneId.class));
+                });
+        entries.add(mappingEntry(OffsetDateTime.class, long.class, null, "$N.toInstant().toEpochMilli()"));
+        entries.add(mappingEntry(OffsetDateTime.class, LocalDateTime.class, null, "$N.toLocalDateTime()"));
+        entries.add(mappingEntry(OffsetDateTime.class, OffsetTime.class, null, "$N.toOffsetTime()"));
+        entries.add(mappingEntry(OffsetDateTime.class, LocalDate.class, null, "$N.toLocalDate()"));
+        entries.add(mappingEntry(
+                LocalDateTime.class,
+                long.class,
+                usesSystemDefaultZoneId,
+                "$2N.atZone($1T.systemDefault()).toOffsetDateTime().toInstant().toEpochMilli()",
+                ZoneId.class));
+        entries.add(mappingEntry(LocalDateTime.class, LocalDate.class, null, "$N.toLocalDate()"));
+        entries.add(mappingEntry(LocalDateTime.class, LocalTime.class, null, "$N.toLocalTime()"));
+        entries.add(mappingEntry(
+                LocalDate.class,
+                long.class,
+                usesSystemDefaultZoneId,
+                "$2N.atStartOfDay().atZone($1T.systemDefault()).toOffsetDateTime().toInstant().toEpochMilli()",
+                ZoneId.class));
+        entries.add(mappingEntry(LocalDate.class, LocalDateTime.class, null, "$N.atStartOfDay()"));
+        entries.add(mappingEntry(
+                LocalDate.class,
+                OffsetDateTime.class,
+                null,
+                "$2N.atStartOfDay().atZone($1T.systemDefault()).toOffsetDateTime()",
+                ZoneId.class));
+        entries.add(mappingEntry(OffsetTime.class, LocalTime.class, null, "$N.toLocalTime()"));
+    }
+
+    private void addBigNumberMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
         List.of(BigInteger.class, BigDecimal.class).forEach(big -> {
             // primitive -> Big
             Stream.of(byte.class, short.class, int.class, long.class, float.class, double.class)
                     .forEach(source -> {
-                        entries.add(mappingEntry(source, big, null, "%s.valueOf(%%s)".formatted(big.getSimpleName())));
+                        entries.add(mappingEntry(source, big, null, "$T.valueOf($N)", big));
                     });
 
             // String -> Big
             String warning = "possible NumberFormatException parsing String to %s".formatted(big.getSimpleName());
-            entries.add(mappingEntry(String.class, big, warning, "new %s(%%s)".formatted(big.getSimpleName())));
+            entries.add(mappingEntry(String.class, big, warning, "new $T($N)", big));
 
             // Big -> primitive
             Stream.of(byte.class, short.class, int.class, long.class, float.class, double.class)
                     .forEach(target -> {
                         String w = "possible lossy conversion from %s to %s".formatted(big.getName(), target.getName());
-                        entries.add(mappingEntry(big, target, w, "%%s.%sValue()".formatted(target.getName())));
+                        entries.add(mappingEntry(big, target, w, "$N.%sValue()".formatted(target.getName())));
                     });
         });
+        entries.add(mappingEntry(BigInteger.class, boolean.class, null, "!$T.ZERO.equals($N)", BigInteger.class));
+        entries.add(mappingEntry(boolean.class, BigInteger.class, null, "$2N ? $1T.ONE : $1T.ZERO", BigInteger.class));
+        entries.add(mappingEntry(
+                BigDecimal.class,
+                BigInteger.class,
+                "possible lossy conversion from BigDecimal to BigInteger",
+                "$N.toBigInteger()"));
+        entries.add(mappingEntry(BigInteger.class, BigDecimal.class, null, "new $T($N)", BigDecimal.class));
     }
 
-    private void addPrimitiveMappings(Collection<Map.Entry<TypeMapping, StringFormatConversion>> entries) {
+    private void addPrimitiveMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
         // primitive safe assignments
         assignableFrom.forEach((source, targets) -> {
             targets.forEach(target -> {
                 // primitive
-                entries.add(mappingEntry(source, target, null, "%s"));
+                entries.add(mappingEntry(source, target, new AssignmentConversion()));
             });
         });
 
@@ -144,20 +209,33 @@ public class CoreTypes {
                 if (!source.equals(target) && !isAssignable(source, target)) {
                     String warning =
                             "possible lossy conversion from %s to %s".formatted(source.getName(), target.getName());
-                    String conversionFormat = "(%s) %%s".formatted(target.getName());
-                    entries.add(mappingEntry(source, target, warning, conversionFormat));
+                    entries.add(mappingEntry(source, target, warning, "($T) $N", target));
                 }
             });
         });
+
+        Stream.of(byte.class, short.class, int.class, long.class).forEach(source -> {
+            entries.add(mappingEntry(source, boolean.class, null, "$N != 0"));
+            entries.add(mappingEntry(boolean.class, source, null, "$2N ? 1 : 0"));
+        });
+        entries.add(mappingEntry(char.class, boolean.class, null, "Character.isDigit($1N) && $1N != '0'"));
+        entries.add(mappingEntry(boolean.class, char.class, null, "$N ? '1' : '0'"));
     }
 
-    private Map.Entry<TypeMapping, StringFormatConversion> mappingEntry(
-            Class<?> source, Class<?> target, @Nullable String warning, String conversionFormat) {
+    private Map.Entry<TypeMapping, Conversion> mappingEntry(Class<?> source, Class<?> target, Conversion lookup) {
         var fromType = Objects.requireNonNull(coreTypes.get(source));
         var toType = Objects.requireNonNull(coreTypes.get(target));
         var mapping = new TypeMapping(fromType, toType);
-        var lookup = new StringFormatConversion(warning, conversionFormat);
         return entry(mapping, lookup);
+    }
+
+    private Map.Entry<TypeMapping, Conversion> mappingEntry(
+            Class<?> source,
+            Class<?> target,
+            @Nullable String warning,
+            String conversionFormat,
+            Object... defaultArgs) {
+        return mappingEntry(source, target, new StringFormatConversion(warning, conversionFormat, defaultArgs));
     }
 
     private Map<Class<?>, KiwiType> defineTypes() {
@@ -194,7 +272,7 @@ public class CoreTypes {
         // special case String
         StringFormatConversion stringConversion = null;
         if (STRING_TYPE.equals(target) || STRING_TYPE.withIsNullable(true).equals(target)) {
-            stringConversion = new StringFormatConversion(null, "String.valueOf(%s)");
+            stringConversion = new StringFormatConversion(null, "String.valueOf($N)");
         }
         var result = firstNonNull(
                 stringConversion,
