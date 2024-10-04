@@ -17,7 +17,7 @@ tasks.named<Test>("test") {
     useJUnitPlatform()
 }
 
-val junitVersion = "5.11.1"
+val junitVersion = "5.11.2"
 dependencies {
     implementation("org.jspecify:jspecify:1.0.0")
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
