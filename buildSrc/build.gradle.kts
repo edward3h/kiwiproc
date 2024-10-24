@@ -15,6 +15,6 @@ java {
 
 dependencies {
     implementation(libs.embeddedpostgres)
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:7.0.0.BETA3")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:7.0.0.BETA4")
     runtimeOnly(libs.liquibase.core)
 }
