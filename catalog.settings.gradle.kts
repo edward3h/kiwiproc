@@ -24,7 +24,7 @@ dependencyResolutionManagement {
             library("recordbuilder-processor", "io.soabase.record-builder", "record-builder-processor").versionRef("recordbuilder")
             library("recordbuilder-core", "io.soabase.record-builder", "record-builder-core").versionRef("recordbuilder")
 
-            library("embeddedpostgres", "io.zonky.test:embedded-postgres:2.0.7")
+            library("embeddedpostgres", "io.zonky.test:embedded-postgres:2.1.0")
             library("liquibase-core", "org.liquibase:liquibase-core:4.30.0")
 
             library("mapstruct-processor", "org.mapstruct", "mapstruct-processor").versionRef("mapstruct")
