@@ -1,0 +1,12 @@
+{
+  "dataSources": {
+    "default": {
+      "named": "default",
+      "url": "jdbc:postgresql://localhost:5432/postgres?user=postgres",
+      "database": "postgres",
+      "username":  "postgres",
+      "password": "password"
+    }
+  },
+  "dependencyInjectionStyle": "JAKARTA"
+}

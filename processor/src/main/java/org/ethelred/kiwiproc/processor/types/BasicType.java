@@ -1,3 +1,4 @@
+/* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor.types;
 
 public record BasicType(String packageName, String className, boolean isNullable) implements KiwiType {

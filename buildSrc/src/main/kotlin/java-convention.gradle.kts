@@ -33,5 +33,6 @@ spotless {
         removeUnusedImports()
         palantirJavaFormat()
         formatAnnotations()
+        licenseHeader("/* (C) Edward Harman \$YEAR */")
     }
 }

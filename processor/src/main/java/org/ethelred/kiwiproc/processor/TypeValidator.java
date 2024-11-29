@@ -1,3 +1,4 @@
+/* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor;
 
 import com.karuslabs.utilitary.Logger;
@@ -6,13 +7,13 @@ import javax.lang.model.element.Element;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.processor.types.*;
 
-public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes) {
+public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes, boolean debug) {
 
     private static final KiwiType UPDATE_RETURN_TYPE = new PrimitiveKiwiType("int", false);
     private static final KiwiType BATCH_RETURN_TYPE = new ContainerType(ValidContainerType.ARRAY, UPDATE_RETURN_TYPE);
 
-    public TypeValidator(Logger logger, Element methodElement) {
-        this(logger, methodElement, new CoreTypes());
+    public TypeValidator(Logger logger, Element methodElement, boolean debug) {
+        this(logger, methodElement, new CoreTypes(), debug);
     }
 
     public boolean validateParameters(Map<ColumnMetaData, MethodParameterInfo> parameterMapping, QueryMethodKind kind) {
@@ -43,7 +44,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
     }
 
     private TypeValidator withElement(Element element) {
-        return new TypeValidator(logger, element, coreTypes);
+        return new TypeValidator(logger, element, coreTypes, debug);
     }
 
     private boolean validateSingleParameter(KiwiType parameterType, KiwiType columnType) {
@@ -137,7 +138,9 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes)
     }
 
     private void debug(String message) {
-        info("DEBUG: " + message);
+        if (debug) {
+            info("DEBUG: " + message);
+        }
     }
 
     private void warn(String message) {

@@ -1,0 +1,69 @@
+:sourcedir: ../../../example
+:source-highlighter: rouge
+:icons: font
+
+== Quick Start
+
+=== Gradle Configuration
+
+Set up dependencies for the annotation processor and runtime.
+Add a JSON file with configuration for the annotation processor, and tell the annotation processor the path.
+_TODO: milestone2 - gradle plugin to help with this._
+
+[source,json]
+.`src/main/resources/kiwi-config.json`
+----
+{
+    "dataSources": {
+        "default": {
+            "named": "default",
+            "url": "jdbc:postgresql://localhost:5432/example?user=example",
+            "database": "example",
+            "username":  "example"
+        }
+    },
+    "dependencyInjectionStyle": "JAKARTA",
+    "debug": false
+}
+----
+
+[source,groovy,indent=0,subs="verbatim,attributes",role="secondary"]
+.Groovy
+----
+def kiwiversion = "0.1"
+dependencies {
+    annotationProcessor("org.ethelred.kiwiproc:processor:$kiwiversion")
+    implementation("org.ethelred.kiwiproc:runtime:$kiwiversion")
+    implementation("jakarta.inject:jakarta.inject-api:2.0.1")
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add("-Aorg.ethelred.kiwiproc.configuration=src/main/resources/kiwi-config.json")
+}
+----
+
+[source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
+.Kotlin
+----
+val kiwiversion = "0.1"
+dependencies {
+    annotationProcessor("org.ethelred.kiwiproc:processor:$kiwiversion")
+    implementation("org.ethelred.kiwiproc:runtime:$kiwiversion")
+    implementation("jakarta.inject:jakarta.inject-api:2.0.1")
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Aorg.ethelred.kiwiproc.configuration=src/main/resources/kiwi-config.json")
+}
+----
+
+=== Define a DAO interface
+
+[source,java]
+----
+include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/CountryCityDao.java[tag=body]
+----
+<1> Declare an interface as being a DAO.
+<2> Define a query. The SQL statement goes inline with the code.
+<3> Records could be separate data types, or inline in the DAO.
+<4> Use a default method to transform a result.

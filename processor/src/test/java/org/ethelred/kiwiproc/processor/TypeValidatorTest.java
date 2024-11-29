@@ -1,3 +1,4 @@
+/* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -27,7 +28,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class TypeValidatorTest {
-    TypeValidator validator = new TypeValidator(mockLogger(), mockMethodElement(), new CoreTypes());
+    TypeValidator validator = new TypeValidator(mockLogger(), mockMethodElement(), new CoreTypes(), false);
     Set<String> messages = new HashSet<>();
     static int colCount = 1;
 

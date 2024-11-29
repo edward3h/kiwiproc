@@ -1,3 +1,4 @@
+/* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor.generator;
 
 import com.karuslabs.utilitary.Logger;

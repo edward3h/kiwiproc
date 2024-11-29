@@ -1,3 +1,4 @@
+/* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor;
 
 import static org.ethelred.kiwiproc.processor.QueryMethodKind.*;
@@ -131,7 +132,7 @@ public class KiwiProcessor extends AnnotationProcessor {
                 MethodParameterInfo.fromElements(Objects.requireNonNull(typeUtils), methodElement.getParameters());
         Map<ColumnMetaData, MethodParameterInfo> parameterMapping =
                 mapParameters(methodElement, parsedSql.parameterNames(), queryMetaData.parameters(), parameterInfo);
-        var typeValidator = new TypeValidator(logger, methodElement);
+        var typeValidator = new TypeValidator(logger, methodElement, config.debug());
         if (!typeValidator.validateParameters(parameterMapping, kind)) {
             return null;
         }

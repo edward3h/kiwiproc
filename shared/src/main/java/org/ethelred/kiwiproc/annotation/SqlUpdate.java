@@ -1,3 +1,4 @@
+/* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.annotation;
 
 import java.lang.annotation.ElementType;

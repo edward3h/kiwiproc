@@ -1,0 +1,6 @@
+= Kiwiproc
+:toc: left
+
+Use declarative interfaces for Java database queries.
+
+include::quick_start.adoc[]
