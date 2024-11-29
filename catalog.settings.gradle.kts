@@ -5,11 +5,11 @@ dependencyResolutionManagement {
             version("avaje-json", "2.3")
             version("junit", "5.11.3")
             version("recordbuilder", "43")
-            version("mapstruct", "1.6.2")
+            version("mapstruct", "1.6.3")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
             library("avaje-json-processor", "io.avaje", "avaje-jsonb-generator").versionRef("avaje-json")
-            library("avaje-prisms", "io.avaje:avaje-prisms:1.33")
+            library("avaje-prisms", "io.avaje:avaje-prisms:1.35")
 
             library("jakarta-inject", "jakarta.inject:jakarta.inject-api:2.0.1")
 
@@ -24,8 +24,8 @@ dependencyResolutionManagement {
             library("recordbuilder-processor", "io.soabase.record-builder", "record-builder-processor").versionRef("recordbuilder")
             library("recordbuilder-core", "io.soabase.record-builder", "record-builder-core").versionRef("recordbuilder")
 
-            library("embeddedpostgres", "io.zonky.test:embedded-postgres:2.0.7")
-            library("liquibase-core", "org.liquibase:liquibase-core:4.29.2")
+            library("embeddedpostgres", "io.zonky.test:embedded-postgres:2.1.0")
+            library("liquibase-core", "org.liquibase:liquibase-core:4.30.0")
 
             library("mapstruct-processor", "org.mapstruct", "mapstruct-processor").versionRef("mapstruct")
             library("mapstruct-compile", "org.mapstruct", "mapstruct").versionRef("mapstruct")
