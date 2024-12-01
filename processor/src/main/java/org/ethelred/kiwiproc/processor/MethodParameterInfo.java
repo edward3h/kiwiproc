@@ -4,32 +4,22 @@ package org.ethelred.kiwiproc.processor;
 import java.util.*;
 import java.util.stream.Collectors;
 import javax.lang.model.element.VariableElement;
+import org.ethelred.kiwiproc.meta.JavaName;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.jspecify.annotations.Nullable;
 
 @KiwiRecordBuilder
 public record MethodParameterInfo(
         VariableElement variableElement,
-        String name,
+        JavaName name,
         KiwiType type,
         boolean isRecordComponent,
         @Nullable String recordParameterName) {
 
-    static Map<String, MethodParameterInfo> fromElements(
-            TypeUtils types, List<? extends VariableElement> variableElements) {
+    static Set<MethodParameterInfo> fromElements(TypeUtils types, List<? extends VariableElement> variableElements) {
         return variableElements.stream()
                 .flatMap(variableElement -> fromElement(types, variableElement).stream())
-                .collect(Collectors.toMap(MethodParameterInfo::name, x -> x, MethodParameterInfo::merge));
-    }
-
-    private static MethodParameterInfo merge(MethodParameterInfo a, MethodParameterInfo b) {
-        if (a.isRecordComponent == b.isRecordComponent) {
-            throw new IllegalStateException("Can't have 2 parameters with same methodName");
-        }
-        if (a.isRecordComponent) {
-            return b;
-        }
-        return a;
+                .collect(Collectors.toSet());
     }
 
     static Set<MethodParameterInfo> fromElement(TypeUtils types, VariableElement variableElement) {
@@ -43,7 +33,7 @@ public record MethodParameterInfo(
     private static Set<MethodParameterInfo> fromSingle(TypeUtils types, VariableElement variableElement) {
         var info = MethodParameterInfoBuilder.builder()
                 .variableElement(variableElement)
-                .name(variableElement.getSimpleName().toString())
+                .name(new JavaName(variableElement.getSimpleName().toString()))
                 .type(types.kiwiType(variableElement.asType()))
                 .isRecordComponent(false)
                 .recordParameterName(null)
@@ -57,7 +47,7 @@ public record MethodParameterInfo(
         var parameterInfos = components.stream()
                 .map(component -> MethodParameterInfoBuilder.builder()
                         .variableElement(variableElement)
-                        .name(component.getSimpleName().toString())
+                        .name(new JavaName(component.getSimpleName().toString()))
                         .type(types.kiwiType(component.asType()))
                         .isRecordComponent(true)
                         .recordParameterName(variableElement.getSimpleName().toString())

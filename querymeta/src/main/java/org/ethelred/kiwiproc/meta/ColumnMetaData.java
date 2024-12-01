@@ -7,15 +7,20 @@ import org.jspecify.annotations.Nullable;
 import org.postgresql.core.BaseConnection;
 
 public record ColumnMetaData(
-        int index, String name, boolean nullable, JDBCType sqlType, @Nullable ArrayComponent componentType
+        int index, SqlName name, boolean nullable, JDBCType sqlType, @Nullable ArrayComponent componentType
         // TODO precision/scale?
         ) {
+
+    public ColumnMetaData(
+            int index, String name, boolean nullable, JDBCType sqlType, @Nullable ArrayComponent componentType) {
+        this(index, new SqlName(name), nullable, sqlType, componentType);
+    }
 
     public static ColumnMetaData from(Connection connection, int index, ResultSetMetaData resultSetMetaData)
             throws SQLException {
         return new ColumnMetaData(
                 index,
-                resultSetMetaData.getColumnName(index),
+                new SqlName(resultSetMetaData.getColumnName(index)),
                 resultSetMetaData.isNullable(index)
                         != ResultSetMetaData
                                 .columnNoNulls, // for results, treat 'unknown' as 'nullable' since caller may need to
@@ -49,7 +54,7 @@ public record ColumnMetaData(
             throws SQLException {
         return new ColumnMetaData(
                 index,
-                "parameter", // does not have a name in metadata, will be associated by index outside this scope
+                SqlName.PARAMETER, // does not have a name in metadata, will be associated by index outside this scope
                 parameterMetaData.isNullable(index)
                         != ParameterMetaData
                                 .parameterNoNulls, // Postgres does not report nullability of parameters, so be lenient

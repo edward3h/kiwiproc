@@ -16,16 +16,23 @@ public abstract class ProcessorConfigTask extends DefaultTask {
     abstract Property<EmbeddedPostgresService> getService();
 
     @OutputFile
-    abstract RegularFileProperty getConfigFile();
+    public abstract RegularFileProperty getConfigFile();
 
     @OutputFile
     public abstract RegularFileProperty getApplicationConfigFile();
 
     @InputFile
-    abstract RegularFileProperty getLiquibaseChangelog();
+    public abstract RegularFileProperty getLiquibaseChangelog();
 
     @Input
-    abstract Property<String> getDependencyInjectionStyle();
+    public abstract Property<String> getDependencyInjectionStyle();
+
+    @Input
+    public abstract Property<Boolean> getDebug();
+
+    public ProcessorConfigTask() {
+        getDebug().convention(false);
+    }
 
     @TaskAction
     public void run() {
@@ -44,13 +51,15 @@ public abstract class ProcessorConfigTask extends DefaultTask {
                             "username":  "%3$s"
                         }
                     },
-                    "dependencyInjectionStyle": "%s"
+                    "dependencyInjectionStyle": "%s",
+                    "debug": %s
                 }
                 """.formatted(
                     connectionInfo.getPort(),
                         connectionInfo.getDbName(),
                         connectionInfo.getUser(),
-                        getDependencyInjectionStyle().get()
+                        getDependencyInjectionStyle().get(),
+                        getDebug().get()
                 );
         var outputPath = getConfigFile().get().getAsFile().toPath();
         try {

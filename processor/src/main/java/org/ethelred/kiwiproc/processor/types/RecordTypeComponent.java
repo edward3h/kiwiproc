@@ -1,4 +1,6 @@
 /* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor.types;
 
-public record RecordTypeComponent(String name, KiwiType type) {}
+import org.ethelred.kiwiproc.meta.JavaName;
+
+public record RecordTypeComponent(JavaName name, KiwiType type) {}

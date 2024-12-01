@@ -19,10 +19,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.ElementFilter;
 import org.ethelred.kiwiproc.annotation.DAO;
-import org.ethelred.kiwiproc.meta.ColumnMetaData;
-import org.ethelred.kiwiproc.meta.DatabaseWrapper;
-import org.ethelred.kiwiproc.meta.ParsedQuery;
-import org.ethelred.kiwiproc.meta.QueryMetaData;
+import org.ethelred.kiwiproc.meta.*;
 import org.ethelred.kiwiproc.processor.generator.PoetDAOGenerator;
 import org.ethelred.kiwiproc.processor.types.ContainerType;
 import org.ethelred.kiwiproc.processor.types.RecordType;
@@ -150,15 +147,15 @@ public class KiwiProcessor extends AnnotationProcessor {
             if (returnComponentType instanceof RecordType recordType) {
                 recordType.components().forEach((component) -> {
                     var colOpt = queryMetaData.resultColumns().stream()
-                            .filter(c -> component.name().equals(c.name()))
+                            .filter(c -> component.name().equivalent(c.name()))
                             .findFirst();
                     colOpt.ifPresentOrElse(
                             col -> multipleColumnResults.add(
-                                    new DAOResultColumn(component.name(), SqlTypeMapping.get(col), component.type())),
+                                    new DAOResultColumn(col.name(), SqlTypeMapping.get(col), component.type())),
                             () -> logger.error(
                                     methodElement,
-                                    "No matching column found for record component \"%s\""
-                                            .formatted(component.name())));
+                                    "No matching column found for record '%s' component '%s'"
+                                            .formatted(recordType.className(), component.name())));
                 });
             } else {
                 logger.error(methodElement, "A query with multiple columns must be mapped to a Record type");
@@ -181,15 +178,16 @@ public class KiwiProcessor extends AnnotationProcessor {
             ExecutableElement methodElement,
             List<String> parameterNames,
             List<ColumnMetaData> queryParameters,
-            Map<String, MethodParameterInfo> methodParameters) {
+            Set<MethodParameterInfo> methodParameters) {
         Map<ColumnMetaData, MethodParameterInfo> r = new HashMap<>();
         for (var queryParameter : queryParameters) {
             var name = parameterNames.get(queryParameter.index() - 1);
-            var methodParameter = methodParameters.get(name);
+            var methodParameter = methodParameters.stream()
+                    .filter(mp -> mp.name().equivalent(new SqlName(name)))
+                    .findFirst()
+                    .orElse(null);
             if (methodParameter == null) {
-                logger.error(
-                        methodElement,
-                        "No method parameter found for query parameter '%s'".formatted(queryParameter.name()));
+                logger.error(methodElement, "No method parameter found for query parameter '%s'".formatted(name));
             } else {
                 r.put(queryParameter, methodParameter);
             }

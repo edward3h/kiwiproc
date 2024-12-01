@@ -130,12 +130,12 @@ public class InstanceGenerator {
                             .addStatement("$L = null", rawName)
                             .endControlFlow();
                 }
-                var varName = patchName(daoResultColumn.name());
+                var varName = patchName(daoResultColumn.name().name());
                 buildConversion(
                         builder, conversion, daoResultColumn.asTypeMapping().target(), varName, rawName, true);
             });
             var params = multipleColumns.stream()
-                    .map(p -> CodeBlock.of("$L", patchedNames.get(p.name())))
+                    .map(p -> CodeBlock.of("$L", patchedNames.get(p.name().name())))
                     .collect(CodeBlock.joining(",\n"));
             params = CodeBlock.builder().indent().add(params).unindent().build();
             builder.add(

@@ -19,7 +19,9 @@ dependencies {
     testRuntimeOnly(libs.yaml)
 }
 
-val processorConfig = tasks.named<ProcessorConfigTask>("processorConfig")
+val processorConfig = tasks.named<ProcessorConfigTask>("processorConfig") {
+//    debug = true
+}
 
 tasks.named<ProcessResources>("processTestResources") {
     from(processorConfig.get().getApplicationConfigFile())

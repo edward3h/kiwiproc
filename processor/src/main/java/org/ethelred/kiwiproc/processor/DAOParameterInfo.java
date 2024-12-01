@@ -21,7 +21,7 @@ public record DAOParameterInfo(
         List<DAOParameterInfo> result = new ArrayList<>(parameterMapping.size());
 
         parameterMapping.forEach(((columnMetaData, methodParameterInfo) -> {
-            String accessor = methodParameterInfo.name();
+            String accessor = methodParameterInfo.name().name();
             if (methodParameterInfo.isRecordComponent()) {
                 accessor = "%s.%s()".formatted(methodParameterInfo.recordParameterName(), methodParameterInfo.name());
             }
