@@ -14,7 +14,7 @@ buildscript {
 plugins {
     application
     id("com.diffplug.spotless")
-    id("org.liquibase.gradle") version "2.2.1"
+    id("org.liquibase.gradle") version "2.2.2"
 }
 
 java {
@@ -39,8 +39,8 @@ dependencies {
     implementation("jakarta.inject:jakarta.inject-api:2.0.1")
     liquibaseRuntime("org.liquibase:liquibase-core:4.29.2")
     liquibaseRuntime("info.picocli:picocli:4.7.6")
-    liquibaseRuntime("ch.qos.logback:logback-core:1.2.3")
-    liquibaseRuntime("ch.qos.logback:logback-classic:1.2.3")
+    liquibaseRuntime("ch.qos.logback:logback-core:1.5.12")
+    liquibaseRuntime("ch.qos.logback:logback-classic:1.5.12")
     liquibaseRuntime("javax.xml.bind:jaxb-api:2.3.1")
     liquibaseRuntime("org.postgresql:postgresql:42.7.4")
 }
