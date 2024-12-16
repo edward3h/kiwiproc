@@ -4,7 +4,7 @@ dependencyResolutionManagement {
         create("libs") {
             version("avaje-json", "2.4")
             version("junit", "5.11.4")
-            version("recordbuilder", "43")
+            version("recordbuilder", "44")
             version("mapstruct", "1.6.3")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
