@@ -18,3 +18,7 @@ tasks.named<AsciidoctorTask>("asciidoctor").configure {
     baseDirFollowsSourceDir()
 //    configurations("asciidoctorExtensions")
 }
+
+tasks.named("build") {
+    dependsOn(tasks.named("asciidoctor"))
+}

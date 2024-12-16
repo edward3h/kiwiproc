@@ -1,0 +1,7 @@
+== Framework Support
+
+Kiwiproc uses only the Jakarta annotations `@Singleton` and `@Named`, so should work with any Dependency Injection framework that supports those.
+It expects a `DataSource` to be injected, with a name matching that specified on the `@DAO` annotation.
+
+* Micronaut test cases are in the "test-micronaut" subproject.
+* Spring test cases are on the roadmap.
