@@ -100,7 +100,7 @@ public class InstanceGenerator {
         var listVariable = patchName("l");
         TypeName componentClass = kiwiTypeConverter.fromKiwiType(methodInfo.resultComponentType());
         builder.addStatement("var rs = statement.executeQuery()")
-                .addStatement("List<$T> $L = new $T<>()", componentClass, listVariable, ArrayList.class)
+                .addStatement("$T<$T> $L = new $T<>()", List.class, componentClass, listVariable, ArrayList.class)
                 .beginControlFlow("$L (rs.next())", methodInfo.singleResult() ? "if" : "while");
         var singleColumn = methodInfo.singleColumn();
         var multipleColumns = methodInfo.multipleColumns();
