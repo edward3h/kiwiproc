@@ -207,7 +207,10 @@ public class CoreTypes {
         // primitive lossy assignments
         primitiveToBoxed.keySet().forEach(source -> {
             primitiveToBoxed.keySet().forEach(target -> {
-                if (!source.equals(target) && !isAssignable(source, target)) {
+                if (!source.equals(boolean.class)
+                        && !target.equals(boolean.class)
+                        && !source.equals(target)
+                        && !isAssignable(source, target)) {
                     String warning =
                             "possible lossy conversion from %s to %s".formatted(source.getName(), target.getName());
                     entries.add(mappingEntry(source, target, warning, "($T) $N", target));
