@@ -42,7 +42,7 @@ dependencies {
     liquibaseRuntime("ch.qos.logback:logback-core:1.5.16")
     liquibaseRuntime("ch.qos.logback:logback-classic:1.5.16")
     liquibaseRuntime("javax.xml.bind:jaxb-api:2.3.1")
-    liquibaseRuntime("org.postgresql:postgresql:42.7.4")
+    liquibaseRuntime("org.postgresql:postgresql:42.7.5")
 }
 
 liquibase {
