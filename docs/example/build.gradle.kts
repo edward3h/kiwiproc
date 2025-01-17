@@ -37,7 +37,7 @@ dependencies {
     annotationProcessor(project(":processor"))
     implementation(project(":runtime"))
     implementation("jakarta.inject:jakarta.inject-api:2.0.1")
-    liquibaseRuntime("org.liquibase:liquibase-core:4.29.2")
+    liquibaseRuntime("org.liquibase:liquibase-core:4.31.0")
     liquibaseRuntime("info.picocli:picocli:4.7.6")
     liquibaseRuntime("ch.qos.logback:logback-core:1.5.16")
     liquibaseRuntime("ch.qos.logback:logback-classic:1.5.16")
