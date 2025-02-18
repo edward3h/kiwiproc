@@ -9,7 +9,7 @@ dependencyResolutionManagement {
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
             library("avaje-json-processor", "io.avaje", "avaje-jsonb-generator").versionRef("avaje-json")
-            library("avaje-prisms", "io.avaje:avaje-prisms:1.38")
+            library("avaje-prisms", "io.avaje:avaje-prisms:1.39")
 
             library("jakarta-inject", "jakarta.inject:jakarta.inject-api:2.0.1")
 
