@@ -2,7 +2,7 @@
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
-            version("avaje-json", "2.4")
+            version("avaje-json", "3.0")
             version("junit", "5.12.0")
             version("recordbuilder", "44")
             version("mapstruct", "1.6.3")
