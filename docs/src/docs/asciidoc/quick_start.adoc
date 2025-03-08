@@ -30,7 +30,7 @@ _TODO: milestone2 - gradle plugin to help with this._
 [source,groovy,indent=0,subs="verbatim,attributes",role="secondary"]
 .Groovy
 ----
-def kiwiversion = "0.1"
+def kiwiversion = "0.1.1"
 dependencies {
     annotationProcessor("org.ethelred.kiwiproc:processor:$kiwiversion")
     implementation("org.ethelred.kiwiproc:runtime:$kiwiversion")
@@ -45,7 +45,7 @@ tasks.withType(JavaCompile).configureEach {
 [source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
 .Kotlin
 ----
-val kiwiversion = "0.1"
+val kiwiversion = "0.1.1"
 dependencies {
     annotationProcessor("org.ethelred.kiwiproc:processor:$kiwiversion")
     implementation("org.ethelred.kiwiproc:runtime:$kiwiversion")
