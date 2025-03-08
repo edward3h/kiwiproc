@@ -25,7 +25,7 @@ public record DAOParameterInfo(
             if (methodParameterInfo.isRecordComponent()) {
                 accessor = "%s.%s()".formatted(methodParameterInfo.recordParameterName(), methodParameterInfo.name());
             }
-            var sqlTypeMapping = SqlTypeMapping.get(columnMetaData);
+            var sqlTypeMapping = SqlTypeMappingRegistry.get(columnMetaData);
             if (sqlTypeMapping.specialCase()) {
                 // TODO
             }
@@ -35,7 +35,7 @@ public record DAOParameterInfo(
                     columnMetaData.index(),
                     accessor,
                     setter,
-                    columnMetaData.sqlType().getVendorTypeNumber(),
+                    columnMetaData.jdbcType().getVendorTypeNumber(),
                     mapper,
                     methodParameterInfo.variableElement(),
                     null));

@@ -114,7 +114,7 @@ public class TypeValidatorTest {
     }
 
     private KiwiType logKiwiType(ColumnMetaData columnMetaData) {
-        return SqlTypeMapping.get(columnMetaData).kiwiType();
+        return SqlTypeMappingRegistry.get(columnMetaData).kiwiType();
     }
 
     public static Stream<Arguments> testQueryReturn() {
@@ -187,7 +187,7 @@ public class TypeValidatorTest {
     }
 
     static ColumnMetaData col(boolean nullable, JDBCType type, @Nullable ArrayComponent componentType) {
-        return new ColumnMetaData(colCount, "test" + colCount++, nullable, type, componentType);
+        return new ColumnMetaData(colCount, "test" + colCount++, nullable, type, "butt", "poop", componentType);
     }
 
     static ColumnMetaData col(boolean nullable, JDBCType type) {

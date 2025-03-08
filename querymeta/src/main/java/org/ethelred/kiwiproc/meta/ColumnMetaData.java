@@ -7,14 +7,33 @@ import org.jspecify.annotations.Nullable;
 import org.postgresql.core.BaseConnection;
 
 public record ColumnMetaData(
-        int index, SqlName name, boolean nullable, JDBCType sqlType, @Nullable ArrayComponent componentType
+        int index,
+        SqlName name,
+        boolean nullable,
+        JDBCType jdbcType,
+        String dbType,
+        @Nullable String dbClassName,
+        @Nullable ArrayComponent componentType
         // TODO precision/scale?
-        ) {
+        ) implements DBType {
 
     public ColumnMetaData(
-            int index, String name, boolean nullable, JDBCType sqlType, @Nullable ArrayComponent componentType) {
-        this(index, new SqlName(name), nullable, sqlType, componentType);
+            int index,
+            String name,
+            boolean nullable,
+            JDBCType sqlType,
+            String dbTypeName,
+            @Nullable String dbClassName,
+            @Nullable ArrayComponent componentType) {
+        this(index, new SqlName(name), nullable, sqlType, dbTypeName, dbClassName, componentType);
     }
+
+    // temporary constructor for back-compat
+    //    @Deprecated
+    //    public ColumnMetaData(int index, String name, boolean nullable, JDBCType jdbcType, @Nullable ArrayComponent
+    // componentType) {
+    //        this(index, name, nullable, jdbcType, "", null, componentType);
+    //    }
 
     public static ColumnMetaData from(Connection connection, int index, ResultSetMetaData resultSetMetaData)
             throws SQLException {
@@ -26,6 +45,8 @@ public record ColumnMetaData(
                                 .columnNoNulls, // for results, treat 'unknown' as 'nullable' since caller may need to
                 // handle null case
                 JDBCType.valueOf(resultSetMetaData.getColumnType(index)),
+                resultSetMetaData.getColumnTypeName(index),
+                resultSetMetaData.getColumnClassName(index),
                 componentType(
                         connection,
                         resultSetMetaData.getColumnType(index),
@@ -59,6 +80,8 @@ public record ColumnMetaData(
                         != ParameterMetaData
                                 .parameterNoNulls, // Postgres does not report nullability of parameters, so be lenient
                 JDBCType.valueOf(parameterMetaData.getParameterType(index)),
+                parameterMetaData.getParameterTypeName(index),
+                parameterMetaData.getParameterClassName(index),
                 componentType(
                         connection,
                         parameterMetaData.getParameterType(index),

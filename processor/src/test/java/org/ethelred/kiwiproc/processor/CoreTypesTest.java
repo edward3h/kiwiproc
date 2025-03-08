@@ -91,7 +91,13 @@ public class CoreTypesTest {
                 arguments(
                         new ContainerType(ValidContainerType.LIST, ofClass(Integer.class, true)),
                         new SqlArrayType(
-                                ofClass(int.class), new SqlTypeMapping(JDBCType.INTEGER, int.class, "Int"), "ignored"),
+                                ofClass(int.class),
+                                SqlTypeMappingBuilder.builder()
+                                        .jdbcType(JDBCType.INTEGER)
+                                        .baseType(int.class)
+                                        .accessorSuffix("Int")
+                                        .build(),
+                                "ignored"),
                         true,
                         false,
                         "fail"),
