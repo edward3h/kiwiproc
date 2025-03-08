@@ -61,7 +61,10 @@ public class SqlTypeMappingRegistry {
             // https://jdbc.postgresql.org/documentation/query/#using-java-8-date-and-time-classes
             jdbcType(JDBCType.DATE).baseType(LocalDate.class).build(),
             jdbcType(JDBCType.TIME).baseType(LocalTime.class).build(),
-            jdbcType(JDBCType.TIME_WITH_TIMEZONE).baseType(OffsetTime.class).build(),
+            jdbcType(JDBCType.TIME_WITH_TIMEZONE)
+                    .baseType(OffsetTime.class)
+                    .dbType("timetz")
+                    .build(),
             jdbcType(JDBCType.TIMESTAMP).baseType(LocalDateTime.class).build(),
             jdbcType(JDBCType.TIMESTAMP_WITH_TIMEZONE)
                     .baseType(OffsetDateTime.class)

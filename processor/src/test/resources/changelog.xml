@@ -24,4 +24,5 @@
     <changeSet id="2" author="edward3h">
         <loadData tableName="restaurant" file="restaurants.csv"/>
     </changeSet>
+    <includeAll path="changelogs/" relativeToChangelogFile="true"/>
 </databaseChangeLog>
