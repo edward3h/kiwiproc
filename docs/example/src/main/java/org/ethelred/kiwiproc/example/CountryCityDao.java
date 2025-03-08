@@ -2,11 +2,8 @@ package org.ethelred.kiwiproc.example;
 
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import org.ethelred.kiwiproc.annotation.SqlUpdate;
+import org.jspecify.annotations.Nullable;
 
 // tag::body[]
 @DAO // <1>
@@ -14,23 +11,16 @@ public interface CountryCityDao {
     @SqlQuery("""
             SELECT id, name, code
             FROM country
+            WHERE code = :code
             """) // <2>
-    List<Country> findAllCountries();
+    @Nullable
+    Country findCountryByCode(String code);
 
-    record CityDTO(int city_id, String city_name, int country_id, String country_name, String country_code){} // <3>
-
-    @SqlQuery("""
-            SELECT city.id AS city_id, city.name AS city_name, country.id AS country_id, country.name AS country_name, country.code AS country_code
-            FROM city
-            JOIN country on city.country_id = country.id;
+    @SqlUpdate("""
+            INSERT INTO city(name, country_id)
+            VALUES (:name, :country_id)
             """)
-    List<CityDTO> findAllCityDTO();
+    boolean addCity(String name, int countryId);
 
-    default Map<Country, Set<City>> findAllCities() { // <4>
-        return findAllCityDTO()
-                .stream()
-                .map(dto -> new City(dto.city_id, dto.city_name, new Country(dto.country_id, dto.country_name, dto.country_code)))
-                .collect(Collectors.groupingBy(City::country, Collectors.toSet()));
-    }
 }
 // end::body[]

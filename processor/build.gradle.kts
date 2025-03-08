@@ -1,8 +1,10 @@
 plugins {
     id("java-convention")
+    id("publishing-convention")
 }
 
 dependencies {
+    annotationProcessor(libs.jspecify)
     annotationProcessor(libs.avaje.prisms)
     annotationProcessor(libs.recordbuilder.processor)
     implementation(project(":shared"))

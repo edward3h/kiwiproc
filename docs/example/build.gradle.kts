@@ -6,15 +6,15 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("org.testcontainers:testcontainers:1.20.4")
-        classpath("org.testcontainers:postgresql:1.20.4")
+        classpath("org.testcontainers:testcontainers:1.20.6")
+        classpath("org.testcontainers:postgresql:1.20.6")
     }
 }
 
 plugins {
     application
     id("com.diffplug.spotless")
-    id("org.liquibase.gradle") version "3.0.1"
+    id("org.liquibase.gradle") version "3.0.2"
 }
 
 java {
@@ -37,12 +37,12 @@ dependencies {
     annotationProcessor(project(":processor"))
     implementation(project(":runtime"))
     implementation("jakarta.inject:jakarta.inject-api:2.0.1")
-    liquibaseRuntime("org.liquibase:liquibase-core:4.29.2")
+    liquibaseRuntime("org.liquibase:liquibase-core:4.31.1")
     liquibaseRuntime("info.picocli:picocli:4.7.6")
-    liquibaseRuntime("ch.qos.logback:logback-core:1.5.12")
-    liquibaseRuntime("ch.qos.logback:logback-classic:1.5.12")
+    liquibaseRuntime("ch.qos.logback:logback-core:1.5.17")
+    liquibaseRuntime("ch.qos.logback:logback-classic:1.5.17")
     liquibaseRuntime("javax.xml.bind:jaxb-api:2.3.1")
-    liquibaseRuntime("org.postgresql:postgresql:42.7.4")
+    liquibaseRuntime("org.postgresql:postgresql:42.7.5")
 }
 
 liquibase {

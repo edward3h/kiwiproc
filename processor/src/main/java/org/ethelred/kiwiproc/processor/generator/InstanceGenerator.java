@@ -100,7 +100,7 @@ public class InstanceGenerator {
         var listVariable = patchName("l");
         TypeName componentClass = kiwiTypeConverter.fromKiwiType(methodInfo.resultComponentType());
         builder.addStatement("var rs = statement.executeQuery()")
-                .addStatement("List<$T> $L = new $T<>()", componentClass, listVariable, ArrayList.class)
+                .addStatement("$T<$T> $L = new $T<>()", List.class, componentClass, listVariable, ArrayList.class)
                 .beginControlFlow("$L (rs.next())", methodInfo.singleResult() ? "if" : "while");
         var singleColumn = methodInfo.singleColumn();
         var multipleColumns = methodInfo.multipleColumns();
@@ -130,12 +130,12 @@ public class InstanceGenerator {
                             .addStatement("$L = null", rawName)
                             .endControlFlow();
                 }
-                var varName = patchName(daoResultColumn.name());
+                var varName = patchName(daoResultColumn.name().name());
                 buildConversion(
                         builder, conversion, daoResultColumn.asTypeMapping().target(), varName, rawName, true);
             });
             var params = multipleColumns.stream()
-                    .map(p -> CodeBlock.of("$L", patchedNames.get(p.name())))
+                    .map(p -> CodeBlock.of("$L", patchedNames.get(p.name().name())))
                     .collect(CodeBlock.joining(",\n"));
             params = CodeBlock.builder().indent().add(params).unindent().build();
             builder.add(

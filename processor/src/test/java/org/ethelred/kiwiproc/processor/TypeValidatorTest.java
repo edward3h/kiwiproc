@@ -20,6 +20,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import org.ethelred.kiwiproc.meta.ArrayComponent;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
+import org.ethelred.kiwiproc.meta.JavaName;
 import org.ethelred.kiwiproc.processor.types.*;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -59,24 +60,27 @@ public class TypeValidatorTest {
         return Stream.of(
                 arguments(
                         col(false, JDBCType.INTEGER),
-                        new MethodParameterInfo(mockVariableElement(), "x", ofClass(int.class), false, null),
+                        new MethodParameterInfo(
+                                mockVariableElement(), new JavaName("x"), ofClass(int.class), false, null),
                         true,
                         null),
                 arguments(
                         col(true, JDBCType.INTEGER),
-                        new MethodParameterInfo(mockVariableElement(), "x", ofClass(int.class), false, null),
+                        new MethodParameterInfo(
+                                mockVariableElement(), new JavaName("x"), ofClass(int.class), false, null),
                         true,
                         null),
                 arguments(
                         col(true, JDBCType.INTEGER),
-                        new MethodParameterInfo(mockVariableElement(), "x", ofClass(Integer.class, true), false, null),
+                        new MethodParameterInfo(
+                                mockVariableElement(), new JavaName("x"), ofClass(Integer.class, true), false, null),
                         true,
                         null),
                 arguments(
                         col(true, JDBCType.ARRAY, new ArrayComponent(JDBCType.INTEGER, "ignored")),
                         new MethodParameterInfo(
                                 mockVariableElement(),
-                                "x",
+                                new JavaName("x"),
                                 new ContainerType(ValidContainerType.LIST, ofClass(Integer.class, true)),
                                 false,
                                 null),
@@ -110,7 +114,7 @@ public class TypeValidatorTest {
     }
 
     private KiwiType logKiwiType(ColumnMetaData columnMetaData) {
-        return SqlTypeMapping.get(columnMetaData).kiwiType();
+        return SqlTypeMappingRegistry.get(columnMetaData).kiwiType();
     }
 
     public static Stream<Arguments> testQueryReturn() {
@@ -132,13 +136,13 @@ public class TypeValidatorTest {
                                 ValidContainerType.LIST,
                                 recordType("TestRecord", "test1", ofClass(int.class), "test2", ofClass(String.class))),
                         false,
-                        "Missing or incompatible column type null for component test2 type String/non-null",
+                        "Record component 'TestRecord.test2' does not have a matching column",
                         col(false, JDBCType.INTEGER)),
                 testCase(
                         new ContainerType(
                                 ValidContainerType.LIST, recordType("TestRecord", "test1", ofClass(int.class))),
                         false,
-                        "Missing component type for column test2 type String/non-null",
+                        "Record 'TestRecord' does not have a component matching column 'test2'",
                         col(false, JDBCType.INTEGER),
                         col(false, JDBCType.VARCHAR)),
                 testCase(
@@ -157,7 +161,8 @@ public class TypeValidatorTest {
     }
 
     private static KiwiType recordType(String className, String componentName, KiwiType componentType) {
-        return new RecordType("test", className, List.of(new RecordTypeComponent(componentName, componentType)));
+        return new RecordType(
+                "test", className, List.of(new RecordTypeComponent(new JavaName(componentName), componentType)));
     }
 
     private static KiwiType recordType(
@@ -170,8 +175,8 @@ public class TypeValidatorTest {
                 "test",
                 className,
                 List.of(
-                        new RecordTypeComponent(componentName, componentType),
-                        new RecordTypeComponent(componentName2, componentType2)));
+                        new RecordTypeComponent(new JavaName(componentName), componentType),
+                        new RecordTypeComponent(new JavaName(componentName2), componentType2)));
     }
 
     static Arguments testCase(
@@ -182,7 +187,7 @@ public class TypeValidatorTest {
     }
 
     static ColumnMetaData col(boolean nullable, JDBCType type, @Nullable ArrayComponent componentType) {
-        return new ColumnMetaData(colCount, "test" + colCount++, nullable, type, componentType);
+        return new ColumnMetaData(colCount, "test" + colCount++, nullable, type, "butt", "poop", componentType);
     }
 
     static ColumnMetaData col(boolean nullable, JDBCType type) {

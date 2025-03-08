@@ -53,7 +53,7 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
             GROUP BY 1""")
     List<OwnerPets> findOwnersAndPets();
 
-    record Visit(String pet_name, @Nullable LocalDate visit_date, String description) {}
+    record Visit(String petName, @Nullable LocalDate visitDate, String description) {}
 
     @SqlQuery(
             """

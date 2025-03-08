@@ -21,11 +21,11 @@ public record DAOParameterInfo(
         List<DAOParameterInfo> result = new ArrayList<>(parameterMapping.size());
 
         parameterMapping.forEach(((columnMetaData, methodParameterInfo) -> {
-            String accessor = methodParameterInfo.name();
+            String accessor = methodParameterInfo.name().name();
             if (methodParameterInfo.isRecordComponent()) {
                 accessor = "%s.%s()".formatted(methodParameterInfo.recordParameterName(), methodParameterInfo.name());
             }
-            var sqlTypeMapping = SqlTypeMapping.get(columnMetaData);
+            var sqlTypeMapping = SqlTypeMappingRegistry.get(columnMetaData);
             if (sqlTypeMapping.specialCase()) {
                 // TODO
             }
@@ -35,7 +35,7 @@ public record DAOParameterInfo(
                     columnMetaData.index(),
                     accessor,
                     setter,
-                    columnMetaData.sqlType().getVendorTypeNumber(),
+                    columnMetaData.jdbcType().getVendorTypeNumber(),
                     mapper,
                     methodParameterInfo.variableElement(),
                     null));

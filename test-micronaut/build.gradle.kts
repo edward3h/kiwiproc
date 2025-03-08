@@ -3,11 +3,11 @@ import org.ethelred.buildsupport.ProcessorConfigTask
 plugins {
     id("java-convention")
     id("org.ethelred.embeddedpostgres")
-    id("io.micronaut.library") version "4.4.4"
+    id("io.micronaut.library") version "4.5.0"
 }
 
 micronaut {
-    version = "4.7.1"
+    version = "4.7.6"
 }
 
 dependencies {
@@ -19,7 +19,9 @@ dependencies {
     testRuntimeOnly(libs.yaml)
 }
 
-val processorConfig = tasks.named<ProcessorConfigTask>("processorConfig")
+val processorConfig = tasks.named<ProcessorConfigTask>("processorConfig") {
+//    debug = true
+}
 
 tasks.named<ProcessResources>("processTestResources") {
     from(processorConfig.get().getApplicationConfigFile())

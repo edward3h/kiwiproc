@@ -64,6 +64,8 @@ tasks.withType<JavaCompile>().configureEach {
 include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/CountryCityDao.java[tag=body]
 ----
 <1> Declare an interface as being a DAO.
-<2> Define a query. The SQL statement goes inline with the code.
-<3> Records could be separate data types, or inline in the DAO.
-<4> Use a default method to transform a result.
+<2> Define a query. The SQL statement goes inline with the code. Parameters are inserted with ':'.
+
+=== Inject
+
+Use your favourite dependency injection framework to inject an instance of your DAO.

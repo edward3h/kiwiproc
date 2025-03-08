@@ -7,8 +7,9 @@ import java.lang.annotation.*;
 @RecordBuilder.Template(
         options =
                 @RecordBuilder.Options(
-                        builderMode = RecordBuilder.BuilderMode.STAGED,
-                        enableWither = true,
+                        builderMode = RecordBuilder.BuilderMode.STAGED_REQUIRED_ONLY,
+                        //                        skipStagingForInitializedComponents = true,
+                        nullablePattern = "Nullable",
                         addFunctionalMethodsToWith = true,
                         addSingleItemCollectionBuilders = true,
                         useImmutableCollections = true,

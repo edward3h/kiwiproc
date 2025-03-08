@@ -27,7 +27,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
                 parameterType = containerType.containedType();
             }
             var element = methodParameterInfo.variableElement();
-            KiwiType columnType = SqlTypeMapping.get(columnMetaData).kiwiType();
+            KiwiType columnType = SqlTypeMappingRegistry.get(columnMetaData).kiwiType();
             if (!withElement(element).validateSingleParameter(parameterType, columnType)) {
                 result = false;
             }
@@ -147,58 +147,68 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
         logger.warn(element, message);
     }
 
-    public boolean validateReturn(List<ColumnMetaData> columnMetaData, KiwiType returnType, QueryMethodKind kind) {
+    public boolean validateReturn(List<ColumnMetaData> columnMetaDataList, KiwiType returnType, QueryMethodKind kind) {
         if (returnType instanceof VoidType && kind != QueryMethodKind.QUERY) {
             return true;
+        } else if (returnType instanceof VoidType) {
+            return reportError("Why would you want to return void from a query?");
         }
         if (kind == QueryMethodKind.UPDATE) {
             return validateCompatible(UPDATE_RETURN_TYPE, returnType)
-                    || reportError("SqlUpdate return type must be compatible with int");
+                    || reportError("Return type %s is invalid for SqlUpdate. Must be compatible with int"
+                            .formatted(returnType));
         }
         if (kind == QueryMethodKind.BATCH) {
             return validateCompatible(BATCH_RETURN_TYPE, returnType)
-                    || reportError("SqlBatch return type must be compatible with int[]");
+                    || reportError("Return type %s is invalid for SqlBatch. Must be compatible with int[]"
+                            .formatted(returnType));
         }
         // below clauses apply to kind QUERY
         if (returnType instanceof ContainerType containerType) {
             // any container is acceptable
             debug("Return type Container %s.%s".formatted(containerType.packageName(), containerType.className()));
-            return validateReturn(columnMetaData, containerType.containedType(), kind);
+            return validateReturn(columnMetaDataList, containerType.containedType(), kind);
         }
-        if (columnMetaData.size() == 1 && returnType.isSimple()) {
+        if (columnMetaDataList.size() == 1 && returnType.isSimple()) {
             debug("Return type simple %s.%s".formatted(returnType.packageName(), returnType.className()));
             // a single column result maps to a simple type
-            var first = columnMetaData.get(0);
-            KiwiType columnType = SqlTypeMapping.get(first).kiwiType();
+            var firstColumnMetaData = columnMetaDataList.get(0);
+            KiwiType columnType =
+                    SqlTypeMappingRegistry.get(firstColumnMetaData).kiwiType();
             return validateCompatible(columnType, returnType);
         }
         if (returnType instanceof RecordType recordType) {
             debug("Return type record %s.%s".formatted(recordType.packageName(), recordType.className()));
             var components = recordType.components();
-            return columnMetaData.stream().allMatch(cmd -> {
-                        var componentType = components.stream()
-                                .filter(targetComponent -> cmd.name().equals(targetComponent.name()))
+            return columnMetaDataList.stream().allMatch(columnMetaData -> {
+                        var matchingComponent = components.stream()
+                                .filter(targetComponent -> columnMetaData.name().equivalent(targetComponent.name()))
                                 .findFirst()
                                 .orElse(null);
-                        KiwiType columnType = SqlTypeMapping.get(cmd).kiwiType();
-                        if (componentType == null) {
-                            return reportError(
-                                    "Missing component type for column %s type %s".formatted(cmd.name(), columnType));
+                        if (matchingComponent == null) {
+                            return reportError("Record '%s' does not have a component matching column '%s'"
+                                    .formatted(recordType.className(), columnMetaData.name()));
                         }
-                        return validateCompatible(columnType, componentType.type())
+                        KiwiType columnType =
+                                SqlTypeMappingRegistry.get(columnMetaData).kiwiType();
+                        return validateCompatible(columnType, matchingComponent.type())
                                 || reportError("Incompatible component type %s for column %s type %s"
-                                        .formatted(componentType, cmd.name(), columnType));
+                                        .formatted(matchingComponent, columnMetaData.name(), columnType));
                     })
-                    && components.stream().allMatch(cmp -> {
-                        var cmd = columnMetaData.stream()
-                                .filter(col -> col.name().equals(cmp.name()))
+                    && components.stream().allMatch(component -> {
+                        var matchingColumn = columnMetaDataList.stream()
+                                .filter(columnMetaData -> columnMetaData.name().equivalent(component.name()))
                                 .findFirst()
                                 .orElse(null);
-                        var colType =
-                                cmd == null ? null : SqlTypeMapping.get(cmd).kiwiType();
-                        return (cmd != null && validateCompatible(colType, cmp.type()))
+                        if (matchingColumn == null) {
+                            return reportError("Record component '%s.%s' does not have a matching column"
+                                    .formatted(recordType.className(), component.name()));
+                        }
+                        var columnType =
+                                SqlTypeMappingRegistry.get(matchingColumn).kiwiType();
+                        return validateCompatible(columnType, component.type())
                                 || reportError("Missing or incompatible column type %s for component %s type %s"
-                                        .formatted(colType, cmp.name(), cmp.type()));
+                                        .formatted(columnType, component.name(), component.type()));
                     });
         }
 

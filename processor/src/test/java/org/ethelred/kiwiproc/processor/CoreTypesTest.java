@@ -91,10 +91,17 @@ public class CoreTypesTest {
                 arguments(
                         new ContainerType(ValidContainerType.LIST, ofClass(Integer.class, true)),
                         new SqlArrayType(
-                                ofClass(int.class), new SqlTypeMapping(JDBCType.INTEGER, int.class, "Int"), "ignored"),
+                                ofClass(int.class),
+                                SqlTypeMappingBuilder.builder()
+                                        .jdbcType(JDBCType.INTEGER)
+                                        .baseType(int.class)
+                                        .accessorSuffix("Int")
+                                        .build(),
+                                "ignored"),
                         true,
                         false,
-                        "fail"));
+                        "fail"),
+                arguments(ofClass(int.class), ofClass(boolean.class), true, false, "value != 0"));
     }
 
     @ParameterizedTest
@@ -144,10 +151,10 @@ public class CoreTypesTest {
             return source.className().matches(".*(Big|Date|Time).*");
         }
         if (source.className().matches("boolean")) {
-            return target.className().matches(".*(BigDecimal|Date|Time).*");
+            return target.className().matches(".*(BigDecimal|Date|Time|double|float).*");
         }
         if (target.className().matches("boolean")) {
-            return source.className().matches(".*(BigDecimal|Date|Time).*");
+            return source.className().matches(".*(BigDecimal|Date|Time|double|float).*");
         }
         if ("long".equals(target.className())) {
             return Set.of("OffsetTime", "LocalTime").contains(source.className());

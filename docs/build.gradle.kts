@@ -1,7 +1,7 @@
 import org.asciidoctor.gradle.jvm.AsciidoctorTask
 
 plugins {
-    id("org.asciidoctor.jvm.convert") version "4.0.3"
+    id("org.asciidoctor.jvm.convert") version "4.0.4"
 }
 
 repositories {
@@ -17,4 +17,8 @@ dependencies {
 tasks.named<AsciidoctorTask>("asciidoctor").configure {
     baseDirFollowsSourceDir()
 //    configurations("asciidoctorExtensions")
+}
+
+tasks.named("build") {
+    dependsOn(tasks.named("asciidoctor"))
 }

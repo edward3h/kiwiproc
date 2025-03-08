@@ -1,0 +1,5 @@
+== Database Support
+
+Kiwiproc is currently _only_ tested with Postgresql.
+Support for SQL Arrays is known to be specific to Postgresql.
+Other databases using standard JDBC _may_ work, as long as you don't use Arrays.

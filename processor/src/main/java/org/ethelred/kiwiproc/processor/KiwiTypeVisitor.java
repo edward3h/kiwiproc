@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.type.*;
 import javax.lang.model.util.SimpleTypeVisitor14;
+import org.ethelred.kiwiproc.meta.JavaName;
 import org.ethelred.kiwiproc.processor.types.*;
 
 public class KiwiTypeVisitor extends SimpleTypeVisitor14<KiwiType, Void> {
@@ -45,8 +46,8 @@ public class KiwiTypeVisitor extends SimpleTypeVisitor14<KiwiType, Void> {
         if (utils.isRecord(t)) {
             var componentTypes = new ArrayList<RecordTypeComponent>();
             for (var component : utils.recordComponents(t)) {
-                componentTypes.add(
-                        new RecordTypeComponent(component.getSimpleName().toString(), visit(component.asType())));
+                componentTypes.add(new RecordTypeComponent(
+                        new JavaName(component.getSimpleName().toString()), visit(component.asType())));
             }
             return new RecordType(utils.packageName(t), utils.className(t), List.copyOf(componentTypes));
         }
