@@ -27,7 +27,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
                 parameterType = containerType.containedType();
             }
             var element = methodParameterInfo.variableElement();
-            KiwiType columnType = SqlTypeMapping.get(columnMetaData).kiwiType();
+            KiwiType columnType = SqlTypeMappingRegistry.get(columnMetaData).kiwiType();
             if (!withElement(element).validateSingleParameter(parameterType, columnType)) {
                 result = false;
             }
@@ -173,7 +173,8 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
             debug("Return type simple %s.%s".formatted(returnType.packageName(), returnType.className()));
             // a single column result maps to a simple type
             var firstColumnMetaData = columnMetaDataList.get(0);
-            KiwiType columnType = SqlTypeMapping.get(firstColumnMetaData).kiwiType();
+            KiwiType columnType =
+                    SqlTypeMappingRegistry.get(firstColumnMetaData).kiwiType();
             return validateCompatible(columnType, returnType);
         }
         if (returnType instanceof RecordType recordType) {
@@ -188,7 +189,8 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
                             return reportError("Record '%s' does not have a component matching column '%s'"
                                     .formatted(recordType.className(), columnMetaData.name()));
                         }
-                        KiwiType columnType = SqlTypeMapping.get(columnMetaData).kiwiType();
+                        KiwiType columnType =
+                                SqlTypeMappingRegistry.get(columnMetaData).kiwiType();
                         return validateCompatible(columnType, matchingComponent.type())
                                 || reportError("Incompatible component type %s for column %s type %s"
                                         .formatted(matchingComponent, columnMetaData.name(), columnType));
@@ -202,7 +204,8 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
                             return reportError("Record component '%s.%s' does not have a matching column"
                                     .formatted(recordType.className(), component.name()));
                         }
-                        var columnType = SqlTypeMapping.get(matchingColumn).kiwiType();
+                        var columnType =
+                                SqlTypeMappingRegistry.get(matchingColumn).kiwiType();
                         return validateCompatible(columnType, component.type())
                                 || reportError("Missing or incompatible column type %s for component %s type %s"
                                         .formatted(columnType, component.name(), component.type()));

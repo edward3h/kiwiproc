@@ -50,8 +50,8 @@ public class SqlTypeMappingTest {
         if (unsupportedTypes.contains(jdbcType)) {
             return;
         }
-        var columnMetaData = new ColumnMetaData(1, "columnName", false, jdbcType, null);
-        var mapping = SqlTypeMapping.get(columnMetaData);
+        var columnMetaData = new ColumnMetaData(1, "columnName", false, jdbcType, "butt", "poop", null);
+        var mapping = SqlTypeMappingRegistry.get(columnMetaData);
         assertThat(mapping).isNotNull();
         atLeastOne(
                 assertThat(mapping.kiwiType()),
@@ -65,9 +65,9 @@ public class SqlTypeMappingTest {
         if (unsupportedTypes.contains(componentType)) {
             return;
         }
-        var columnMetaData =
-                new ColumnMetaData(1, "columnName", false, JDBCType.ARRAY, new ArrayComponent(componentType, dbType));
-        var mapping = SqlTypeMapping.get(columnMetaData);
+        var columnMetaData = new ColumnMetaData(
+                1, "columnName", false, JDBCType.ARRAY, "butt", "poop", new ArrayComponent(componentType, dbType));
+        var mapping = SqlTypeMappingRegistry.get(columnMetaData);
         assertThat(mapping).isNotNull();
         assertThat(mapping.kiwiType()).isInstanceOf(SqlArrayType.class);
     }

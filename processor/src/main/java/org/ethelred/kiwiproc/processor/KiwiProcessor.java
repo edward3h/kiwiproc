@@ -151,7 +151,7 @@ public class KiwiProcessor extends AnnotationProcessor {
                             .findFirst();
                     colOpt.ifPresentOrElse(
                             col -> multipleColumnResults.add(
-                                    new DAOResultColumn(col.name(), SqlTypeMapping.get(col), component.type())),
+                                    new DAOResultColumn(col.name(), SqlTypeMappingRegistry.get(col), component.type())),
                             () -> logger.error(
                                     methodElement,
                                     "No matching column found for record '%s' component '%s'"
@@ -162,7 +162,7 @@ public class KiwiProcessor extends AnnotationProcessor {
             }
         } else if (queryMetaData.resultColumns().size() == 1) {
             var col = queryMetaData.resultColumns().get(0);
-            singleColumnResult = new DAOResultColumn(col.name(), SqlTypeMapping.get(col), returnComponentType);
+            singleColumnResult = new DAOResultColumn(col.name(), SqlTypeMappingRegistry.get(col), returnComponentType);
         }
         return new DAOMethodInfo(
                 methodElement,
@@ -217,7 +217,6 @@ public class KiwiProcessor extends AnnotationProcessor {
                 .annotation(daoAnn)
                 .packageName(packageName)
                 .daoName(daoName)
-                .methods(new ArrayList<>())
                 .builder();
         for (var methodElement : ElementFilter.methodsIn(Set.copyOf(interfaceElement.getEnclosedElements()))) {
             var kinds = QueryMethodKind.forMethod(methodElement);
