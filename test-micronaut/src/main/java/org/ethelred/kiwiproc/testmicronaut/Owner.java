@@ -1,5 +1,5 @@
 /* (C) Edward Harman 2024 */
-package org.ethelred.kiwiproc.test;
+package org.ethelred.kiwiproc.testmicronaut;
 
 import org.jspecify.annotations.Nullable;
 

@@ -32,5 +32,9 @@ public class KiwiTypeConverter {
     private final Map<DependencyInjectionStyle, DependencyInjectionTypes> dependencyInjectionTypesMap = Map.of(
             DependencyInjectionStyle.JAKARTA,
             new DependencyInjectionTypes(
-                    ClassName.get("jakarta.inject", "Singleton"), ClassName.get("jakarta.inject", "Named")));
+                    ClassName.get("jakarta.inject", "Singleton"), ClassName.get("jakarta.inject", "Named")),
+            DependencyInjectionStyle.SPRING,
+            new DependencyInjectionTypes(
+                    ClassName.get("org.springframework.stereotype", "Repository"),
+                    ClassName.get("org.springframework.beans.factory.annotation", "Qualifier")));
 }

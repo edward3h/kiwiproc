@@ -2,7 +2,5 @@
 package org.ethelred.kiwiproc.processor;
 
 public interface DAOGenerator {
-    void generateProvider(DAOClassInfo classInfo);
-
-    void generateImpl(DAOClassInfo classInfo);
+    void generateImplementations(DAOClassInfo classInfo);
 }

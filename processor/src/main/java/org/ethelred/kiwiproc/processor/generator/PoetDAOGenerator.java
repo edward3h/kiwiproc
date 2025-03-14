@@ -27,13 +27,11 @@ public class PoetDAOGenerator implements DAOGenerator {
         this.providerGenerator = new ProviderGenerator(dependencyInjectionStyle, kiwiTypeConverter);
     }
 
-    @Override
     public void generateProvider(DAOClassInfo classInfo) {
         var javaFile = providerGenerator.generate(classInfo);
         writeJavaFile(classInfo::element, javaFile);
     }
 
-    @Override
     public void generateImpl(DAOClassInfo classInfo) {
         var javaFile = instanceGenerator.generate(classInfo);
         writeJavaFile(classInfo::element, javaFile);
@@ -53,5 +51,11 @@ public class PoetDAOGenerator implements DAOGenerator {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void generateImplementations(DAOClassInfo classInfo) {
+        generateProvider(classInfo);
+        generateImpl(classInfo);
     }
 }

@@ -1,21 +1,42 @@
 /* (C) Edward Harman 2024 */
-package org.ethelred.kiwiproc.test;
+package org.ethelred.kiwiproc.testspring;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
-import jakarta.inject.Inject;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.test.context.ActiveProfiles;
 
-@MicronautTest(environments = "test")
+@SpringBootTest
+@ActiveProfiles("test")
 public class PetClinicTest {
-    @Inject
+    @Autowired
     PetClinicDAO dao;
+
+    @Configuration
+    @ComponentScan
+    static class TestConfiguration {
+        @Bean
+        @Qualifier("default") public DataSource testDataSource(Environment environment) {
+            var dataSourceProperties = new DataSourceProperties();
+            // TODO @ConfigurationProperties mapping wasn't working for this
+            dataSourceProperties.setUrl(environment.getProperty("datasources.default.url"));
+            return dataSourceProperties.initializeDataSourceBuilder().build();
+        }
+    }
 
     @Test
     void happySelectTypes() throws SQLException {
