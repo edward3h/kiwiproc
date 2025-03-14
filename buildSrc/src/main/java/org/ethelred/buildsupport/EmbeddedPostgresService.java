@@ -18,7 +18,8 @@ public abstract class EmbeddedPostgresService implements BuildService<EmbeddedPo
         return dbProvider;
     }
 
-    public ConnectionInfo getPreparedDatabase(File liquibaseChangelog) {
+    // synchronized because Liquibase has issues in multi-threaded
+    public synchronized ConnectionInfo getPreparedDatabase(File liquibaseChangelog) {
         try {
             var connectionInfo = getDbProvider().createNewDatabase();
             var dataSource = getDbProvider().createDataSourceFromConnectionInfo(connectionInfo);

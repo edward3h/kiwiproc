@@ -42,7 +42,7 @@ public class KiwiProcessor extends AnnotationProcessor {
     private ProcessorConfig config = ProcessorConfig.EMPTY;
     private @Nullable TypeUtils typeUtils;
     private final Map<String, DatabaseWrapper> databases = new HashMap<>();
-    private @Nullable PoetDAOGenerator poet;
+    private @Nullable DAOGenerator codeGenerator;
     private final Set<String> generatedTransactionManagers = new HashSet<>();
 
     // automated adapter discovery doesn't work in annotation processor
@@ -58,7 +58,7 @@ public class KiwiProcessor extends AnnotationProcessor {
         var configPath = processingEnv.getOptions().get(CONFIGURATION_OPTION);
         config = loadConfig(configPath);
         typeUtils = new TypeUtils(elements, types, logger);
-        poet = new PoetDAOGenerator(logger, processingEnv.getFiler(), config.dependencyInjectionStyle());
+        codeGenerator = new PoetDAOGenerator(logger, processingEnv.getFiler(), config.dependencyInjectionStyle());
     }
 
     private ProcessorConfig loadConfig(@Nullable String configPath) {
@@ -197,7 +197,7 @@ public class KiwiProcessor extends AnnotationProcessor {
 
     private void processInterface(TypeElement interfaceElement) throws SQLException {
         Objects.requireNonNull(typeUtils, "processInterface called before init?");
-        Objects.requireNonNull(poet, "processInterface called before init?");
+        Objects.requireNonNull(codeGenerator, "processInterface called before init?");
         var daoAnn = DAOPrism.getInstanceOn(interfaceElement);
         var dataSourceName = daoAnn.dataSourceName();
         var databaseWrapper = getDatabase(dataSourceName);
@@ -246,7 +246,6 @@ public class KiwiProcessor extends AnnotationProcessor {
             return;
         }
         var classInfo = builderStage.build();
-        poet.generateImpl(classInfo);
-        poet.generateProvider(classInfo);
+        codeGenerator.generateImplementations(classInfo);
     }
 }

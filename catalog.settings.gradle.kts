@@ -6,6 +6,7 @@ dependencyResolutionManagement {
             version("junit", "5.12.0")
             version("recordbuilder", "44")
             version("mapstruct", "1.6.3")
+            version("springboot", "3.4.3")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
             library("avaje-json-processor", "io.avaje", "avaje-jsonb-generator").versionRef("avaje-json")
@@ -38,6 +39,10 @@ dependencyResolutionManagement {
             library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
 
             library("yaml", "org.yaml:snakeyaml:2.4")
+
+            library("spring-starter", "org.springframework.boot", "spring-boot-starter").versionRef("springboot")
+            library("spring-starter-jdbc", "org.springframework.boot", "spring-boot-starter-jdbc").versionRef("springboot")
+            library("spring-test", "org.springframework.boot", "spring-boot-starter-test").versionRef("springboot")
 
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }
