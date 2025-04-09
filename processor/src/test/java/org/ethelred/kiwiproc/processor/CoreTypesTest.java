@@ -31,7 +31,7 @@ public class CoreTypesTest {
     void typeFromClass() {
         KiwiType type;
         type = coreTypes.type(LocalDate.class);
-        assertThat(type).isInstanceOf(BasicType.class);
+        assertThat(type).isInstanceOf(ObjectType.class);
         assertThat(type.className()).isEqualTo("LocalDate");
         assertThat(type.packageName()).isEqualTo("java.time");
         assertThat(type.isNullable()).isFalse();
@@ -89,7 +89,7 @@ public class CoreTypesTest {
                 arguments(ofClass(String.class), ofClass(int.class), true, true, "$T.parse$L(value)"),
                 arguments(ofClass(String.class), ofClass(Integer.class, true), true, true, "$T.valueOf(value)"),
                 arguments(
-                        new ContainerType(ValidContainerType.LIST, ofClass(Integer.class, true)),
+                        new CollectionType(ValidCollection.LIST, ofClass(Integer.class, true)),
                         new SqlArrayType(
                                 ofClass(int.class),
                                 SqlTypeMappingBuilder.builder()
@@ -137,7 +137,7 @@ public class CoreTypesTest {
     static Set<KiwiType> simpleTypes() {
         Set<KiwiType> types = new LinkedHashSet<>();
         CoreTypes.primitiveToBoxed.keySet().forEach(c -> types.add(new PrimitiveKiwiType(c.getSimpleName(), false)));
-        CoreTypes.BASIC_TYPES.forEach(c -> types.add(new BasicType(c.getPackageName(), c.getSimpleName(), false)));
+        CoreTypes.OBJECT_TYPES.forEach(c -> types.add(new ObjectType(c.getPackageName(), c.getSimpleName(), false)));
         return types;
     }
 

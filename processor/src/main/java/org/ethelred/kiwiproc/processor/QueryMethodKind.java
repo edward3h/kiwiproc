@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
+import org.ethelred.kiwiproc.processor.types.TypeUtils;
+import org.jspecify.annotations.Nullable;
 
 public enum QueryMethodKind {
     DEFAULT(ExecutableElement::isDefault),
@@ -15,6 +17,18 @@ public enum QueryMethodKind {
         public String getSql(ExecutableElement element) {
             var prism = SqlQueryPrism.getInstanceOn(element);
             return prism.sql().isBlank() ? prism.value() : prism.sql();
+        }
+
+        @Override
+        public @Nullable String getKeyColumn(ExecutableElement element) {
+            var prism = SqlQueryPrism.getInstanceOn(element);
+            return blankAsNull(prism.keyColumn());
+        }
+
+        @Override
+        public @Nullable String getValueColumn(ExecutableElement element) {
+            var prism = SqlQueryPrism.getInstanceOn(element);
+            return QueryMethodKind.blankAsNull(prism.valueColumn());
         }
     },
     UPDATE(SqlUpdatePrism::isPresent) {
@@ -53,6 +67,10 @@ public enum QueryMethodKind {
         }
     };
 
+    private static @Nullable String blankAsNull(String s) {
+        return s.isBlank() ? null : s;
+    }
+
     private final Predicate<ExecutableElement> isKind;
 
     QueryMethodKind(Predicate<ExecutableElement> isKind) {
@@ -69,5 +87,13 @@ public enum QueryMethodKind {
 
     public boolean validateReturn(TypeUtils typeUtils, TypeMirror returnType) {
         return true;
+    }
+
+    public @Nullable String getKeyColumn(ExecutableElement element) {
+        return null;
+    }
+
+    public @Nullable String getValueColumn(ExecutableElement element) {
+        return null;
     }
 }

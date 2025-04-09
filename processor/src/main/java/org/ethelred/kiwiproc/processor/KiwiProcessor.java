@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.ElementKind;
@@ -21,8 +22,7 @@ import javax.lang.model.util.ElementFilter;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.meta.*;
 import org.ethelred.kiwiproc.processor.generator.PoetDAOGenerator;
-import org.ethelred.kiwiproc.processor.types.ContainerType;
-import org.ethelred.kiwiproc.processor.types.RecordType;
+import org.ethelred.kiwiproc.processor.types.TypeUtils;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfigJsonAdapter;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
@@ -43,7 +43,7 @@ public class KiwiProcessor extends AnnotationProcessor {
     private @Nullable TypeUtils typeUtils;
     private final Map<String, DatabaseWrapper> databases = new HashMap<>();
     private @Nullable DAOGenerator codeGenerator;
-    private final Set<String> generatedTransactionManagers = new HashSet<>();
+    private CoreTypes coreTypes = new CoreTypes();
 
     // automated adapter discovery doesn't work in annotation processor
     Jsonb jsonb = Jsonb.builder()
@@ -58,7 +58,8 @@ public class KiwiProcessor extends AnnotationProcessor {
         var configPath = processingEnv.getOptions().get(CONFIGURATION_OPTION);
         config = loadConfig(configPath);
         typeUtils = new TypeUtils(elements, types, logger);
-        codeGenerator = new PoetDAOGenerator(logger, processingEnv.getFiler(), config.dependencyInjectionStyle());
+        codeGenerator =
+                new PoetDAOGenerator(logger, processingEnv.getFiler(), config.dependencyInjectionStyle(), coreTypes);
     }
 
     private ProcessorConfig loadConfig(@Nullable String configPath) {
@@ -115,8 +116,7 @@ public class KiwiProcessor extends AnnotationProcessor {
     }
 
     @Nullable private DAOMethodInfo processMethod(
-            String daoName, QueryMethodKind kind, DatabaseWrapper databaseWrapper, ExecutableElement methodElement)
-            throws SQLException {
+            QueryMethodKind kind, DatabaseWrapper databaseWrapper, ExecutableElement methodElement) {
         var parsedSql = ParsedQuery.parse(kind.getSql(methodElement));
         QueryMetaData queryMetaData;
         try {
@@ -129,49 +129,71 @@ public class KiwiProcessor extends AnnotationProcessor {
                 MethodParameterInfo.fromElements(Objects.requireNonNull(typeUtils), methodElement.getParameters());
         Map<ColumnMetaData, MethodParameterInfo> parameterMapping =
                 mapParameters(methodElement, parsedSql.parameterNames(), queryMetaData.parameters(), parameterInfo);
-        var typeValidator = new TypeValidator(logger, methodElement, config.debug());
+        var typeValidator = new TypeValidator(logger, methodElement, coreTypes, config.debug());
         if (!typeValidator.validateParameters(parameterMapping, kind)) {
             return null;
         }
-        List<DAOParameterInfo> templateParameterMapping = DAOParameterInfo.from(typeUtils, parameterMapping);
+        List<DAOParameterInfo> templateParameterMapping = DAOParameterInfo.from(coreTypes, typeUtils, parameterMapping);
         var returnType = typeUtils.kiwiType(methodElement.getReturnType());
-        if (!typeValidator.validateReturn(queryMetaData.resultColumns(), returnType, kind)) {
+        var resultContext = new QueryResultContext(
+                kind,
+                queryMetaData.resultColumns(),
+                kind.getKeyColumn(methodElement),
+                kind.getValueColumn(methodElement));
+        var unusedColumns = new HashSet<>(queryMetaData.resultColumns());
+        DAOResultMapping columnMapping = typeValidator.validateReturn(resultContext, returnType, unusedColumns::remove);
+        if (!columnMapping.isValid()) {
             logger.error(methodElement, "Invalid return type");
             return null;
         }
-        List<DAOResultColumn> multipleColumnResults = new ArrayList<>();
-        DAOResultColumn singleColumnResult = null;
-        var returnComponentType =
-                returnType instanceof ContainerType containerType ? containerType.containedType() : returnType;
-        if (kind == QUERY && queryMetaData.resultColumns().size() > 1) {
-            if (returnComponentType instanceof RecordType recordType) {
-                recordType.components().forEach((component) -> {
-                    var colOpt = queryMetaData.resultColumns().stream()
-                            .filter(c -> component.name().equivalent(c.name()))
-                            .findFirst();
-                    colOpt.ifPresentOrElse(
-                            col -> multipleColumnResults.add(
-                                    new DAOResultColumn(col.name(), SqlTypeMappingRegistry.get(col), component.type())),
-                            () -> logger.error(
-                                    methodElement,
-                                    "No matching column found for record '%s' component '%s'"
-                                            .formatted(recordType.className(), component.name())));
-                });
-            } else {
-                logger.error(methodElement, "A query with multiple columns must be mapped to a Record type");
-            }
-        } else if (queryMetaData.resultColumns().size() == 1) {
-            var col = queryMetaData.resultColumns().get(0);
-            singleColumnResult = new DAOResultColumn(col.name(), SqlTypeMappingRegistry.get(col), returnComponentType);
+        if (!unusedColumns.isEmpty()) {
+            logger.error(
+                    methodElement,
+                    "Unused columns in the result: "
+                            + unusedColumns.stream()
+                                    .map(ColumnMetaData::name)
+                                    .map(SqlName::toString)
+                                    .collect(Collectors.joining(", ")));
+            return null;
         }
+        //        List<DAOResultColumn> multipleColumnResults = new ArrayList<>();
+        //        DAOResultColumn singleColumnResult = null;
+        //        var returnComponentType =
+        //                returnType instanceof CollectionType containerType ? containerType.containedType() :
+        // returnType;
+        //        returnComponentType = returnComponentType instanceof OptionalType optionalType
+        //                ? optionalType.containedType()
+        //                : returnComponentType;
+        //        if (kind == QUERY && queryMetaData.resultColumns().size() > 1) {
+        //            if (returnComponentType instanceof RecordType recordType) {
+        //                recordType.components().forEach((component) -> {
+        //                    var colOpt = queryMetaData.resultColumns().stream()
+        //                            .filter(c -> component.name().equivalent(c.name()))
+        //                            .findFirst();
+        //                    colOpt.ifPresentOrElse(
+        //                            col -> multipleColumnResults.add(
+        //                                    new DAOResultColumn(col.name(), SqlTypeMappingRegistry.get(col),
+        // component.type())),
+        //                            () -> logger.error(
+        //                                    methodElement,
+        //                                    "No matching column found for record '%s' component '%s'"
+        //                                            .formatted(recordType.className(), component.name())));
+        //                });
+        //            } else {
+        //                logger.error(methodElement, "A query with multiple columns must be mapped to a Record type");
+        //            }
+        //        } else if (queryMetaData.resultColumns().size() == 1) {
+        //            var col = queryMetaData.resultColumns().get(0);
+        //            singleColumnResult = new DAOResultColumn(col.name(), SqlTypeMappingRegistry.get(col),
+        // returnComponentType);
+        //        }
         return new DAOMethodInfo(
                 methodElement,
-                Signature.fromMethod(typeUtils, methodElement),
+                Signature.fromMethod(returnType, methodElement),
                 kind,
                 parsedSql,
                 templateParameterMapping,
-                multipleColumnResults,
-                singleColumnResult);
+                columnMapping.getColumns()); // TODO
     }
 
     private Map<ColumnMetaData, MethodParameterInfo> mapParameters(
@@ -236,7 +258,7 @@ public class KiwiProcessor extends AnnotationProcessor {
                 logger.error(methodElement, "@SqlBatch is not supported yet. It is planned for Milestone 2.");
             }
 
-            DAOMethodInfo methodInfo = processMethod(daoName, kinds.iterator().next(), databaseWrapper, methodElement);
+            DAOMethodInfo methodInfo = processMethod(kind, databaseWrapper, methodElement);
             if (methodInfo != null) {
                 builderStage.addMethods(methodInfo);
             }

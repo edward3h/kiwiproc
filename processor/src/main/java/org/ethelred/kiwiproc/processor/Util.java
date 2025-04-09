@@ -4,12 +4,12 @@ package org.ethelred.kiwiproc.processor;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-class Util {
+public class Util {
     private Util() {}
 
     static Pattern delimiter = Pattern.compile("[\\W_]+|(?=\\p{Upper})");
 
-    static String toTitleCase(String input) {
+    public static String toTitleCase(String input) {
         return delimiter.splitAsStream(input).map(Util::capitalizeFirst).collect(Collectors.joining());
     }
 

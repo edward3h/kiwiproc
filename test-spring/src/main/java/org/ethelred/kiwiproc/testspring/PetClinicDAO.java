@@ -21,7 +21,7 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
 
     @SqlQuery("""
             SELECT name FROM pets""")
-    Set<@Nullable String> findPetNames(); // TODO shouldn't need to declare nullable in a collection
+    Set<String> findPetNames();
 
     @SqlQuery("""
             SELECT id, name FROM types WHERE id = :id""")
@@ -53,7 +53,7 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
             GROUP BY 1""")
     List<OwnerPets> findOwnersAndPets();
 
-    record Visit(String petName, @Nullable LocalDate visitDate, String description) {}
+    record Visit(String petName, LocalDate visitDate, @Nullable String description) {}
 
     @SqlQuery(
             """

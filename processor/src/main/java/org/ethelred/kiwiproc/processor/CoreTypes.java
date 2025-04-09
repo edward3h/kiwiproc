@@ -19,9 +19,9 @@ import org.ethelred.kiwiproc.processor.types.*;
 import org.jspecify.annotations.Nullable;
 
 public class CoreTypes {
-    public static final BasicType STRING_TYPE =
-            new BasicType(String.class.getPackageName(), String.class.getSimpleName(), false);
-    public static final Set<Class<?>> BASIC_TYPES = Set.of(
+    public static final ObjectType STRING_TYPE =
+            new ObjectType(String.class.getPackageName(), String.class.getSimpleName(), false);
+    public static final Set<Class<?>> OBJECT_TYPES = Set.of(
             String.class,
             BigInteger.class,
             BigDecimal.class,
@@ -248,7 +248,7 @@ public class CoreTypes {
             builder.put(key, new PrimitiveKiwiType(key.getSimpleName(), false));
             builder.put(value, new PrimitiveKiwiType(key.getSimpleName(), true));
         });
-        BASIC_TYPES.forEach(c -> builder.put(c, new BasicType(c.getPackageName(), c.getSimpleName(), false)));
+        OBJECT_TYPES.forEach(c -> builder.put(c, new ObjectType(c.getPackageName(), c.getSimpleName(), false)));
         return Map.copyOf(builder);
     }
 
@@ -264,13 +264,16 @@ public class CoreTypes {
     }
 
     public Conversion lookup(KiwiType source, KiwiType target) {
+        if (source.isNullable() && !target.isNullable()) {
+            return invalid;
+        }
         if (source.equals(target) || source.withIsNullable(true).equals(target)) {
             return new AssignmentConversion();
         }
-        if (source instanceof ContainerType ct && target instanceof SqlArrayType sat) {
+        if (source instanceof CollectionType ct && ct.isSimple() && target instanceof SqlArrayType sat) {
             return toSqlArray(ct, sat);
         }
-        if (source instanceof SqlArrayType sat && target instanceof ContainerType ct) {
+        if (source instanceof SqlArrayType sat && target instanceof CollectionType ct && ct.isSimple()) {
             return fromSqlArray(sat, ct);
         }
         // special case String
@@ -290,7 +293,7 @@ public class CoreTypes {
         return result;
     }
 
-    private Conversion fromSqlArray(SqlArrayType sat, ContainerType ct) {
+    private Conversion fromSqlArray(SqlArrayType sat, CollectionType ct) {
         var elementConversion = lookup(sat.containedType(), ct.containedType());
         if (!elementConversion.isValid()) {
             return elementConversion;
@@ -298,7 +301,7 @@ public class CoreTypes {
         return new FromSqlArrayConversion(sat, ct, elementConversion);
     }
 
-    private Conversion toSqlArray(ContainerType ct, SqlArrayType sat) {
+    private Conversion toSqlArray(CollectionType ct, SqlArrayType sat) {
         var elementConversion = lookup(ct.containedType().withIsNullable(false), sat.containedType());
         if (!elementConversion.isValid()) {
             return elementConversion;

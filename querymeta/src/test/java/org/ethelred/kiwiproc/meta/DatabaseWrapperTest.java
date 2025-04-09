@@ -56,14 +56,31 @@ public class DatabaseWrapperTest {
         assertThat(queryMetaData.parameters()).isEmpty();
         assertThat(queryMetaData.resultColumns()).hasSize(4);
         assertThat(queryMetaData.resultColumns().get(0))
-                .isEqualTo(
-                        new ColumnMetaData(1, "test_id", false, JDBCType.INTEGER, "int4", "java.lang.Integer", null));
+                .isEqualTo(new ColumnMetaData(
+                        1,
+                        false,
+                        "test_id",
+                        JDBCNullable.NOT_NULL,
+                        JDBCType.INTEGER,
+                        "int4",
+                        "java.lang.Integer",
+                        null));
         assertThat(queryMetaData.resultColumns().get(1))
-                .isEqualTo(new ColumnMetaData(2, "notes", true, JDBCType.VARCHAR, "text", "java.lang.String", null));
+                .isEqualTo(new ColumnMetaData(
+                        2, false, "notes", JDBCNullable.NULLABLE, JDBCType.VARCHAR, "text", "java.lang.String", null));
         assertThat(queryMetaData.resultColumns().get(2))
-                .isEqualTo(new ColumnMetaData(3, "something", true, JDBCType.OTHER, "jsonb", "java.lang.String", null));
+                .isEqualTo(new ColumnMetaData(
+                        3,
+                        false,
+                        "something",
+                        JDBCNullable.NULLABLE,
+                        JDBCType.OTHER,
+                        "jsonb",
+                        "java.lang.String",
+                        null));
         assertThat(queryMetaData.resultColumns().get(3))
-                .isEqualTo(new ColumnMetaData(4, "large", true, JDBCType.BIGINT, "int8", "java.lang.Long", null));
+                .isEqualTo(new ColumnMetaData(
+                        4, false, "large", JDBCNullable.NULLABLE, JDBCType.BIGINT, "int8", "java.lang.Long", null));
     }
 
     @Test
@@ -71,12 +88,26 @@ public class DatabaseWrapperTest {
         var queryMetaData = getQueryMetaData("SELECT * FROM test_table where test_id = ?");
         assertThat(queryMetaData.parameters()).hasSize(1);
         assertThat(queryMetaData.parameters().get(0))
-                .isEqualTo(
-                        new ColumnMetaData(1, "parameter", true, JDBCType.INTEGER, "int4", "java.lang.Integer", null));
+                .isEqualTo(new ColumnMetaData(
+                        1,
+                        true,
+                        "parameter",
+                        JDBCNullable.UNKNOWN,
+                        JDBCType.INTEGER,
+                        "int4",
+                        "java.lang.Integer",
+                        null));
         assertThat(queryMetaData.resultColumns()).hasSize(4);
         assertThat(queryMetaData.resultColumns().get(0))
-                .isEqualTo(
-                        new ColumnMetaData(1, "test_id", false, JDBCType.INTEGER, "int4", "java.lang.Integer", null));
+                .isEqualTo(new ColumnMetaData(
+                        1,
+                        false,
+                        "test_id",
+                        JDBCNullable.NOT_NULL,
+                        JDBCType.INTEGER,
+                        "int4",
+                        "java.lang.Integer",
+                        null));
     }
 
     @Test
@@ -86,16 +117,24 @@ public class DatabaseWrapperTest {
         assertThat(queryMetaData.parameters().get(0))
                 .isEqualTo(new ColumnMetaData(
                         1,
-                        "parameter",
                         true,
+                        "parameter",
+                        JDBCNullable.UNKNOWN,
                         JDBCType.ARRAY,
                         "_int4",
                         "java.sql.Array",
                         new ArrayComponent(JDBCType.INTEGER, "int4")));
         assertThat(queryMetaData.resultColumns()).hasSize(4);
         assertThat(queryMetaData.resultColumns().get(0))
-                .isEqualTo(
-                        new ColumnMetaData(1, "test_id", false, JDBCType.INTEGER, "int4", "java.lang.Integer", null));
+                .isEqualTo(new ColumnMetaData(
+                        1,
+                        false,
+                        "test_id",
+                        JDBCNullable.NOT_NULL,
+                        JDBCType.INTEGER,
+                        "int4",
+                        "java.lang.Integer",
+                        null));
     }
 
     @Test
@@ -103,15 +142,36 @@ public class DatabaseWrapperTest {
         var queryMetaData = getQueryMetaData("INSERT INTO test_table (test_id, notes) VALUES(?, ?) RETURNING test_id");
         assertThat(queryMetaData.parameters()).hasSize(2);
         assertThat(queryMetaData.parameters().get(0))
-                .isEqualTo(
-                        new ColumnMetaData(1, "parameter", true, JDBCType.INTEGER, "int4", "java.lang.Integer", null));
+                .isEqualTo(new ColumnMetaData(
+                        1,
+                        true,
+                        "parameter",
+                        JDBCNullable.UNKNOWN,
+                        JDBCType.INTEGER,
+                        "int4",
+                        "java.lang.Integer",
+                        null));
         assertThat(queryMetaData.parameters().get(1))
-                .isEqualTo(
-                        new ColumnMetaData(2, "parameter", true, JDBCType.VARCHAR, "text", "java.lang.String", null));
+                .isEqualTo(new ColumnMetaData(
+                        2,
+                        true,
+                        "parameter",
+                        JDBCNullable.UNKNOWN,
+                        JDBCType.VARCHAR,
+                        "text",
+                        "java.lang.String",
+                        null));
         assertThat(queryMetaData.resultColumns()).hasSize(1);
         assertThat(queryMetaData.resultColumns().get(0))
-                .isEqualTo(
-                        new ColumnMetaData(1, "test_id", false, JDBCType.INTEGER, "int4", "java.lang.Integer", null));
+                .isEqualTo(new ColumnMetaData(
+                        1,
+                        false,
+                        "test_id",
+                        JDBCNullable.NOT_NULL,
+                        JDBCType.INTEGER,
+                        "int4",
+                        "java.lang.Integer",
+                        null));
     }
 
     @Test
@@ -119,11 +179,25 @@ public class DatabaseWrapperTest {
         var queryMetaData = getQueryMetaData("INSERT INTO test_table (test_id, notes) VALUES(?, ?)");
         assertThat(queryMetaData.parameters()).hasSize(2);
         assertThat(queryMetaData.parameters().get(0))
-                .isEqualTo(
-                        new ColumnMetaData(1, "parameter", true, JDBCType.INTEGER, "int4", "java.lang.Integer", null));
+                .isEqualTo(new ColumnMetaData(
+                        1,
+                        true,
+                        "parameter",
+                        JDBCNullable.UNKNOWN,
+                        JDBCType.INTEGER,
+                        "int4",
+                        "java.lang.Integer",
+                        null));
         assertThat(queryMetaData.parameters().get(1))
-                .isEqualTo(
-                        new ColumnMetaData(2, "parameter", true, JDBCType.VARCHAR, "text", "java.lang.String", null));
+                .isEqualTo(new ColumnMetaData(
+                        2,
+                        true,
+                        "parameter",
+                        JDBCNullable.UNKNOWN,
+                        JDBCType.VARCHAR,
+                        "text",
+                        "java.lang.String",
+                        null));
         assertThat(queryMetaData.resultColumns()).hasSize(0);
     }
 

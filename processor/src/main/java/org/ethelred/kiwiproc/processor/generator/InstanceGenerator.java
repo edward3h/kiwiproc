@@ -1,6 +1,8 @@
 /* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor.generator;
 
+import static org.ethelred.kiwiproc.processor.ResultPart.KEY;
+import static org.ethelred.kiwiproc.processor.ResultPart.VALUE;
 import static org.ethelred.kiwiproc.processor.generator.RuntimeTypes.*;
 
 import com.karuslabs.utilitary.Logger;
@@ -10,10 +12,8 @@ import java.sql.SQLException;
 import java.util.*;
 import javax.lang.model.element.Modifier;
 import org.ethelred.kiwiproc.processor.*;
-import org.ethelred.kiwiproc.processor.types.ContainerType;
-import org.ethelred.kiwiproc.processor.types.KiwiType;
-import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
-import org.ethelred.kiwiproc.processor.types.VoidType;
+import org.ethelred.kiwiproc.processor.types.*;
+import org.jspecify.annotations.Nullable;
 
 public class InstanceGenerator {
 
@@ -65,9 +65,9 @@ public class InstanceGenerator {
                 methodInfo.parsedSql().parsedSql());
         methodSpecBuilder.addCode(
                 switch (methodInfo.kind()) {
-                    case QUERY -> queryMethodBody(methodInfo);
-                    case UPDATE -> updateMethodBody(methodInfo);
-                    case BATCH -> batchMethodBody(methodInfo);
+                    case QUERY -> methodBodyForQuery(methodInfo);
+                    case UPDATE -> methodBodyForUpdate(methodInfo);
+                    case BATCH -> methodBodyForBatch(methodInfo);
                     case DEFAULT -> throw new IllegalArgumentException();
                 });
         methodSpecBuilder
@@ -78,7 +78,7 @@ public class InstanceGenerator {
         return methodSpecBuilder.build();
     }
 
-    private CodeBlock updateMethodBody(DAOMethodInfo methodInfo) {
+    private CodeBlock methodBodyForUpdate(DAOMethodInfo methodInfo) {
         var builder = builderWithParameters(methodInfo);
         builder.addStatement("var rawResult = statement.executeUpdate()");
         KiwiType returnType = methodInfo.signature().returnType();
@@ -91,84 +91,106 @@ public class InstanceGenerator {
         return builder.build();
     }
 
-    private CodeBlock batchMethodBody(DAOMethodInfo methodInfo) {
+    private CodeBlock methodBodyForBatch(DAOMethodInfo methodInfo) {
         return CodeBlock.of("//TODO\n");
     }
 
-    private CodeBlock queryMethodBody(DAOMethodInfo methodInfo) {
+    private CodeBlock methodBodyForQuery(DAOMethodInfo methodInfo) {
         var builder = builderWithParameters(methodInfo);
-        var listVariable = patchName("l");
-        TypeName componentClass = kiwiTypeConverter.fromKiwiType(methodInfo.resultComponentType());
-        builder.addStatement("var rs = statement.executeQuery()")
-                .addStatement("$T<$T> $L = new $T<>()", List.class, componentClass, listVariable, ArrayList.class)
-                .beginControlFlow("$L (rs.next())", methodInfo.singleResult() ? "if" : "while");
-        var singleColumn = methodInfo.singleColumn();
-        var multipleColumns = methodInfo.multipleColumns();
-        if (singleColumn != null) {
-            TypeMapping mapping = singleColumn.asTypeMapping();
-            var conversion = lookupConversion(methodInfo::methodElement, mapping);
-            builder.addStatement(
-                    "var rawValue = rs.get$L($S)", singleColumn.sqlTypeMapping().accessorSuffix(), singleColumn.name());
-            buildConversion(builder, conversion, mapping.target(), "value", "rawValue", true);
-        } else if (!multipleColumns.isEmpty()) {
-            multipleColumns.forEach(daoResultColumn -> {
-                var conversion = lookupConversion(methodInfo::methodElement, daoResultColumn.asTypeMapping());
-                String rawName = daoResultColumn.name() + "Raw";
-                String accessorSuffix = daoResultColumn.sqlTypeMapping().accessorSuffix();
-                TypeName typeName = kiwiTypeConverter.fromKiwiType(
-                        daoResultColumn.sqlTypeMapping().kiwiType());
+        var containerBuilder = containerBuilderFor(methodInfo);
+        builder.addStatement("var rs = statement.executeQuery()");
+        builder.addStatement(containerBuilder.declaration());
+        builder.beginControlFlow("$L (rs.next())", methodInfo.expectedRows() == RowCount.MANY ? "while" : "if");
+        var columns = methodInfo.columns();
+        if (!columns.isEmpty()) {
+            for (DAOResultColumn column : columns) {
+                String rawName = patchName(columnName(column) + "Raw");
+                String accessorSuffix = column.sqlTypeMapping().accessorSuffix();
+                TypeName typeName =
+                        kiwiTypeConverter.fromKiwiType(column.sqlTypeMapping().kiwiType());
                 if ("Object".equals(accessorSuffix)) { // hacky
-
-                    builder.addStatement(
-                            "$1T $2L = rs.getObject($3S, $1T.class)", typeName, rawName, daoResultColumn.name());
+                    builder.addStatement("$1T $2L = rs.getObject($3S, $1T.class)", typeName, rawName, column.name());
                 } else {
-                    builder.addStatement(
-                            "$T $L = rs.get$L($S)", typeName, rawName, accessorSuffix, daoResultColumn.name());
+                    builder.addStatement("$T $L = rs.get$L($S)", typeName, rawName, accessorSuffix, column.name());
                 }
-                if (daoResultColumn.sqlTypeMapping().isNullable()) {
+                if (column.sqlTypeMapping().isNullable()) {
                     builder.beginControlFlow("if (rs.wasNull())")
                             .addStatement("$L = null", rawName)
                             .endControlFlow();
                 }
-                var varName = patchName(daoResultColumn.name().name());
+                var varName = patchName(columnName(column));
                 buildConversion(
-                        builder, conversion, daoResultColumn.asTypeMapping().target(), varName, rawName, true);
-            });
-            var params = multipleColumns.stream()
-                    .map(p -> CodeBlock.of("$L", patchedNames.get(p.name().name())))
-                    .collect(CodeBlock.joining(",\n"));
-            params = CodeBlock.builder().indent().add(params).unindent().build();
-            builder.add(
-                    """
-                    var value = new $T(
-                    $L
-                    );
-                    """,
-                    componentClass,
-                    params);
+                        builder, column.conversion(), column.asTypeMapping().target(), varName, rawName, true);
+            }
+            for (ResultPart resultPart : ResultPart.values()) {
+                var componentClass = containerBuilder.componentTypeFor(resultPart);
+                if (componentClass != null) {
+                    var resultVar = patchName(prefixName(resultPart, "Value"));
+                    var params = columns.stream()
+                            .filter(column -> resultPart.equals(column.resultPart()))
+                            .map(p -> CodeBlock.of("$L", patchedNames.get(columnName(p))))
+                            .collect(CodeBlock.joining(",\n"));
+                    params = CodeBlock.builder().indent().add(params).unindent().build();
+                    builder.add(
+                            """
+                                    var $L = new $T(
+                                    $L
+                                    );
+                                    """,
+                            resultVar,
+                            kiwiTypeConverter.fromKiwiType(componentClass),
+                            params);
+                }
+            }
+            //            builder.addStatement(containerBuilder.add());
+            builder.add(containerBuilder.add());
         } else {
-            throw new IllegalStateException("Expected singleColumn or multipleColumns");
+            throw new IllegalStateException("Expected columns");
         }
-        builder.addStatement("$L.add(value)", listVariable).endControlFlow(); // end while
-        if (methodInfo.signature().returnType() instanceof ContainerType containerType) {
-            builder.add("return ")
-                    .addNamed(
-                            containerType.type().fromListTemplate(),
-                            Map.of("componentClass", componentClass, "listVariable", listVariable))
-                    .addStatement("");
-        } else {
-            builder.addStatement("return $1L.isEmpty() ? null : $1L.get(0)", listVariable);
+        if (methodInfo.expectedRows() == RowCount.EXACTLY_ONE) {
+            // TODO test for exactly one row case
         }
+        builder.endControlFlow(); // end while or if
+        builder.addStatement(containerBuilder.returnValue());
+        //        if (methodInfo.signature().returnType() instanceof CollectionType collectionType) {
+        //            builder.add("return ")
+        //                    .addNamed(
+        //                            collectionType.type().fromListTemplate(),
+        //                            Map.of("componentClass", componentClass, "containerVariable", containerVariable))
+        //                    .addStatement("");
+        //        } else {
+        //            builder.addStatement("return $1L.isEmpty() ? null : $1L.get(0)", containerVariable);
+        //        }
         return builder.build();
+    }
+
+    private String columnName(DAOResultColumn column) {
+        return prefixName(column.resultPart(), column.name().name());
+    }
+
+    private String prefixName(ResultPart part, String name) {
+        var prefix = part.prefix();
+        var cName = Util.toTitleCase(name);
+        if (cName.isBlank()) {
+            throw new IllegalArgumentException("Column name can't be blank");
+        }
+        if (prefix.isBlank()) {
+            return cName.substring(0, 1).toLowerCase() + cName.substring(1);
+        }
+        return prefix + cName;
     }
 
     private CodeBlock.Builder builderWithParameters(DAOMethodInfo methodInfo) {
         var builder = CodeBlock.builder();
         methodInfo.parameterMapping().forEach(parameterInfo -> {
             var name = "param" + parameterInfo.index();
-            var conversion = lookupConversion(parameterInfo::element, parameterInfo.mapper());
             buildConversion(
-                    builder, conversion, parameterInfo.mapper().target(), name, parameterInfo.javaAccessor(), true);
+                    builder,
+                    parameterInfo.conversion(),
+                    parameterInfo.mapper().target(),
+                    name,
+                    parameterInfo.javaAccessor(),
+                    true);
             var nullableSource = parameterInfo.mapper().source().isNullable();
             if (nullableSource) {
                 builder.beginControlFlow("if ($L == null)", name)
@@ -192,6 +214,7 @@ public class InstanceGenerator {
             String accessor,
             boolean withVar) {
         try {
+            System.err.println("Conversion " + conversion);
             var insertVar =
                     withVar ? CodeBlock.of("$T ", kiwiTypeConverter.fromKiwiType(targetType)) : CodeBlock.of("");
             if (conversion instanceof AssignmentConversion) {
@@ -289,6 +312,28 @@ public class InstanceGenerator {
         });
     }
 
+    private ContainerBuilder containerBuilderFor(DAOMethodInfo methodInfo) {
+        var returnType = methodInfo.signature().returnType();
+        if (returnType instanceof MapType mapType) {
+            return new MapContainerBuilder(mapType, methodInfo);
+        }
+        if (returnType instanceof CollectionType collectionType) {
+            return new CollectionContainerBuilder(collectionType, methodInfo);
+        }
+        return new SingleRowContainerBuilder(returnType, methodInfo);
+    }
+
+    interface ContainerBuilder {
+
+        CodeBlock declaration();
+
+        @Nullable KiwiType componentTypeFor(ResultPart resultPart);
+
+        CodeBlock add();
+
+        CodeBlock returnValue();
+    }
+
     Conversion lookupConversion(ElementSupplier elementSupplier, TypeMapping t) {
         var element = elementSupplier.getElement();
         var conversion = coreTypes.lookup(t);
@@ -299,5 +344,209 @@ public class InstanceGenerator {
             logger.warn(element, conversion.warning());
         }
         return conversion;
+    }
+
+    private class BaseContainerBuilder<T extends KiwiType> {
+        protected final DAOMethodInfo methodInfo;
+        protected final T returnType;
+
+        private BaseContainerBuilder(T returnType, DAOMethodInfo methodInfo) {
+            this.methodInfo = methodInfo;
+            this.returnType = returnType;
+        }
+
+        protected DAOResultColumn firstColumnOfPart(ResultPart part) {
+            return methodInfo.columns().stream()
+                    .filter(c -> c.resultPart() == part)
+                    .findFirst()
+                    .orElseThrow(IllegalArgumentException::new);
+        }
+    }
+
+    private class SingleRowContainerBuilder extends BaseContainerBuilder<KiwiType> implements ContainerBuilder {
+
+        public SingleRowContainerBuilder(KiwiType returnType, DAOMethodInfo methodInfo) {
+            super(returnType, methodInfo);
+        }
+
+        @Override
+        public CodeBlock declaration() {
+            // no container needed
+            return CodeBlock.of("");
+        }
+
+        @Override
+        public @Nullable KiwiType componentTypeFor(ResultPart resultPart) {
+            if (resultPart == ResultPart.SIMPLE
+                    && !returnType.valueComponentType().isSimple()) {
+                return returnType.valueComponentType();
+            }
+            return null;
+        }
+
+        @Override
+        public CodeBlock add() {
+            var valueVariable = returnType.valueComponentType().isSimple()
+                    ? columnName(firstColumnOfPart(ResultPart.SIMPLE))
+                    : prefixName(ResultPart.SIMPLE, "Value");
+            var patchedValueVariable = patchedNames.get(valueVariable);
+            if (returnType instanceof OptionalType optionalType) {
+                if (!returnType.valueComponentType().isNullable()) {
+                    return CodeBlock.of("return $T.of($L);", optionalType.optionalClass(), patchedValueVariable);
+                }
+                return CodeBlock.of(
+                        "return $1L == null ? $2T.empty() : $2T.of($1L);",
+                        patchedValueVariable,
+                        optionalType.optionalClass());
+            }
+            return CodeBlock.of("return $L;", patchedValueVariable);
+        }
+
+        @Override
+        public CodeBlock returnValue() {
+            if (returnType instanceof OptionalType optionalType) {
+                return CodeBlock.of("return $T.empty()", optionalType.optionalClass());
+            }
+            return CodeBlock.of("return null"); // TODO
+        }
+    }
+
+    private class CollectionContainerBuilder extends BaseContainerBuilder<CollectionType> implements ContainerBuilder {
+        private final String containerVariable;
+
+        public CollectionContainerBuilder(CollectionType collectionType, DAOMethodInfo methodInfo) {
+            super(collectionType, methodInfo);
+            containerVariable = patchName("l");
+        }
+
+        @Override
+        public CodeBlock declaration() {
+            var componentClass = kiwiTypeConverter.fromKiwiType(returnType.valueComponentType());
+            return CodeBlock.of(
+                    "$T<$T> $L = new $T<>()", List.class, componentClass, containerVariable, ArrayList.class);
+        }
+
+        @Override
+        public @Nullable KiwiType componentTypeFor(ResultPart resultPart) {
+            if (resultPart == ResultPart.SIMPLE
+                    && !returnType.valueComponentType().isSimple()) {
+                return returnType.valueComponentType();
+            }
+            return null;
+        }
+
+        @Override
+        public CodeBlock add() {
+            var valueVariable = returnType.valueComponentType().isSimple()
+                    ? columnName(firstColumnOfPart(ResultPart.SIMPLE))
+                    : prefixName(ResultPart.SIMPLE, "Value");
+            String patchedValueVariable = patchedNames.get(valueVariable);
+            return CodeBlock.builder()
+                    .beginControlFlow("if ($L != null)", patchedValueVariable)
+                    .addStatement("$L.add($L)", containerVariable, patchedValueVariable)
+                    .endControlFlow()
+                    .build();
+        }
+
+        @Override
+        public CodeBlock returnValue() {
+            return CodeBlock.builder()
+                    .add("return ")
+                    .addNamed(
+                            returnType.type().fromListTemplate(),
+                            Map.of(
+                                    "componentClass",
+                                    kiwiTypeConverter.fromKiwiType(returnType.valueComponentType()),
+                                    "listVariable",
+                                    containerVariable))
+                    .build();
+        }
+    }
+
+    private class MapContainerBuilder extends BaseContainerBuilder<MapType> implements ContainerBuilder {
+        private final String containerVariable;
+        private final boolean valueIsCollection;
+
+        public MapContainerBuilder(MapType mapType, DAOMethodInfo methodInfo) {
+            super(mapType, methodInfo);
+            /* Cases:
+            Map<KeyType, Simple>
+            Map<KeyType, Collection<Simple>>
+             */
+            containerVariable = patchName("m");
+            valueIsCollection = mapType.valueType() instanceof CollectionType
+                    // if the value is a SQL array, it must be the only Value column
+                    && methodInfo.columns().stream()
+                            .filter(c -> c.resultPart() == ResultPart.VALUE)
+                            .noneMatch(c -> c.sqlTypeMapping().kiwiType() instanceof SqlArrayType);
+        }
+
+        @Override
+        public CodeBlock declaration() {
+            // TODO imposing comparable ordering probably isn't right. Maybe if declared as SortedMap
+            //            var implementationType = returnType.comparableKey() ? TreeMap.class : HashMap.class;
+            var implementationType = LinkedHashMap.class;
+            var valueDeclarationType = valueIsCollection
+                    ? ParameterizedTypeName.get(
+                            ClassName.get(List.class),
+                            kiwiTypeConverter.fromKiwiType(returnType.valueComponentType(), true))
+                    : kiwiTypeConverter.fromKiwiType(returnType.valueType(), true);
+            var declarationType = ParameterizedTypeName.get(
+                    ClassName.get(Map.class),
+                    kiwiTypeConverter.fromKiwiType(returnType.keyType(), true),
+                    valueDeclarationType);
+            return CodeBlock.of("$T $L = new $T<>()", declarationType, containerVariable, implementationType);
+        }
+
+        @Override
+        public @Nullable KiwiType componentTypeFor(ResultPart resultPart) {
+            if (resultPart == KEY && !returnType.keyType().isSimple()) {
+                return returnType.keyType();
+            }
+            if (resultPart == ResultPart.VALUE
+                    && !returnType.valueComponentType().isSimple()) {
+                return returnType.valueComponentType();
+            }
+            return null;
+        }
+
+        @Override
+        public CodeBlock add() {
+            var keyVariable =
+                    returnType.keyType().isSimple() ? columnName(firstColumnOfPart(KEY)) : prefixName(KEY, "Value");
+            var patchedKeyVariable = patchedNames.get(keyVariable);
+            var valueVariable = returnType.valueComponentType().isSimple()
+                    ? columnName(firstColumnOfPart(VALUE))
+                    : prefixName(VALUE, "Value");
+            var patchedValueVariable = patchedNames.get(valueVariable);
+            var builder = CodeBlock.builder();
+            if (returnType.keyType().isNullable()) {
+                builder.beginControlFlow("if ($L != null)", patchedKeyVariable);
+            }
+            if (returnType.valueComponentType().isNullable()) {
+                builder.beginControlFlow("if ($L != null)", patchedValueVariable);
+            }
+            if (valueIsCollection) {
+                builder.addStatement(
+                        "$L.computeIfAbsent($L, k -> new ArrayList<>()).add($L)",
+                        containerVariable,
+                        patchedKeyVariable,
+                        patchedValueVariable);
+            } else {
+                builder.addStatement("$L.put($L, $L)", containerVariable, patchedKeyVariable, patchedValueVariable);
+            }
+            if (returnType.valueComponentType().isNullable()) {
+                builder.endControlFlow();
+            }
+            if (returnType.keyType().isNullable()) {
+                builder.endControlFlow();
+            }
+            return builder.build();
+        }
+
+        @Override
+        public CodeBlock returnValue() {
+            return CodeBlock.of("return $T.copyOf($L)", Map.class, containerVariable);
+        }
     }
 }

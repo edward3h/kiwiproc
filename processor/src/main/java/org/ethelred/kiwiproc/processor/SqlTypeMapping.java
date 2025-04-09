@@ -3,8 +3,8 @@ package org.ethelred.kiwiproc.processor;
 
 import io.soabase.recordbuilder.core.RecordBuilder;
 import java.sql.JDBCType;
-import org.ethelred.kiwiproc.processor.types.BasicType;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
+import org.ethelred.kiwiproc.processor.types.ObjectType;
 import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
 import org.ethelred.kiwiproc.processor.types.SqlArrayType;
 import org.jspecify.annotations.Nullable;
@@ -43,6 +43,6 @@ public record SqlTypeMapping(
         if (CoreTypes.primitiveToBoxed.containsKey(baseType)) {
             return new PrimitiveKiwiType(baseType().getSimpleName(), isNullable);
         }
-        return new BasicType(baseType.getPackageName(), baseType.getSimpleName(), isNullable);
+        return new ObjectType(baseType.getPackageName(), baseType.getSimpleName(), isNullable);
     }
 }

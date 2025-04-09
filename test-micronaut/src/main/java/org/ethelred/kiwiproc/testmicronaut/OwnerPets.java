@@ -2,5 +2,6 @@
 package org.ethelred.kiwiproc.testmicronaut;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
-public record OwnerPets(String ownerFirstName, List<String> petNames) {}
+public record OwnerPets(@Nullable String ownerFirstName, List<String> petNames) {}

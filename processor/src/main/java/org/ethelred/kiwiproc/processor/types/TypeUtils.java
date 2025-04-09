@@ -1,5 +1,5 @@
 /* (C) Edward Harman 2024 */
-package org.ethelred.kiwiproc.processor;
+package org.ethelred.kiwiproc.processor.types;
 
 import com.karuslabs.utilitary.Logger;
 import com.karuslabs.utilitary.type.TypeMirrors;
@@ -10,8 +10,6 @@ import javax.lang.model.type.*;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleTypeVisitor14;
 import javax.lang.model.util.Types;
-import org.ethelred.kiwiproc.processor.types.KiwiType;
-import org.ethelred.kiwiproc.processor.types.ValidContainerType;
 import org.jspecify.annotations.Nullable;
 
 public class TypeUtils extends TypeMirrors {
@@ -46,20 +44,13 @@ public class TypeUtils extends TypeMirrors {
         return new ToStringVisitor().visit(type);
     }
 
-    public @Nullable ValidContainerType containerType(DeclaredType t) {
-        for (var ct : ValidContainerType.values()) {
+    public @Nullable ValidCollection containerType(DeclaredType t) {
+        for (var ct : ValidCollection.values()) {
             if (is(t, ct.javaType())) {
                 return ct;
             }
         }
         return null;
-    }
-
-    @Override
-    public boolean isSameType(TypeMirror t1, TypeMirror t2) {
-        var result = super.isSameType(t1, t2);
-        //        logger.note(null, "isSameType(%s, %s) = %s".formatted(t1, t2, result));
-        return result;
     }
 
     public List<? extends RecordComponentElement> recordComponents(DeclaredType t) {
@@ -78,7 +69,7 @@ public class TypeUtils extends TypeMirrors {
     public boolean isNullable(DeclaredType t) {
         var annotations = t.getAnnotationMirrors();
         for (var annotationMirror : annotations) {
-            if (annotationMirror.getAnnotationType().toString().endsWith("Nullable")) {
+            if (isSameType(annotationMirror.getAnnotationType(), type(Nullable.class))) {
                 return true;
             }
         }

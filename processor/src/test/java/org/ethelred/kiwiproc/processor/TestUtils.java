@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.ethelred.kiwiproc.processor.types.BasicType;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
+import org.ethelred.kiwiproc.processor.types.ObjectType;
 import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
 import org.jspecify.annotations.Nullable;
 
@@ -24,7 +24,7 @@ public class TestUtils {
         if (boxedToPrimitive.containsKey(k)) {
             return new PrimitiveKiwiType(boxedToPrimitive.get(k).getSimpleName(), nullable == null || nullable);
         }
-        return new BasicType(k.getPackageName(), k.getSimpleName(), nullable != null && nullable);
+        return new ObjectType(k.getPackageName(), k.getSimpleName(), nullable != null && nullable);
     }
 
     static KiwiType ofClass(Class<?> k) {

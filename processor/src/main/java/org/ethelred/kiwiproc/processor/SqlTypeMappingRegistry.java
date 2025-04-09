@@ -114,6 +114,6 @@ public class SqlTypeMappingRegistry {
             r = r.withComponentType(component)
                     .withComponentDbType(columnMetaData.componentType().dbType());
         }
-        return r.withIsNullable(columnMetaData.nullable());
+        return r.withIsNullable(columnMetaData.treatAsNullable());
     }
 }

@@ -1,0 +1,61 @@
+== Types and Validation
+
+Kiwiproc performs validations during build, based on the method signature and database metadata.
+
+Type Hierarchy:: Do the types in the method signature fit Kiwiproc conventions.
+Exhaustiveness:: Are all input parameters matched. Are all result columns matched.
+Compatibility:: Does Kiwiproc have supported conversions between the Java and SQL types.
+
+=== Types
+
+A semi-formal attempt to describe how Kiwiproc uses types.
+These are generalized types, not Java or SQL types.
+
+|===
+|Notation |Description
+
+|V |void
+|I |int or a compatible type
+|P |A primitive or boxed primitive
+|O |Object type. Specifically, one of: String, BigInteger, BigDecimal, LocalDate, LocalTime, OffsetTime, LocalDateTime, OffsetDateTime
+|S | P \| O
+|?S |@Nullable (specifically org.jspecify.annotations.Nullable), or Optional<S>. A boxed primitive is also treated as nullable when it is not a type parameter of a container.
+|SC<S> | A Collection or array, _only_ in a context where it is mapped to or from a SQL array.
+|RC |S \| ?S \| SC
+|RCS |RC \| RCS RC
+|R(RCS) | A Java record.
+|CV | S \| SC \| R
+|C<CV> | A Collection, array or Iterable.
+|MK | R \| S
+|MV | CV \| C
+|M<MK, MV> | A Map.
+|===
+
+==== Unresolved Types
+
+Used internally, not by end users. Documented here for developers working on Kiwiproc itself.
+
+|===
+|Notation |Description
+
+|UC<S> |SC<S> \| C<S>
+|UM | Map, where the key and/or value are not Record, and we need to know the column names.
+|===
+
+==== Nullability
+
+All values are treated as non-null, except as described here.
+
+* Elements of SC, C, M must not be nullable.
+* A boxed primitive is treated as nullable, except where it is an element of SC, C, M.
+* An object type annotated with `org.jspecify.annotations.Nullable`. This does not include boxed primitives.
+* The element of an Optional<>, OptionalInt, OptionalDouble, OptionalLong.
+
+=== Exhaustiveness
+
+* For each Java method parameter, there must be a corresponding parameter in the SQL statement. When the method parameter is a record, at least one of its components must correspond to a parameter in the SQL statement.
+* For each parameter in the SQL statement, there must be a corresponding method parameter, or component of a record that is a method parameter.
+* Every column in the SQL result must be used in the return type of the method.
+* Every value or component in the return type of the method must correspond to a column in the SQL result.
+
+=== Compatibility

@@ -2,11 +2,11 @@
 package org.ethelred.kiwiproc.processor;
 
 import java.util.List;
+import java.util.Optional;
 import javax.lang.model.element.ExecutableElement;
 import org.ethelred.kiwiproc.meta.ParsedQuery;
-import org.ethelred.kiwiproc.processor.types.ContainerType;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
-import org.jspecify.annotations.Nullable;
+import org.ethelred.kiwiproc.processor.types.MapType;
 
 @KiwiRecordBuilder
 public record DAOMethodInfo(
@@ -15,22 +15,23 @@ public record DAOMethodInfo(
         QueryMethodKind kind,
         ParsedQuery parsedSql,
         List<DAOParameterInfo> parameterMapping,
-        List<DAOResultColumn> multipleColumns,
-        @Nullable DAOResultColumn singleColumn) {
+        List<DAOResultColumn> columns) {
 
-    public KiwiType resultComponentType() {
+    public KiwiType valueComponentType() {
         var kiwiType = signature.returnType();
-        if (kiwiType instanceof ContainerType containerType) {
-            return containerType.containedType();
-        }
-        return kiwiType;
+        return kiwiType.valueComponentType();
     }
 
-    public boolean singleResult() {
+    public Optional<KiwiType> keyComponentType() {
         var kiwiType = signature.returnType();
-        if (kiwiType instanceof ContainerType containerType) {
-            return !containerType.type().isMultiValued();
+        if (kiwiType instanceof MapType mapType) {
+            return Optional.of(mapType.keyType().valueComponentType());
         }
-        return true;
+        return Optional.empty();
+    }
+
+    public RowCount expectedRows() {
+        var kiwiType = signature.returnType();
+        return kiwiType.expectedRows();
     }
 }

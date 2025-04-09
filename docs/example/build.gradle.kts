@@ -62,6 +62,12 @@ liquibase {
 
 lateinit var postgres: PostgreSQLContainer<*>
 
+val stopDatabase by tasks.registering {
+    doFirst {
+        postgres.stop()
+    }
+}
+
 val startDatabase by tasks.registering {
     doFirst {
         postgres = PostgreSQLContainer(DockerImageName.parse("postgres:15-alpine"))
@@ -71,12 +77,7 @@ val startDatabase by tasks.registering {
         postgres.portBindings = listOf("5432:5432")
         postgres.start()
     }
-}
-
-val stopDatabase by tasks.registering {
-    doFirst {
-        postgres.stop()
-    }
+    finalizedBy(stopDatabase)
 }
 
 

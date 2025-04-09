@@ -33,5 +33,21 @@ public @interface SqlQuery {
     @Language("SQL")
     String sql() default "";
 
+    /**
+     * <p>When the return type of the method is Map, this is the column name to use as the Map key. It is an error to set
+     * this if the return type is not Map.</p>
+     * <p>If the Map key type is a Record, the columns will be matched by the record component names.</p>
+     * <p>This may also be omitted if there is a column with literal name "key".</p>
+     */
+    String keyColumn() default "";
+
+    /**
+     * <p>When the return type of the method is Map, this is the column name to use as the Map value. It is an error to set
+     * this if the return type is not Map.</p>
+     * <p>If the Map value type is a Record, the columns will be matched by the record component names.</p>
+     * <p>This may also be omitted if there is a column with literal name "value".</p>
+     */
+    String valueColumn() default "";
+
     int fetchSize() default Integer.MIN_VALUE;
 }

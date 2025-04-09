@@ -8,3 +8,5 @@ include::quick_start.adoc[]
 include::frameworks.adoc[]
 
 include::databases.adoc[]
+
+include::types.adoc[]

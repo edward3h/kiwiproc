@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.VariableElement;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
-import org.jspecify.annotations.Nullable;
+import org.ethelred.kiwiproc.processor.types.TypeUtils;
 
 public record DAOParameterInfo(
         int index,
@@ -15,9 +15,9 @@ public record DAOParameterInfo(
         int sqlType,
         TypeMapping mapper,
         VariableElement element,
-        @Nullable String arrayComponent) {
+        Conversion conversion) {
     public static List<DAOParameterInfo> from(
-            TypeUtils typeUtils, Map<ColumnMetaData, MethodParameterInfo> parameterMapping) {
+            CoreTypes coreTypes, TypeUtils typeUtils, Map<ColumnMetaData, MethodParameterInfo> parameterMapping) {
         List<DAOParameterInfo> result = new ArrayList<>(parameterMapping.size());
 
         parameterMapping.forEach(((columnMetaData, methodParameterInfo) -> {
@@ -38,7 +38,7 @@ public record DAOParameterInfo(
                     columnMetaData.jdbcType().getVendorTypeNumber(),
                     mapper,
                     methodParameterInfo.variableElement(),
-                    null));
+                    coreTypes.lookup(mapper)));
         }));
         return result;
     }
