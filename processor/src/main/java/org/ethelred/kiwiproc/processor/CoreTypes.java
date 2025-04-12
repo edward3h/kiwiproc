@@ -186,7 +186,8 @@ public class CoreTypes {
             // Big -> primitive
             Stream.of(byte.class, short.class, int.class, long.class, float.class, double.class)
                     .forEach(target -> {
-                        String w = "possible lossy conversion from %s to %s".formatted(big.getSimpleName(), target.getName());
+                        String w = "possible lossy conversion from %s to %s"
+                                .formatted(big.getSimpleName(), target.getName());
                         entries.add(mappingEntry(big, target, w, "$N.%sValue()".formatted(target.getName())));
                     });
         });
@@ -331,20 +332,26 @@ public class CoreTypes {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            try (var bw = Files.newBufferedWriter(Path.of(args[0]), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING); var w = new PrintWriter(bw)) {
-                w.println("""
+            try (var bw = Files.newBufferedWriter(
+                            Path.of(args[0]), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                    var w = new PrintWriter(bw)) {
+                w.println(
+                        """
                         .Conversions
                         [%autowidth]
                         |===
                         |Source |Target |Warning
                         """);
                 var ct = new CoreTypes();
-                ct.simpleMappings.entrySet()
-                        .stream()
-                        .map(e -> "|%s |%s |%s".formatted(e.getKey().source().className(), e.getKey().target().className(), e.getValue().hasWarning() ? e.getValue().warning() : ""))
+                ct.simpleMappings.entrySet().stream()
+                        .map(e -> "|%s |%s |%s"
+                                .formatted(
+                                        e.getKey().source().className(),
+                                        e.getKey().target().className(),
+                                        e.getValue().hasWarning() ? e.getValue().warning() : ""))
                         .sorted()
                         .forEach(w::println);
-               w.println("|===");
+                w.println("|===");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
