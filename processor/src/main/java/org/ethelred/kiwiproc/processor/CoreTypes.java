@@ -3,8 +3,13 @@ package org.ethelred.kiwiproc.processor;
 
 import static java.util.Map.entry;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,7 +52,7 @@ public class CoreTypes {
 
     /*
     The key type can be assigned to any of the value types without casting.
-    Primitive type mappings that are NOT in this map require a cast and a "lossy converson" warning.
+    Primitive type mappings that are NOT in this map require a cast and a "lossy conversion" warning.
      */
     private static final Map<Class<?>, Set<Class<?>>> assignableFrom = Map.of(
             byte.class, Set.of(byte.class, short.class, int.class, long.class, float.class, double.class),
@@ -181,7 +186,7 @@ public class CoreTypes {
             // Big -> primitive
             Stream.of(byte.class, short.class, int.class, long.class, float.class, double.class)
                     .forEach(target -> {
-                        String w = "possible lossy conversion from %s to %s".formatted(big.getName(), target.getName());
+                        String w = "possible lossy conversion from %s to %s".formatted(big.getSimpleName(), target.getName());
                         entries.add(mappingEntry(big, target, w, "$N.%sValue()".formatted(target.getName())));
                     });
         });
@@ -316,5 +321,33 @@ public class CoreTypes {
             }
         }
         throw new NullPointerException();
+    }
+
+    public static void main(String[] args) {
+        if (args.length > 0) {
+            var filePath = Path.of(args[0]);
+            try {
+                Files.createDirectories(filePath.getParent());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try (var bw = Files.newBufferedWriter(Path.of(args[0]), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING); var w = new PrintWriter(bw)) {
+                w.println("""
+                        .Conversions
+                        [%autowidth]
+                        |===
+                        |Source |Target |Warning
+                        """);
+                var ct = new CoreTypes();
+                ct.simpleMappings.entrySet()
+                        .stream()
+                        .map(e -> "|%s |%s |%s".formatted(e.getKey().source().className(), e.getKey().target().className(), e.getValue().hasWarning() ? e.getValue().warning() : ""))
+                        .sorted()
+                        .forEach(w::println);
+               w.println("|===");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

@@ -1,5 +1,8 @@
 = Kiwiproc
+Edward Harman
+:icons: font
 :toc: left
+:source-highlighter: rouge
 
 Use declarative interfaces for Java database queries.
 

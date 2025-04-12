@@ -19,7 +19,7 @@ These are generalized types, not Java or SQL types.
 |P |A primitive or boxed primitive
 |O |Object type. Specifically, one of: String, BigInteger, BigDecimal, LocalDate, LocalTime, OffsetTime, LocalDateTime, OffsetDateTime
 |S | P \| O
-|?S |@Nullable (specifically org.jspecify.annotations.Nullable), or Optional<S>. A boxed primitive is also treated as nullable when it is not a type parameter of a container.
+|?S |@Nullable (specifically org.jspecify.annotations.Nullable), or Optional<S>. A boxed primitive is also treated as nullable when it is not a type parameter of a container. Optional is only accepted as the return type of a query method.
 |SC<S> | A Collection or array, _only_ in a context where it is mapped to or from a SQL array.
 |RC |S \| ?S \| SC
 |RCS |RC \| RCS RC
@@ -44,12 +44,22 @@ Used internally, not by end users. Documented here for developers working on Kiw
 
 ==== Nullability
 
-All values are treated as non-null, except as described here.
+[NOTE]
+====
+_In the current version of the library, nullability handling is neither as strict or as consistent as I would like it to be._
+====
 
-* Elements of SC, C, M must not be nullable.
+Java values are treated as non-null, except as described here.
+
+* Elements of SC, C, M must not be nullable. _The current implementation allows null values, but skips over adding them to the collection._
 * A boxed primitive is treated as nullable, except where it is an element of SC, C, M.
 * An object type annotated with `org.jspecify.annotations.Nullable`. This does not include boxed primitives.
 * The element of an Optional<>, OptionalInt, OptionalDouble, OptionalLong.
+
+JDBC drivers may return 'unknown' for nullability.
+In practice, the Postgres driver _always_ returns 'unknown' for parameters.
+(As do a couple of other drivers I checked for comparison.)
+_The way that Kiwiproc deals with unknown nullability could do with more design work._
 
 === Exhaustiveness
 
@@ -59,3 +69,10 @@ All values are treated as non-null, except as described here.
 * Every value or component in the return type of the method must correspond to a column in the SQL result.
 
 === Compatibility
+
+Kiwiproc has a set of type conversions, for any supported types where it makes sense.
+"Compatibility" means that there is a type conversion between the matching Java and SQL elements.
+
+include::{build-dir}/conversions.adoc[]
+
+(Any type can be converted to String.)
