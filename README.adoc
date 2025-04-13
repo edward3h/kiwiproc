@@ -1,5 +1,7 @@
 = Kiwiproc
 
+image::https://javadoc.io/badge2/org.ethelred.kiwiproc/shared/javadoc.svg[javadoc,link=https://javadoc.io/doc/org.ethelred.kiwiproc/shared/latest/org/ethelred/kiwiproc/annotation/package-summary.html]
+
 _Under development:_ there are many use cases yet to be implemented.
 
 == Overview
