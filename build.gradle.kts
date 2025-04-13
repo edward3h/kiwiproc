@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "org.ethelred.kiwiproc"
-version = "0.2"
+version = "0.3-SNAPSHOT"
 
 nexusPublishing {
 	repositories {
