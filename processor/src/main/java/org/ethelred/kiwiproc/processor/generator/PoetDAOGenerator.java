@@ -17,12 +17,13 @@ public class PoetDAOGenerator implements DAOGenerator {
     private final ProviderGenerator providerGenerator;
     private final CoreTypes coreTypes;
 
-    public PoetDAOGenerator(Logger logger, Filer filer, DependencyInjectionStyle dependencyInjectionStyle) {
+    public PoetDAOGenerator(
+            Logger logger, Filer filer, DependencyInjectionStyle dependencyInjectionStyle, CoreTypes coreTypes) {
         this.logger = logger;
         this.filer = filer;
         this.dependencyInjectionStyle = dependencyInjectionStyle;
         this.kiwiTypeConverter = new KiwiTypeConverter();
-        this.coreTypes = new CoreTypes();
+        this.coreTypes = coreTypes;
         this.instanceGenerator = new InstanceGenerator(logger, kiwiTypeConverter, coreTypes);
         this.providerGenerator = new ProviderGenerator(dependencyInjectionStyle, kiwiTypeConverter);
     }

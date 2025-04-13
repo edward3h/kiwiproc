@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import javax.lang.model.element.VariableElement;
 import org.ethelred.kiwiproc.meta.JavaName;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
+import org.ethelred.kiwiproc.processor.types.TypeUtils;
 import org.jspecify.annotations.Nullable;
 
 @KiwiRecordBuilder

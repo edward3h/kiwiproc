@@ -8,8 +8,9 @@ import org.postgresql.core.BaseConnection;
 
 public record ColumnMetaData(
         int index,
+        boolean isParameter,
         SqlName name,
-        boolean nullable,
+        JDBCNullable nullable,
         JDBCType jdbcType,
         String dbType,
         @Nullable String dbClassName,
@@ -19,31 +20,23 @@ public record ColumnMetaData(
 
     public ColumnMetaData(
             int index,
+            boolean isParameter,
             String name,
-            boolean nullable,
+            JDBCNullable nullable,
             JDBCType sqlType,
             String dbTypeName,
             @Nullable String dbClassName,
             @Nullable ArrayComponent componentType) {
-        this(index, new SqlName(name), nullable, sqlType, dbTypeName, dbClassName, componentType);
+        this(index, isParameter, new SqlName(name), nullable, sqlType, dbTypeName, dbClassName, componentType);
     }
-
-    // temporary constructor for back-compat
-    //    @Deprecated
-    //    public ColumnMetaData(int index, String name, boolean nullable, JDBCType jdbcType, @Nullable ArrayComponent
-    // componentType) {
-    //        this(index, name, nullable, jdbcType, "", null, componentType);
-    //    }
 
     public static ColumnMetaData from(Connection connection, int index, ResultSetMetaData resultSetMetaData)
             throws SQLException {
         return new ColumnMetaData(
                 index,
+                false,
                 new SqlName(resultSetMetaData.getColumnName(index)),
-                resultSetMetaData.isNullable(index)
-                        != ResultSetMetaData
-                                .columnNoNulls, // for results, treat 'unknown' as 'nullable' since caller may need to
-                // handle null case
+                JDBCNullable.fromCode(resultSetMetaData.isNullable(index)),
                 JDBCType.valueOf(resultSetMetaData.getColumnType(index)),
                 resultSetMetaData.getColumnTypeName(index),
                 resultSetMetaData.getColumnClassName(index),
@@ -75,10 +68,10 @@ public record ColumnMetaData(
             throws SQLException {
         return new ColumnMetaData(
                 index,
+                true,
                 SqlName.PARAMETER, // does not have a name in metadata, will be associated by index outside this scope
-                parameterMetaData.isNullable(index)
-                        != ParameterMetaData
-                                .parameterNoNulls, // Postgres does not report nullability of parameters, so be lenient
+                JDBCNullable.fromCode(
+                        parameterMetaData.isNullable(index)), // For Postgres, this is always 'unknown' for parameters
                 JDBCType.valueOf(parameterMetaData.getParameterType(index)),
                 parameterMetaData.getParameterTypeName(index),
                 parameterMetaData.getParameterClassName(index),
@@ -86,5 +79,13 @@ public record ColumnMetaData(
                         connection,
                         parameterMetaData.getParameterType(index),
                         parameterMetaData.getParameterTypeName(index)));
+    }
+
+    public boolean treatAsNullable() {
+        return switch (nullable) {
+            case NOT_NULL -> false;
+            case NULLABLE -> true;
+            case UNKNOWN -> isParameter;
+        };
     }
 }

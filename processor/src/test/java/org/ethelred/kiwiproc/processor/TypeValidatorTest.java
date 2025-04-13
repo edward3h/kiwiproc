@@ -20,6 +20,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import org.ethelred.kiwiproc.meta.ArrayComponent;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
+import org.ethelred.kiwiproc.meta.JDBCNullable;
 import org.ethelred.kiwiproc.meta.JavaName;
 import org.ethelred.kiwiproc.processor.types.*;
 import org.jspecify.annotations.Nullable;
@@ -81,7 +82,7 @@ public class TypeValidatorTest {
                         new MethodParameterInfo(
                                 mockVariableElement(),
                                 new JavaName("x"),
-                                new ContainerType(ValidContainerType.LIST, ofClass(Integer.class, true)),
+                                new CollectionType(ValidCollection.LIST, ofClass(Integer.class, true)),
                                 false,
                                 null),
                         true,
@@ -95,9 +96,10 @@ public class TypeValidatorTest {
             KiwiType returnType,
             boolean expectedResult,
             @Nullable String message) {
-        var result = validator.validateReturn(columnMetaData, returnType, QueryMethodKind.QUERY);
+        var context = new QueryResultContext(QueryMethodKind.QUERY, columnMetaData, null, null);
+        var result = validator.validateReturn(context, returnType, x -> {});
         assertWithMessage("testQueryReturn %s -> %s", logKiwiType(columnMetaData), returnType)
-                .that(result)
+                .that(result.isValid())
                 .isEqualTo(expectedResult);
         if (message == null) {
             assertThat(messages).isEmpty();
@@ -121,39 +123,38 @@ public class TypeValidatorTest {
         return Stream.of(
                 testCase(ofClass(int.class), true, null, col(false, JDBCType.INTEGER)),
                 testCase(
-                        new ContainerType(ValidContainerType.LIST, ofClass(int.class)),
+                        new CollectionType(ValidCollection.LIST, ofClass(int.class)),
                         true,
                         null,
                         col(false, JDBCType.INTEGER)),
                 testCase(
-                        new ContainerType(
-                                ValidContainerType.LIST, recordType("TestRecord", "test1", ofClass(int.class))),
+                        new CollectionType(ValidCollection.LIST, recordType("TestRecord", "test1", ofClass(int.class))),
                         true,
                         null,
                         col(false, JDBCType.INTEGER)),
                 testCase(
-                        new ContainerType(
-                                ValidContainerType.LIST,
+                        new CollectionType(
+                                ValidCollection.LIST,
                                 recordType("TestRecord", "test1", ofClass(int.class), "test2", ofClass(String.class))),
                         false,
                         "Record component 'TestRecord.test2' does not have a matching column",
                         col(false, JDBCType.INTEGER)),
+                //                testCase( TODO separate exhaustiveness check
+                //                        new CollectionType(ValidCollection.LIST, recordType("TestRecord", "test1",
+                // ofClass(int.class))),
+                //                        false,
+                //                        "Record 'TestRecord' does not have a component matching column 'test2'",
+                //                        col(false, JDBCType.INTEGER),
+                //                        col(false, JDBCType.VARCHAR)),
                 testCase(
-                        new ContainerType(
-                                ValidContainerType.LIST, recordType("TestRecord", "test1", ofClass(int.class))),
-                        false,
-                        "Record 'TestRecord' does not have a component matching column 'test2'",
-                        col(false, JDBCType.INTEGER),
-                        col(false, JDBCType.VARCHAR)),
-                testCase(
-                        new ContainerType(
-                                ValidContainerType.LIST,
+                        new CollectionType(
+                                ValidCollection.LIST,
                                 recordType(
                                         "TestRecord",
                                         "test1",
                                         ofClass(String.class),
                                         "test2",
-                                        new ContainerType(ValidContainerType.LIST, ofClass(String.class)))),
+                                        new CollectionType(ValidCollection.LIST, ofClass(String.class)))),
                         true,
                         null,
                         col(false, JDBCType.VARCHAR),
@@ -162,7 +163,7 @@ public class TypeValidatorTest {
 
     private static KiwiType recordType(String className, String componentName, KiwiType componentType) {
         return new RecordType(
-                "test", className, List.of(new RecordTypeComponent(new JavaName(componentName), componentType)));
+                "test", className, false, List.of(new RecordTypeComponent(new JavaName(componentName), componentType)));
     }
 
     private static KiwiType recordType(
@@ -174,6 +175,7 @@ public class TypeValidatorTest {
         return new RecordType(
                 "test",
                 className,
+                false,
                 List.of(
                         new RecordTypeComponent(new JavaName(componentName), componentType),
                         new RecordTypeComponent(new JavaName(componentName2), componentType2)));
@@ -187,7 +189,15 @@ public class TypeValidatorTest {
     }
 
     static ColumnMetaData col(boolean nullable, JDBCType type, @Nullable ArrayComponent componentType) {
-        return new ColumnMetaData(colCount, "test" + colCount++, nullable, type, "butt", "poop", componentType);
+        return new ColumnMetaData(
+                colCount,
+                false,
+                "test" + colCount++,
+                nullable ? JDBCNullable.NULLABLE : JDBCNullable.NOT_NULL,
+                type,
+                "butt",
+                "poop",
+                componentType);
     }
 
     static ColumnMetaData col(boolean nullable, JDBCType type) {

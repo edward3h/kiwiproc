@@ -9,7 +9,8 @@ public sealed interface Conversion
                 InvalidConversion,
                 NullableSourceConversion,
                 StringFormatConversion,
-                ToSqlArrayConversion {
+                ToSqlArrayConversion,
+                VoidConversion {
     boolean isValid();
 
     boolean hasWarning();

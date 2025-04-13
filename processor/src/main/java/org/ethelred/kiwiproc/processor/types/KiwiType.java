@@ -1,11 +1,21 @@
 /* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor.types;
 
+import org.ethelred.kiwiproc.processor.RowCount;
+
 /**
  * Simplified view of type for parameters and return.
  */
 public sealed interface KiwiType
-        permits BasicType, ContainerType, PrimitiveKiwiType, RecordType, SqlArrayType, UnsupportedType, VoidType {
+        permits CollectionType,
+                MapType,
+                ObjectType,
+                OptionalType,
+                PrimitiveKiwiType,
+                RecordType,
+                SqlArrayType,
+                UnsupportedType,
+                VoidType {
     static KiwiType unsupported() {
         return new UnsupportedType();
     }
@@ -21,6 +31,14 @@ public sealed interface KiwiType
     }
 
     default KiwiType withIsNullable(boolean b) {
+        return this;
+    }
+
+    default RowCount expectedRows() {
+        return isNullable() ? RowCount.ZERO_OR_ONE : RowCount.EXACTLY_ONE;
+    }
+
+    default KiwiType valueComponentType() {
         return this;
     }
 }

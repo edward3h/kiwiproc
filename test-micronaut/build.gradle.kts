@@ -20,7 +20,7 @@ dependencies {
 }
 
 val processorConfig = tasks.named<ProcessorConfigTask>("processorConfig") {
-//    debug = true
+    debug = true
 }
 
 tasks.named<ProcessResources>("processTestResources") {

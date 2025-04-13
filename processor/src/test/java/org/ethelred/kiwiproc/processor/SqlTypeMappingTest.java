@@ -16,7 +16,8 @@ import java.util.stream.Stream;
 import org.ethelred.kiwiproc.meta.ArrayComponent;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.meta.DatabaseWrapper;
-import org.ethelred.kiwiproc.processor.types.BasicType;
+import org.ethelred.kiwiproc.meta.JDBCNullable;
+import org.ethelred.kiwiproc.processor.types.ObjectType;
 import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
 import org.ethelred.kiwiproc.processor.types.SqlArrayType;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
@@ -72,13 +73,14 @@ public class SqlTypeMappingTest {
         if (unsupportedTypes.contains(jdbcType)) {
             return;
         }
-        var columnMetaData = new ColumnMetaData(1, "columnName", false, jdbcType, "butt", "poop", null);
+        var columnMetaData =
+                new ColumnMetaData(1, false, "columnName", JDBCNullable.NOT_NULL, jdbcType, "foo", "bar", null);
         var mapping = SqlTypeMappingRegistry.get(columnMetaData);
         assertThat(mapping).isNotNull();
         atLeastOne(
                 assertThat(mapping.kiwiType()),
                 s -> s.isInstanceOf(PrimitiveKiwiType.class),
-                s -> s.isInstanceOf(BasicType.class));
+                s -> s.isInstanceOf(ObjectType.class));
     }
 
     @ParameterizedTest
@@ -88,7 +90,14 @@ public class SqlTypeMappingTest {
             return;
         }
         var columnMetaData = new ColumnMetaData(
-                1, "columnName", false, JDBCType.ARRAY, "butt", "poop", new ArrayComponent(componentType, dbType));
+                1,
+                false,
+                "columnName",
+                JDBCNullable.NOT_NULL,
+                JDBCType.ARRAY,
+                "foo",
+                "bar",
+                new ArrayComponent(componentType, dbType));
         var mapping = SqlTypeMappingRegistry.get(columnMetaData);
         assertThat(mapping).isNotNull();
         assertThat(mapping.kiwiType()).isInstanceOf(SqlArrayType.class);

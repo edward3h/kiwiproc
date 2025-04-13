@@ -27,14 +27,16 @@ _TODO: milestone2 - gradle plugin to help with this._
 }
 ----
 
+To use with Spring, set `"dependencyInjectionStyle": "SPRING"`.
+
 [source,groovy,indent=0,subs="verbatim,attributes",role="secondary"]
 .Groovy
 ----
-def kiwiversion = "0.1.1"
+def kiwiversion = "{revnumber}"
 dependencies {
     annotationProcessor("org.ethelred.kiwiproc:processor:$kiwiversion")
     implementation("org.ethelred.kiwiproc:runtime:$kiwiversion")
-    implementation("jakarta.inject:jakarta.inject-api:2.0.1")
+    implementation("{jakarta-dependency}")
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -45,11 +47,11 @@ tasks.withType(JavaCompile).configureEach {
 [source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
 .Kotlin
 ----
-val kiwiversion = "0.1.2-SNAPSHOT"
+val kiwiversion = "{revnumber}"
 dependencies {
     annotationProcessor("org.ethelred.kiwiproc:processor:$kiwiversion")
     implementation("org.ethelred.kiwiproc:runtime:$kiwiversion")
-    implementation("jakarta.inject:jakarta.inject-api:2.0.1")
+    implementation("{jakarta-dependency}")
 }
 
 tasks.withType<JavaCompile>().configureEach {

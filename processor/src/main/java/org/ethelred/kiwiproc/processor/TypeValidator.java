@@ -1,8 +1,11 @@
 /* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor;
 
+import static org.ethelred.kiwiproc.processor.DAOResultMapping.INVALID;
+
 import com.karuslabs.utilitary.Logger;
 import java.util.*;
+import java.util.function.Consumer;
 import javax.lang.model.element.Element;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.processor.types.*;
@@ -10,11 +13,7 @@ import org.ethelred.kiwiproc.processor.types.*;
 public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes, boolean debug) {
 
     private static final KiwiType UPDATE_RETURN_TYPE = new PrimitiveKiwiType("int", false);
-    private static final KiwiType BATCH_RETURN_TYPE = new ContainerType(ValidContainerType.ARRAY, UPDATE_RETURN_TYPE);
-
-    public TypeValidator(Logger logger, Element methodElement, boolean debug) {
-        this(logger, methodElement, new CoreTypes(), debug);
-    }
+    private static final KiwiType BATCH_RETURN_TYPE = new CollectionType(ValidCollection.ARRAY, UPDATE_RETURN_TYPE);
 
     public boolean validateParameters(Map<ColumnMetaData, MethodParameterInfo> parameterMapping, QueryMethodKind kind) {
         boolean result = true;
@@ -22,9 +21,9 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
             var columnMetaData = entry.getKey();
             var methodParameterInfo = entry.getValue();
             var parameterType = methodParameterInfo.type();
-            if (kind == QueryMethodKind.BATCH && parameterType instanceof ContainerType containerType) {
+            if (kind == QueryMethodKind.BATCH && parameterType instanceof CollectionType collectionType) {
                 // unwrap container because it will be iterated for the batch
-                parameterType = containerType.containedType();
+                parameterType = collectionType.containedType();
             }
             var element = methodParameterInfo.variableElement();
             KiwiType columnType = SqlTypeMappingRegistry.get(columnMetaData).kiwiType();
@@ -35,7 +34,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
         if (kind == QueryMethodKind.BATCH
                 && parameterMapping.values().stream()
                         .map(MethodParameterInfo::type)
-                        .anyMatch(t -> t instanceof ContainerType)) {
+                        .anyMatch(t -> t instanceof CollectionType)) {
             result = false;
             logger.error(element, "SqlBatch method must have at least one iterable parameter");
         }
@@ -52,7 +51,8 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
             logger.error(element, "Unsupported type %s for parameter %s".formatted(parameterType, simpleName()));
             return false;
         }
-        if (!validateCompatible(parameterType, columnType)) {
+        Conversion conversion = validateCompatible(parameterType, columnType);
+        if (!conversion.isValid()) {
             logger.error(
                     element,
                     "Parameter type %s is not compatible with SQL type %s for parameter %s"
@@ -73,34 +73,9 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
      * @param target
      * @return
      */
-    private boolean validateCompatible(KiwiType source, KiwiType target) {
-        if (source.equals(target)) {
-            // shortcut
-            return true;
-        }
+    private Conversion validateCompatible(KiwiType source, KiwiType target) {
         debug("Comparing %s with %s".formatted(source, target));
-
-        // check for a valid conversion
-        // don't fail on invalid conversion because there are other possible cases
-        Conversion c = coreTypes.lookup(source, target);
-        if (c.isValid()) {
-            if (c.hasWarning()) {
-                warn(Objects.requireNonNull(c.warning()));
-            }
-            return true;
-        }
-        if (target instanceof ContainerType targetContainer) {
-            // we can convert a single value to a container by wrapping
-            return validateCompatible(source, targetContainer.containedType());
-        }
-        if (source instanceof ContainerType containerType
-                && containerType.type() == ValidContainerType.OPTIONAL
-                && target.isSimple()) {
-            // an Optional can be converted to a nullable simple type
-            // TODO how to interact with Record?
-            return target.isNullable() && validateCompatible(containerType.containedType(), target);
-        }
-        return false;
+        return coreTypes.lookup(source, target);
     }
 
     /**
@@ -113,7 +88,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
         if (type.isSimple() || type instanceof VoidType) {
             return true;
         }
-        if (type instanceof ContainerType ct) {
+        if (type instanceof CollectionType ct) {
             var contained = ct.containedType();
             return ((contained instanceof RecordType) || (contained.isSimple())) && validateGeneral(contained);
         }
@@ -128,9 +103,9 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
         return false;
     }
 
-    private boolean reportError(String message) {
+    private DAOResultMapping reportError(String message) {
         logger.error(element, message);
-        return false;
+        return INVALID;
     }
 
     private void info(String message) {
@@ -147,71 +122,132 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
         logger.warn(element, message);
     }
 
-    public boolean validateReturn(List<ColumnMetaData> columnMetaDataList, KiwiType returnType, QueryMethodKind kind) {
+    public DAOResultMapping validateReturn(
+            QueryResultContext context, KiwiType returnType, Consumer<ColumnMetaData> mappedColumn) {
+        //        debug("validateReturn %s, %s, %s".formatted(columnMetaDataList, returnType, kind));
+        var kind = context.kind();
         if (returnType instanceof VoidType && kind != QueryMethodKind.QUERY) {
-            return true;
+            return new DAOResultMapping(new VoidConversion());
         } else if (returnType instanceof VoidType) {
             return reportError("Why would you want to return void from a query?");
         }
         if (kind == QueryMethodKind.UPDATE) {
-            return validateCompatible(UPDATE_RETURN_TYPE, returnType)
-                    || reportError("Return type %s is invalid for SqlUpdate. Must be compatible with int"
-                            .formatted(returnType));
+            var conversion = validateCompatible(UPDATE_RETURN_TYPE, returnType);
+            if (!conversion.isValid()) {
+                return reportError(
+                        "Return type %s is invalid for SqlUpdate. Must be compatible with int".formatted(returnType));
+            }
+            return new DAOResultMapping(conversion);
         }
         if (kind == QueryMethodKind.BATCH) {
-            return validateCompatible(BATCH_RETURN_TYPE, returnType)
-                    || reportError("Return type %s is invalid for SqlBatch. Must be compatible with int[]"
-                            .formatted(returnType));
+            var conversion = validateCompatible(BATCH_RETURN_TYPE, returnType);
+            if (!conversion.isValid()) {
+                return reportError(
+                        "Return type %s is invalid for SqlBatch. Must be compatible with int[]".formatted(returnType));
+            }
+            return new DAOResultMapping(conversion);
         }
         // below clauses apply to kind QUERY
-        if (returnType instanceof ContainerType containerType) {
+        if (returnType instanceof CollectionType collectionType) {
+            if (collectionType.isSimple() && context.resultPart() != ResultPart.KEY) {
+                var maybeColumn = context.getSingleMatchingColumn();
+                if (maybeColumn.isPresent()) {
+                    ColumnMetaData columnMetaData = maybeColumn.get();
+                    SqlTypeMapping sqlTypeMapping = SqlTypeMappingRegistry.get(columnMetaData);
+                    var columnType = sqlTypeMapping.kiwiType();
+                    if (columnType instanceof SqlArrayType) {
+                        var conversion = validateCompatible(columnType, collectionType);
+                        if (conversion.isValid()) {
+                            var result = new DAOResultMapping();
+                            mappedColumn.accept(columnMetaData);
+                            result.addColumn(new DAOResultColumn(
+                                    columnMetaData.name(),
+                                    sqlTypeMapping,
+                                    collectionType,
+                                    context.resultPart(),
+                                    conversion));
+                            return result;
+                        }
+                    }
+                }
+            }
             // any container is acceptable
-            debug("Return type Container %s.%s".formatted(containerType.packageName(), containerType.className()));
-            return validateReturn(columnMetaDataList, containerType.containedType(), kind);
+            debug("Return type Container %s.%s".formatted(collectionType.packageName(), collectionType.className()));
+            return validateReturn(context.withAsParameter(true), collectionType.containedType(), mappedColumn);
         }
-        if (columnMetaDataList.size() == 1 && returnType.isSimple()) {
+        if (returnType instanceof MapType mapType) {
+            debug("Return type %s".formatted(mapType));
+            System.err.println("map type columns" + context.columns());
+            var keyMapping = validateReturn(
+                    context.withMapMapping(ResultPart.KEY).withAsParameter(true),
+                    mapType.keyType().withIsNullable(false),
+                    mappedColumn);
+            var valueMapping = validateReturn(
+                    context.withMapMapping(ResultPart.VALUE).withAsParameter(true),
+                    mapType.valueType().withIsNullable(false),
+                    mappedColumn);
+            return keyMapping.merge(valueMapping);
+        }
+        if (returnType.isSimple()) {
             debug("Return type simple %s.%s".formatted(returnType.packageName(), returnType.className()));
             // a single column result maps to a simple type
-            var firstColumnMetaData = columnMetaDataList.get(0);
-            KiwiType columnType =
-                    SqlTypeMappingRegistry.get(firstColumnMetaData).kiwiType();
-            return validateCompatible(columnType, returnType);
+            var columnMetaData = context.getSingleMatchingColumn();
+            if (columnMetaData.isPresent()) {
+                ColumnMetaData t = columnMetaData.get();
+                SqlTypeMapping sqlTypeMapping = SqlTypeMappingRegistry.get(t);
+                KiwiType columnType = sqlTypeMapping.kiwiType();
+                mappedColumn.accept(t);
+                KiwiType target = context.asParameter() ? returnType.withIsNullable(false) : returnType;
+                Conversion conversion = validateCompatible(columnType, target);
+                return new DAOResultMapping(
+                        new DAOResultColumn(t.name(), sqlTypeMapping, target, context.resultPart(), conversion));
+            }
+            return INVALID;
         }
         if (returnType instanceof RecordType recordType) {
             debug("Return type record %s.%s".formatted(recordType.packageName(), recordType.className()));
             var components = recordType.components();
-            return columnMetaDataList.stream().allMatch(columnMetaData -> {
-                        var matchingComponent = components.stream()
-                                .filter(targetComponent -> columnMetaData.name().equivalent(targetComponent.name()))
-                                .findFirst()
-                                .orElse(null);
-                        if (matchingComponent == null) {
-                            return reportError("Record '%s' does not have a component matching column '%s'"
-                                    .formatted(recordType.className(), columnMetaData.name()));
-                        }
-                        KiwiType columnType =
-                                SqlTypeMappingRegistry.get(columnMetaData).kiwiType();
-                        return validateCompatible(columnType, matchingComponent.type())
-                                || reportError("Incompatible component type %s for column %s type %s"
-                                        .formatted(matchingComponent, columnMetaData.name(), columnType));
-                    })
-                    && components.stream().allMatch(component -> {
-                        var matchingColumn = columnMetaDataList.stream()
-                                .filter(columnMetaData -> columnMetaData.name().equivalent(component.name()))
-                                .findFirst()
-                                .orElse(null);
-                        if (matchingColumn == null) {
-                            return reportError("Record component '%s.%s' does not have a matching column"
-                                    .formatted(recordType.className(), component.name()));
-                        }
-                        var columnType =
-                                SqlTypeMappingRegistry.get(matchingColumn).kiwiType();
-                        return validateCompatible(columnType, component.type())
-                                || reportError("Missing or incompatible column type %s for component %s type %s"
+            try {
+                return components.stream()
+                        .map(component -> {
+                            ColumnMetaData columnMetaData = getColumnMetaData(context, recordType, component);
+                            SqlTypeMapping sqlTypeMapping = SqlTypeMappingRegistry.get(columnMetaData);
+                            var columnType = sqlTypeMapping.kiwiType();
+                            mappedColumn.accept(columnMetaData);
+                            var conversion = validateCompatible(columnType, component.type());
+                            if (!conversion.isValid()) {
+                                reportError("Missing or incompatible column type %s for component %s type %s"
                                         .formatted(columnType, component.name(), component.type()));
-                    });
+                            }
+                            return new DAOResultColumn(
+                                    columnMetaData.name(),
+                                    sqlTypeMapping,
+                                    component.type(),
+                                    context.resultPart(),
+                                    conversion);
+                        })
+                        .collect(DAOResultMapping::new, DAOResultMapping::addColumn, DAOResultMapping::merge);
+            } catch (IllegalArgumentException e) {
+                // already reported above, just return
+                return INVALID;
+            }
         }
+        if (returnType instanceof OptionalType optionalType) {
+            debug("Return type Optional %s.%s".formatted(optionalType.packageName(), optionalType.className()));
+            return validateReturn(context, optionalType.containedType(), mappedColumn);
+        }
+        debug("Unmatched return type? %s".formatted(returnType));
+        return INVALID;
+    }
 
-        return false;
+    private ColumnMetaData getColumnMetaData(
+            QueryResultContext context, RecordType recordType, RecordTypeComponent component) {
+        var matchingColumn = context.getMatchingColumn(component.name());
+        if (matchingColumn.isEmpty()) {
+            reportError("Record component '%s.%s' does not have a matching column"
+                    .formatted(recordType.className(), component.name()));
+            throw new IllegalArgumentException();
+        }
+        return matchingColumn.get();
     }
 }

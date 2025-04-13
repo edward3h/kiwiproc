@@ -3,8 +3,13 @@ package org.ethelred.kiwiproc.processor;
 
 import static java.util.Map.entry;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,9 +24,9 @@ import org.ethelred.kiwiproc.processor.types.*;
 import org.jspecify.annotations.Nullable;
 
 public class CoreTypes {
-    public static final BasicType STRING_TYPE =
-            new BasicType(String.class.getPackageName(), String.class.getSimpleName(), false);
-    public static final Set<Class<?>> BASIC_TYPES = Set.of(
+    public static final ObjectType STRING_TYPE =
+            new ObjectType(String.class.getPackageName(), String.class.getSimpleName(), false);
+    public static final Set<Class<?>> OBJECT_TYPES = Set.of(
             String.class,
             BigInteger.class,
             BigDecimal.class,
@@ -47,7 +52,7 @@ public class CoreTypes {
 
     /*
     The key type can be assigned to any of the value types without casting.
-    Primitive type mappings that are NOT in this map require a cast and a "lossy converson" warning.
+    Primitive type mappings that are NOT in this map require a cast and a "lossy conversion" warning.
      */
     private static final Map<Class<?>, Set<Class<?>>> assignableFrom = Map.of(
             byte.class, Set.of(byte.class, short.class, int.class, long.class, float.class, double.class),
@@ -181,7 +186,8 @@ public class CoreTypes {
             // Big -> primitive
             Stream.of(byte.class, short.class, int.class, long.class, float.class, double.class)
                     .forEach(target -> {
-                        String w = "possible lossy conversion from %s to %s".formatted(big.getName(), target.getName());
+                        String w = "possible lossy conversion from %s to %s"
+                                .formatted(big.getSimpleName(), target.getName());
                         entries.add(mappingEntry(big, target, w, "$N.%sValue()".formatted(target.getName())));
                     });
         });
@@ -248,7 +254,7 @@ public class CoreTypes {
             builder.put(key, new PrimitiveKiwiType(key.getSimpleName(), false));
             builder.put(value, new PrimitiveKiwiType(key.getSimpleName(), true));
         });
-        BASIC_TYPES.forEach(c -> builder.put(c, new BasicType(c.getPackageName(), c.getSimpleName(), false)));
+        OBJECT_TYPES.forEach(c -> builder.put(c, new ObjectType(c.getPackageName(), c.getSimpleName(), false)));
         return Map.copyOf(builder);
     }
 
@@ -264,13 +270,16 @@ public class CoreTypes {
     }
 
     public Conversion lookup(KiwiType source, KiwiType target) {
+        if (source.isNullable() && !target.isNullable()) {
+            return invalid;
+        }
         if (source.equals(target) || source.withIsNullable(true).equals(target)) {
             return new AssignmentConversion();
         }
-        if (source instanceof ContainerType ct && target instanceof SqlArrayType sat) {
+        if (source instanceof CollectionType ct && ct.isSimple() && target instanceof SqlArrayType sat) {
             return toSqlArray(ct, sat);
         }
-        if (source instanceof SqlArrayType sat && target instanceof ContainerType ct) {
+        if (source instanceof SqlArrayType sat && target instanceof CollectionType ct && ct.isSimple()) {
             return fromSqlArray(sat, ct);
         }
         // special case String
@@ -290,7 +299,7 @@ public class CoreTypes {
         return result;
     }
 
-    private Conversion fromSqlArray(SqlArrayType sat, ContainerType ct) {
+    private Conversion fromSqlArray(SqlArrayType sat, CollectionType ct) {
         var elementConversion = lookup(sat.containedType(), ct.containedType());
         if (!elementConversion.isValid()) {
             return elementConversion;
@@ -298,7 +307,7 @@ public class CoreTypes {
         return new FromSqlArrayConversion(sat, ct, elementConversion);
     }
 
-    private Conversion toSqlArray(ContainerType ct, SqlArrayType sat) {
+    private Conversion toSqlArray(CollectionType ct, SqlArrayType sat) {
         var elementConversion = lookup(ct.containedType().withIsNullable(false), sat.containedType());
         if (!elementConversion.isValid()) {
             return elementConversion;
@@ -313,5 +322,39 @@ public class CoreTypes {
             }
         }
         throw new NullPointerException();
+    }
+
+    public static void main(String[] args) {
+        if (args.length > 0) {
+            var filePath = Path.of(args[0]);
+            try {
+                Files.createDirectories(filePath.getParent());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try (var bw = Files.newBufferedWriter(
+                            Path.of(args[0]), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                    var w = new PrintWriter(bw)) {
+                w.println(
+                        """
+                        .Conversions
+                        [%autowidth]
+                        |===
+                        |Source |Target |Warning
+                        """);
+                var ct = new CoreTypes();
+                ct.simpleMappings.entrySet().stream()
+                        .map(e -> "|%s |%s |%s"
+                                .formatted(
+                                        e.getKey().source().className(),
+                                        e.getKey().target().className(),
+                                        e.getValue().hasWarning() ? e.getValue().warning() : ""))
+                        .sorted()
+                        .forEach(w::println);
+                w.println("|===");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

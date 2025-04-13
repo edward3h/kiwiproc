@@ -8,14 +8,11 @@ import org.ethelred.kiwiproc.processor.types.KiwiType;
 
 @KiwiRecordBuilder
 public record Signature(KiwiType returnType, String methodName, List<String> paramNames) {
-    static Signature fromMethod(TypeUtils typeUtils, ExecutableElement element) {
+    static Signature fromMethod(KiwiType returnType, ExecutableElement element) {
         List<String> params = element.getParameters().stream()
                 .map(VariableElement::getSimpleName)
                 .map(Object::toString)
                 .toList();
-        return new Signature(
-                typeUtils.kiwiType(element.getReturnType()),
-                element.getSimpleName().toString(),
-                params);
+        return new Signature(returnType, element.getSimpleName().toString(), params);
     }
 }

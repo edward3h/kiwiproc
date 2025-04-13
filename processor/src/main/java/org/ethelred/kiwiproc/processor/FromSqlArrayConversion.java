@@ -1,11 +1,11 @@
 /* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor;
 
-import org.ethelred.kiwiproc.processor.types.ContainerType;
+import org.ethelred.kiwiproc.processor.types.CollectionType;
 import org.ethelred.kiwiproc.processor.types.SqlArrayType;
 import org.jspecify.annotations.Nullable;
 
-public record FromSqlArrayConversion(SqlArrayType sat, ContainerType ct, Conversion elementConversion)
+public record FromSqlArrayConversion(SqlArrayType sat, CollectionType ct, Conversion elementConversion)
         implements Conversion {
     @Override
     public boolean isValid() {

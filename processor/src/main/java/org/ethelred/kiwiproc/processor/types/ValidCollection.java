@@ -4,10 +4,9 @@ package org.ethelred.kiwiproc.processor.types;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
-public enum ValidContainerType {
+public enum ValidCollection {
     ARRAY(
             Array.class,
             """
@@ -27,11 +26,6 @@ public enum ValidContainerType {
     LIST(List.class),
     SET(Set.class, """
             new java.util.LinkedHashSet<>($listVariable:L)
-            """),
-    OPTIONAL(
-            Optional.class,
-            """
-            $listVariable:L.isEmpty() ? Optional.empty() : Optional.of($listVariable:L.get(0))
             """);
 
     private final Class<?> javaType;
@@ -43,22 +37,18 @@ public enum ValidContainerType {
     private final String fromListTemplate;
     private final String toStreamTemplate;
 
-    ValidContainerType(Class<?> javaType, String fromListTemplate, String toStreamTemplate) {
+    ValidCollection(Class<?> javaType, String fromListTemplate, String toStreamTemplate) {
         this.javaType = javaType;
         this.fromListTemplate = fromListTemplate;
         this.toStreamTemplate = toStreamTemplate;
     }
 
-    ValidContainerType(Class<?> javaType) {
+    ValidCollection(Class<?> javaType) {
         this(javaType, "List.copyOf($listVariable:L)", "$containerVariable:L.stream()");
     }
 
-    ValidContainerType(Class<?> javaType, String fromListTemplate) {
+    ValidCollection(Class<?> javaType, String fromListTemplate) {
         this(javaType, fromListTemplate, "$containerVariable:L.stream()");
-    }
-
-    public boolean isMultiValued() {
-        return this != OPTIONAL;
     }
 
     public Class<?> javaType() {
