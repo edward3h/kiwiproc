@@ -34,7 +34,7 @@ dependencyResolutionManagement {
             library("jspecify", "org.jspecify:jspecify:1.0.0")
 
             library("javapoet", "com.palantir.javapoet:javapoet:0.7.0")
-            library("guava", "com.google.guava:guava:33.4.0-jre")
+            library("guava", "com.google.guava:guava:33.4.8-jre")
             library("compile-testing", "com.google.testing.compile:compile-testing:0.21.0")
             library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
 
