@@ -7,7 +7,7 @@ plugins {
 }
 
 micronaut {
-    version = "4.7.6"
+    version = "4.8.1"
 }
 
 dependencies {
