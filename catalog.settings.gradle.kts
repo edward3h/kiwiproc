@@ -6,7 +6,7 @@ dependencyResolutionManagement {
             version("junit", "5.12.1")
             version("recordbuilder", "44")
             version("mapstruct", "1.6.3")
-            version("springboot", "3.4.3")
+            version("springboot", "3.4.4")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
             library("avaje-json-processor", "io.avaje", "avaje-jsonb-generator").versionRef("avaje-json")
