@@ -6,8 +6,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("org.testcontainers:testcontainers:1.20.6")
-        classpath("org.testcontainers:postgresql:1.20.6")
+        classpath("org.testcontainers:testcontainers:1.21.0")
+        classpath("org.testcontainers:postgresql:1.21.0")
     }
 }
 
@@ -38,7 +38,7 @@ dependencies {
     implementation(project(":runtime"))
     implementation("jakarta.inject:jakarta.inject-api:2.0.1")
     liquibaseRuntime("org.liquibase:liquibase-core:4.31.1")
-    liquibaseRuntime("info.picocli:picocli:4.7.6")
+    liquibaseRuntime("info.picocli:picocli:4.7.7")
     liquibaseRuntime("ch.qos.logback:logback-core:1.5.18")
     liquibaseRuntime("ch.qos.logback:logback-classic:1.5.18")
     liquibaseRuntime("javax.xml.bind:jaxb-api:2.3.1")
