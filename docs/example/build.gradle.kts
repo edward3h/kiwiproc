@@ -6,8 +6,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("org.testcontainers:testcontainers:1.20.6")
-        classpath("org.testcontainers:postgresql:1.20.6")
+        classpath("org.testcontainers:testcontainers:1.21.0")
+        classpath("org.testcontainers:postgresql:1.21.0")
     }
 }
 
