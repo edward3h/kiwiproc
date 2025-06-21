@@ -7,3 +7,4 @@ include("shared", "querymeta", "processor", "runtime", "test-spring", "test-micr
 includeBuild("gradle-plugin")
 includeBuild(".")
 apply(from = "catalog.settings.gradle.kts")
+
