@@ -13,6 +13,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.language.jvm.tasks.ProcessResources;
 
+@SuppressWarnings("unused")
 public class KiwiProcPlugin implements Plugin<Project> {
 
     @Override
