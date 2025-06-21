@@ -1,6 +1,7 @@
 plugins {
     // Apply the Java Gradle plugin development plugin to add support for developing Gradle plugins
     `java-gradle-plugin`
+    id("com.diffplug.spotless").version("7.0.4")
 }
 
 group = "org.ethelred.kiwiproc"
@@ -12,10 +13,6 @@ repositories {
 }
 
 dependencies {
-    // Use JUnit Jupiter for testing.
-//    testImplementation(libs.junit.jupiter)
-
-//    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation(libs.jspecify)
 
     annotationProcessor(libs.avaje.json.processor)
@@ -23,11 +20,17 @@ dependencies {
     implementation(libs.embeddedpostgres)
     implementation(libs.liquibase.core)
     implementation(libs.postgresql)
+    testImplementation(gradleTestKit())
+val junitVersion = "5.13.1"
+    testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 gradlePlugin {
     // Define the plugin
-    val greeting by plugins.creating {
+    val kiwiproc by plugins.creating {
         id = "org.ethelred.kiwiproc"
         implementationClass = "org.ethelred.kiwiproc.gradle.KiwiProcPlugin"
     }
@@ -61,4 +64,15 @@ tasks.named<Test>("test") {
 
 tasks.named<ProcessResources>("processResources") {
     expand("version" to project.version)
+}
+
+spotless {
+    java {
+        cleanthat()
+        importOrder()
+        removeUnusedImports()
+        palantirJavaFormat()
+        formatAnnotations()
+        licenseHeader("/* (C) Edward Harman \$YEAR */")
+    }
 }
