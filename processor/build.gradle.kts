@@ -9,7 +9,7 @@ dependencies {
     annotationProcessor(libs.recordbuilder.processor)
     implementation(project(":shared"))
     implementation(project(":querymeta"))
-    implementation("org.ethelred.kiwiproc:plugin:0.3-SNAPSHOT")
+    implementation("org.ethelred.kiwiproc:plugin:${project.version}")
     implementation(libs.utilitary)
     implementation(libs.avaje.json.asProvider())
     implementation(libs.avaje.prisms)

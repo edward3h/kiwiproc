@@ -1,3 +1,5 @@
+import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle
+
 plugins {
     id("java-convention")
     id("org.ethelred.kiwiproc")
@@ -14,5 +16,5 @@ dependencies {
 
 kiwiProc {
     debug = true
-    dependencyInjectionStyle = org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle.SPRING
+    dependencyInjectionStyle = DependencyInjectionStyle.SPRING
 }

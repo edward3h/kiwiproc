@@ -1,4 +1,4 @@
-package org.ethelred.kiwiproc.example;
+package org.ethelred.kiwiproc.example.transaction;
 
 public record Country(int id, String name, String code) {
     public Country {

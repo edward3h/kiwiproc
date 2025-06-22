@@ -6,56 +6,45 @@
 
 === Gradle Configuration
 
-Set up dependencies for the annotation processor and runtime.
-Add a JSON file with configuration for the annotation processor, and tell the annotation processor the path.
-_TODO: milestone2 - gradle plugin to help with this._
+Add the Gradle plugin. By default, it will:
 
-[source,json]
-.`src/main/resources/kiwi-config.json`
-----
-{
-    "dataSources": {
-        "default": {
-            "named": "default",
-            "url": "jdbc:postgresql://localhost:5432/example?user=example",
-            "database": "example",
-            "username":  "example"
-        }
-    },
-    "dependencyInjectionStyle": "JAKARTA",
-    "debug": false
-}
-----
-
-To use with Spring, set `"dependencyInjectionStyle": "SPRING"`.
+* Set up dependencies for the annotation processor and runtime.
+* Run an embedded Postgres database during Gradle build and test.
+* Run a Liquibase changeset against the database.
+* Export a configuration file that is used by the annotation processor.
+* Export a properties file that works for Micronaut and Spring to access the embedded database.
 
 [source,groovy,indent=0,subs="verbatim,attributes",role="secondary"]
 .Groovy
 ----
-def kiwiversion = "{revnumber}"
+plugins {
+    id("org.ethelred.kiwiproc").version("{revnumber}")
+}
+
 dependencies {
-    annotationProcessor("org.ethelred.kiwiproc:processor:$kiwiversion")
-    implementation("org.ethelred.kiwiproc:runtime:$kiwiversion")
     implementation("{jakarta-dependency}")
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.compilerArgs.add("-Aorg.ethelred.kiwiproc.configuration=src/main/resources/kiwi-config.json")
+kiwiProc {
+    // uncomment for Spring:
+    // dependencyInjectionStyle = DependencyInjectionStyle.SPRING
 }
 ----
 
 [source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
 .Kotlin
 ----
-val kiwiversion = "{revnumber}"
+plugins {
+    id("org.ethelred.kiwiproc").version("{revnumber}")
+}
+
 dependencies {
-    annotationProcessor("org.ethelred.kiwiproc:processor:$kiwiversion")
-    implementation("org.ethelred.kiwiproc:runtime:$kiwiversion")
     implementation("{jakarta-dependency}")
 }
 
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.add("-Aorg.ethelred.kiwiproc.configuration=src/main/resources/kiwi-config.json")
+kiwiProc {
+    // uncomment for Spring:
+    // dependencyInjectionStyle = DependencyInjectionStyle.SPRING
 }
 ----
 
@@ -63,7 +52,7 @@ tasks.withType<JavaCompile>().configureEach {
 
 [source,java]
 ----
-include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/CountryCityDao.java[tag=body]
+include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/quickstart/CountryCityDao.java[tag=body]
 ----
 <1> Declare an interface as being a DAO.
 <2> Define a query. The SQL statement goes inline with the code. Parameters are inserted with ':'.
@@ -71,3 +60,8 @@ include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/CountryCityDao.
 === Inject
 
 Use your favourite dependency injection framework to inject an instance of your DAO.
+
+[source,java]
+----
+include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/quickstart/CountryService.java[tag=body]
+----

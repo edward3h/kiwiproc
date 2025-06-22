@@ -1,11 +1,18 @@
 plugins {
     // Apply the Java Gradle plugin development plugin to add support for developing Gradle plugins
     `java-gradle-plugin`
+    id("com.gradle.plugin-publish") version "1.2.1"
     id("com.diffplug.spotless").version("7.0.4")
 }
 
+apply(from = "../../version.gradle.kts")
 group = "org.ethelred.kiwiproc"
-version = "0.3-SNAPSHOT"
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
 
 repositories {
     // Use Maven Central for resolving dependencies.

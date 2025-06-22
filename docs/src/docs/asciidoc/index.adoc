@@ -8,6 +8,8 @@ Use declarative interfaces for Java database queries.
 
 include::quick_start.adoc[]
 
+include::transactions.adoc[]
+
 include::frameworks.adoc[]
 
 include::databases.adoc[]

@@ -1,18 +1,20 @@
-package org.ethelred.kiwiproc.example;
+package org.ethelred.kiwiproc.example.transaction;
 
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
 import org.ethelred.kiwiproc.annotation.SqlUpdate;
+import org.ethelred.kiwiproc.api.TransactionalDAO;
 import org.jspecify.annotations.Nullable;
 
 // tag::body[]
-@DAO // <1>
-public interface CountryCityDao {
+@DAO
+public interface CountryCityDao extends TransactionalDAO<CountryCityDao> { // <1>
+    // end::body[]
     @SqlQuery("""
             SELECT id, name, code
             FROM country
             WHERE code = :code
-            """) // <2>
+            """)
     @Nullable
     Country findCountryByCode(String code);
 
@@ -23,4 +25,3 @@ public interface CountryCityDao {
     boolean addCity(String name, int countryId);
 
 }
-// end::body[]
