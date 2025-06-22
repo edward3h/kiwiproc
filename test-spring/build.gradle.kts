@@ -1,8 +1,8 @@
-import org.ethelred.buildsupport.ProcessorConfigTask
+import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle
 
 plugins {
     id("java-convention")
-    id("org.ethelred.embeddedpostgres")
+    id("org.ethelred.kiwiproc")
 }
 
 dependencies {
@@ -14,12 +14,7 @@ dependencies {
     testRuntimeOnly(libs.postgresql)
 }
 
-
-val processorConfig = tasks.named<ProcessorConfigTask>("processorConfig") {
-//    debug = true
-    dependencyInjectionStyle = "SPRING"
-}
-
-tasks.named<ProcessResources>("processTestResources") {
-    from(processorConfig.get().getApplicationConfigFile())
+kiwiProc {
+    debug = true
+    dependencyInjectionStyle = DependencyInjectionStyle.SPRING
 }

@@ -1,8 +1,7 @@
-import org.ethelred.buildsupport.ProcessorConfigTask
 
 plugins {
     id("java-convention")
-    id("org.ethelred.embeddedpostgres")
+    id("org.ethelred.kiwiproc")
 }
 
 dependencies {
@@ -13,10 +12,6 @@ dependencies {
     testRuntimeOnly(libs.yaml)
 }
 
-val processorConfig = tasks.named<ProcessorConfigTask>("processorConfig") {
+kiwiProc {
     debug = true
-}
-
-tasks.named<ProcessResources>("processTestResources") {
-    from(processorConfig.get().getApplicationConfigFile())
 }

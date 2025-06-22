@@ -1,0 +1,17 @@
+:sourcedir: ../../../example
+:source-highlighter: rouge
+:icons: font
+
+== Transactions
+
+[source,java]
+----
+include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/transaction/CountryCityDao.java[tag=body]
+----
+<1> Make the DAO interface extend `TransactionalDAO`
+
+[source,java]
+----
+include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/transaction/CountryCityService.java[tag=body]
+----
+<1> Use the `call` or `run` methods, which are passed an instance of "dao" in a transaction.
