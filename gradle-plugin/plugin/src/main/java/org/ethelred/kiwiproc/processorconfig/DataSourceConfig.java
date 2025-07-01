@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 public record DataSourceConfig(
         String named,
         String url,
-        String database,
-        String username,
+        @Nullable String database,
+        @Nullable String username,
         @Nullable String password,
         @Nullable String driverClassName) {}

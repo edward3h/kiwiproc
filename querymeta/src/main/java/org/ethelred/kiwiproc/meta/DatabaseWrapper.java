@@ -26,10 +26,16 @@ public class DatabaseWrapper {
             error = new DatabaseWrapperException("Sorry, I only support Postgres at the moment.");
         } else {
             var pgSimpleDataSource = new PGSimpleDataSource();
-            pgSimpleDataSource.setDatabaseName(dataSourceConfig.database());
             pgSimpleDataSource.setURL(dataSourceConfig.url());
-            pgSimpleDataSource.setUser(dataSourceConfig.username());
-            pgSimpleDataSource.setPassword(dataSourceConfig.password());
+            if (dataSourceConfig.database() != null) {
+                pgSimpleDataSource.setDatabaseName(dataSourceConfig.database());
+            }
+            if (dataSourceConfig.username() != null) {
+                pgSimpleDataSource.setUser(dataSourceConfig.username());
+            }
+            if (dataSourceConfig.password() != null) {
+                pgSimpleDataSource.setPassword(dataSourceConfig.password());
+            }
             dataSource = pgSimpleDataSource;
         }
     }
@@ -111,7 +117,7 @@ public class DatabaseWrapper {
             valid = rs.next();
         } catch (SQLException e) {
             valid = false;
-            error = new DatabaseWrapperException("Test database connection failed", e);
+            error = new DatabaseWrapperException("Test database connection failed: " + e.getMessage(), e);
         }
     }
 

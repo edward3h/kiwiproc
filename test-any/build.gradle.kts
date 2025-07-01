@@ -14,4 +14,18 @@ dependencies {
 
 kiwiProc {
     debug = true
+    dataSources {
+        register("datetime") {
+            liquibaseChangelog = file("$projectDir/src/main/resources/datetime/changelog.xml")
+        }
+        if (project.hasProperty("kiwiproc.periodic-table.url")) {
+            register("periodic-table") {
+                jdbcUrl = project.property("kiwiproc.periodic-table.url").toString()
+            }
+        } else {
+            register("periodic-table") {
+                liquibaseChangelog = file("$projectDir/src/main/resources/periodic/changelog.xml")
+            }
+        }
+    }
 }

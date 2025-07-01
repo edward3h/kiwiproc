@@ -10,6 +10,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import liquibase.Liquibase;
@@ -129,12 +130,10 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
     private DataSourceConfig externalDataSourceConfig(KiwiProcDataSource kiwiProcDataSource) {
         if (kiwiProcDataSource.getLiquibaseChangelog().isPresent()) {
             var pgSimpleDataSource = new PGSimpleDataSource();
-            pgSimpleDataSource.setDatabaseName(kiwiProcDataSource.getDatabase().get());
             pgSimpleDataSource.setURL(kiwiProcDataSource.getJdbcUrl().get());
-            pgSimpleDataSource.setUser(kiwiProcDataSource.getUsername().get());
-            if (kiwiProcDataSource.getPassword().isPresent()) {
-                pgSimpleDataSource.setPassword(kiwiProcDataSource.getPassword().get());
-            }
+            ifPresent(kiwiProcDataSource.getDatabase(), pgSimpleDataSource::setDatabaseName);
+            ifPresent(kiwiProcDataSource.getUsername(), pgSimpleDataSource::setUser);
+            ifPresent(kiwiProcDataSource.getPassword(), pgSimpleDataSource::setPassword);
             liquibaseUpdate(
                     kiwiProcDataSource.getLiquibaseChangelog().getAsFile().get(), pgSimpleDataSource);
         }
@@ -142,10 +141,16 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
         return new DataSourceConfig(
                 kiwiProcDataSource.getName(),
                 kiwiProcDataSource.getJdbcUrl().get(),
-                kiwiProcDataSource.getDatabase().get(),
-                kiwiProcDataSource.getUsername().get(),
+                kiwiProcDataSource.getDatabase().getOrNull(),
+                kiwiProcDataSource.getUsername().getOrNull(),
                 kiwiProcDataSource.getPassword().getOrNull(),
                 null);
+    }
+
+    private <T> void ifPresent(Property<T> property, Consumer<T> consumer) {
+        if (property.isPresent()) {
+            consumer.accept(property.get());
+        }
     }
 
     private void liquibaseUpdate(File file, DataSource dataSource) {

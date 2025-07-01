@@ -5,13 +5,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
+import org.ethelred.kiwiproc.annotation.SqlUpdate;
+import org.ethelred.kiwiproc.api.TransactionalDAO;
 
-@DAO
-public interface DateTimeDAO {
+@DAO(dataSourceName = "datetime")
+public interface DateTimeDAO extends TransactionalDAO<DateTimeDAO> {
     record TestTz(int id, LocalDateTime createdAt) {}
 
     @SqlQuery("""
             SELECT id, created_at FROM test_tz
             """)
-    List<TestTz> getTestTimezone();
+    List<TestTz> getTestTimestamps();
+
+    @SqlUpdate("""
+            INSERT INTO test_tz DEFAULT VALUES
+            """)
+    void nextTimestamp();
 }
