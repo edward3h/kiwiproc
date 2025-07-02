@@ -14,4 +14,6 @@ include::frameworks.adoc[]
 
 include::databases.adoc[]
 
+include::gradle_plugin.adoc[]
+
 include::types.adoc[]
