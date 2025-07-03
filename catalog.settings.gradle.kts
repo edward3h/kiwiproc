@@ -17,7 +17,7 @@ dependencyResolutionManagement {
             library("jetbrains-annotations", "org.jetbrains:annotations:26.0.2")
 
             library("utilitary", "com.karuslabs:utilitary:3.0.0")
-            library("postgresql", "org.postgresql:postgresql:42.7.6")
+            library("postgresql", "org.postgresql:postgresql:42.7.7")
 
             library("junit-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit")
             library("junit-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit")
