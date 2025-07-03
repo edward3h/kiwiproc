@@ -1,7 +1,9 @@
+
 plugins {
     `java-gradle-plugin`
     id("com.gradle.plugin-publish") version "1.2.1"
     id("com.diffplug.spotless").version("7.0.4")
+    signing
 }
 
 apply(from = "../../version.gradle.kts")
@@ -119,4 +121,11 @@ publishing {
             }
         }
     }
+}
+
+signing {
+    val signingKey = findProperty("signingKey").toString()
+    val signingPassword = findProperty("signingPassword").toString()
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign(publishing.publications["maven"])
 }
