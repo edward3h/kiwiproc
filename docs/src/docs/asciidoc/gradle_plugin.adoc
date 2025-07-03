@@ -1,0 +1,100 @@
+== Gradle Plugin
+
+As noted in Quick Start, add the plugin with
+
+[source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
+----
+plugins {
+    id("org.ethelred.kiwiproc").version("{revnumber}")
+}
+----
+
+With no additional configuration, this will assume:
+
+* A single datasource named "default".
+* A Liquibase changelog in "src/main/resources/changelog.xml".
+* Use `jakarta.inject` annotations in generated code.
+
+[source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
+.Properties shown with their default values
+----
+import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle
+
+kiwiProc {
+    dependencyInjectionStyle = DependencyInjectionStyle.JAKARTA // <1>
+    debug = false // <2>
+    addDependencies = true // <3>
+    liquibaseChangelog = file("$projectDir/src/main/resources/changelog.xml") // <4>
+}
+----
+<1> Change to `DependencyInjectionStyle.SPRING` for use with Spring.
+<2> Enabling debug will make the annotation processor print more details during compilation.
+<3> Disabling "add dependencies" will prevent the plugin adding kiwiproc dependencies to the build. This is primarily for testing.
+<4> Change the path for liquibase for the "default" datasource. It is not valid when using multiple datasources - see below.
+
+=== Liquibase
+
+When using an embedded database, a schema must be defined. Liquibase is the supported way to do this.
+Therefore, a Liquibase changelog file is _required_, except when using an external database.
+
+=== Multiple and External Datasources
+
+KiwiProc supports using more than one datasource in a project.
+
+[source,java]
+----
+@DAO(dataSourceName = "firstDatabase") // <1>
+interface FirstDatabaseDAO {
+    //...
+}
+----
+<1> Specify the datasource name in an interface.
+
+[source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
+----
+kiwiProc {
+    dataSources {
+        register("firstDatabase") { // <1>
+            liquibaseChangelog = file("$projectDir/src/main/resources/first/changelog.xml")
+        }
+        register("secondDatabase") {
+            liquibaseChangelog = file("$projectDir/src/main/resources/somepath/changelog.xml")
+        }
+        register("externalDatabase") { // <2>
+            jdbcUrl = "jdbc:postgresql://db.example.com/database"
+            // optional
+            database = "..."
+            username = "..."
+            password = "..." // <3>
+        }
+    }
+}
+----
+<1> Register one or more datasources.
+<2> An external datasource is specified by giving a JDBC URL. Liquibase changelog is _optional_ for an external datasource.
+<3> How to manage secret values for Gradle builds, is out of scope for this document.
+
+[source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
+----
+kiwiProc {
+    dataSources {
+        register("default") { // <1>
+            jdbcUrl = "jdbc:postgresql://db.example.com/database"
+        }
+    }
+}
+----
+<1> To use an external database for the "default" datasource, configure it in the dataSources block.
+
+=== Test properties
+
+A file named `application-test.properties` will be written to the test resources path, so that automated tests can use the same database.
+It contains lines of the form:
+
+[source,properties]
+----
+datasources.default.url=jdbc\:postgresql\://localhost\:42581/rgtnmpgbihhy?user\=postgres
+----
+
+This is natively supported by Micronaut, and can be used with Spring with a small extra configuration.
+Other code can read it with `java.util.Properties`.
