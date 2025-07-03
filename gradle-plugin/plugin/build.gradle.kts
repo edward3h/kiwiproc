@@ -1,6 +1,6 @@
 plugins {
     `java-gradle-plugin`
-    id("com.gradle.plugin-publish") version "1.2.1"
+    id("com.gradle.plugin-publish") version "1.3.1"
     id("com.diffplug.spotless").version("7.0.4")
     id("org.danilopianini.publish-on-central").version("9.0.6")
 }
