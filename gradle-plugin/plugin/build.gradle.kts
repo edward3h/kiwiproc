@@ -1,5 +1,4 @@
 plugins {
-    // Apply the Java Gradle plugin development plugin to add support for developing Gradle plugins
     `java-gradle-plugin`
     id("com.gradle.plugin-publish") version "1.2.1"
     id("com.diffplug.spotless").version("7.0.4")
@@ -36,10 +35,16 @@ val junitVersion = "5.13.1"
 }
 
 gradlePlugin {
+    website = "https://edward3h.github.io/kiwiproc/"
+    vcsUrl = "https://github.com/edward3h/kiwiproc.git"
+
     // Define the plugin
     val kiwiproc by plugins.creating {
         id = "org.ethelred.kiwiproc"
         implementationClass = "org.ethelred.kiwiproc.gradle.KiwiProcPlugin"
+        displayName = "KiwiProc Gradle Plugin"
+        description = "Configure and run embedded databases for KiwiProc generation"
+        tags.addAll("Java", "database", "annotation processor")
     }
 }
 
@@ -81,5 +86,37 @@ spotless {
         palantirJavaFormat()
         formatAnnotations()
         licenseHeader("/* (C) Edward Harman \$YEAR */")
+    }
+}
+
+// plugin is published as a library as well, for the shared processorconfig classes
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+
+            pom {
+                name = "kiwiproc"
+                description = "Java build time SQL support"
+                url = "https://github.com/edward3h/kiwiproc"
+                licenses {
+                    license {
+                        name = "Apache License 2.0"
+                        url = "https://choosealicense.com/licenses/apache-2.0/"
+                    }
+                }
+                developers {
+                    developer {
+                        name = "Edward Harman"
+                        email = "jaq@ethelred.org"
+                    }
+                }
+                scm {
+                    connection = "https://github.com/edward3h/kiwiproc.git"
+                    developerConnection = "git@github.com:edward3h/kiwiproc.git"
+                    url = "https://github.com/edward3h/kiwiproc"
+                }
+            }
+        }
     }
 }

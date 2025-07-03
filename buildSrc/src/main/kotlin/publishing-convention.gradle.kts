@@ -32,8 +32,8 @@ publishing {
                 url = "https://github.com/edward3h/kiwiproc"
                 licenses {
                     license {
-                        name = "GNU General Public License, Version 3"
-                        url = "https://choosealicense.com/licenses/gpl-3.0/"
+                        name = "Apache License 2.0"
+                        url = "https://choosealicense.com/licenses/apache-2.0/"
                     }
                 }
                 developers {
