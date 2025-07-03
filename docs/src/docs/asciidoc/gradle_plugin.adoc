@@ -72,7 +72,7 @@ kiwiProc {
 ----
 <1> Register one or more datasources.
 <2> An external datasource is specified by giving a JDBC URL. Liquibase changelog is _optional_ for an external datasource.
-<3> Managing secret values for Gradle builds is out of scope for this document.
+<3> How to manage secret values for Gradle builds, is out of scope for this document.
 
 [source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
 ----
