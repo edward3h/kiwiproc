@@ -72,8 +72,8 @@ public class KiwiProcPlugin implements Plugin<Project> {
         });
 
         project.getTasks().named("processTestResources", ProcessResources.class, task -> {
-           task.dependsOn(processorConfigTask);
-           task.from(processorConfigTask.map(KiwiProcConfigTask::getApplicationPropertiesFile));
+            task.dependsOn(processorConfigTask);
+            task.from(processorConfigTask.map(KiwiProcConfigTask::getApplicationPropertiesFile));
         });
     }
 
