@@ -28,7 +28,7 @@ dependencies {
     implementation(libs.liquibase.core)
     implementation(libs.postgresql)
     testImplementation(gradleTestKit())
-val junitVersion = "5.13.1"
+val junitVersion = "5.13.2"
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
 
