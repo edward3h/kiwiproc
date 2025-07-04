@@ -76,6 +76,7 @@ tasks.named<Test>("test") {
 }
 
 tasks.named<ProcessResources>("processResources") {
+    inputs.property("version", project.version)
     expand("version" to project.version)
 }
 
