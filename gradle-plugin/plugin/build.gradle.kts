@@ -1,6 +1,6 @@
 plugins {
     `java-gradle-plugin`
-    id("com.gradle.plugin-publish") version "1.2.1"
+    id("com.gradle.plugin-publish") version "1.3.1"
     id("com.diffplug.spotless").version("7.0.4")
     id("org.danilopianini.publish-on-central").version("9.0.6")
 }
@@ -28,7 +28,7 @@ dependencies {
     implementation(libs.liquibase.core)
     implementation(libs.postgresql)
     testImplementation(gradleTestKit())
-val junitVersion = "5.13.1"
+val junitVersion = "5.13.2"
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
 
