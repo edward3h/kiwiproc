@@ -14,6 +14,6 @@ java {
 }
 
 dependencies {
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:7.0.4")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:7.1.0")
     implementation(libs.publish.on.central)
 }

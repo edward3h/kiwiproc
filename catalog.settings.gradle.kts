@@ -3,7 +3,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             version("avaje-json", "3.5")
-            version("junit", "5.13.2")
+            version("junit", "5.13.3")
             version("recordbuilder", "47")
             version("mapstruct", "1.6.3")
             version("springboot", "3.5.3")
@@ -44,7 +44,7 @@ dependencyResolutionManagement {
             library("spring-starter-jdbc", "org.springframework.boot", "spring-boot-starter-jdbc").versionRef("springboot")
             library("spring-test", "org.springframework.boot", "spring-boot-starter-test").versionRef("springboot")
 
-            library("publish-on-central", "org.danilopianini:publish-on-central:9.0.6")
+            library("publish-on-central", "org.danilopianini:publish-on-central:9.0.8")
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }
     }

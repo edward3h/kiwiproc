@@ -28,11 +28,11 @@ dependencies {
     implementation(libs.liquibase.core)
     implementation(libs.postgresql)
     // quick fix - should make postgres version/arch configurable
-    runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:14.15.0"))
+    runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:17.5.0"))
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-linux-arm64v8")
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-darwin-arm64v8")
     testImplementation(gradleTestKit())
-val junitVersion = "5.13.2"
+val junitVersion = "5.13.3"
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
 
