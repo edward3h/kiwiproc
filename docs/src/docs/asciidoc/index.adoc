@@ -1,8 +1,10 @@
-= Kiwiproc
+= image:kiwiproclogo.svg["Kiwiproc logo",100, role="left"] Kiwiproc
 Edward Harman
 :icons: font
 :toc: left
 :source-highlighter: rouge
+:imagesdir: images
+:docinfo: shared
 
 Use declarative interfaces for Java database queries.
 
@@ -16,4 +18,5 @@ include::databases.adoc[]
 
 include::gradle_plugin.adoc[]
 
+[appendix]
 include::types.adoc[]
