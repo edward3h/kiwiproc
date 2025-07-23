@@ -18,6 +18,7 @@ dependencies {
 
 tasks.named<AsciidoctorTask>("asciidoctor").configure {
     dependsOn(conversionsTable)
+    inputs.files("src/docs/asciidoc")
     baseDirFollowsSourceDir()
 //    configurations("asciidoctorExtensions")
     attributes(
