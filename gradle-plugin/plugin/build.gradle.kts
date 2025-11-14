@@ -28,7 +28,7 @@ dependencies {
     implementation(libs.liquibase.core)
     implementation(libs.postgresql)
     // quick fix - should make postgres version/arch configurable
-    runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:17.5.0"))
+    runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:17.7.0"))
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-linux-arm64v8")
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-darwin-arm64v8")
     testImplementation(gradleTestKit())
