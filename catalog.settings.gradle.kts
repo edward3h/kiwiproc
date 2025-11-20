@@ -44,7 +44,7 @@ dependencyResolutionManagement {
             library("spring-starter-jdbc", "org.springframework.boot", "spring-boot-starter-jdbc").versionRef("springboot")
             library("spring-test", "org.springframework.boot", "spring-boot-starter-test").versionRef("springboot")
 
-            library("publish-on-central", "org.danilopianini:publish-on-central:9.1.0")
+            library("publish-on-central", "org.danilopianini:publish-on-central:9.1.8")
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }
     }
