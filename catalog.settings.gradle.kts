@@ -4,9 +4,9 @@ dependencyResolutionManagement {
         create("libs") {
             version("avaje-json", "3.6")
             version("junit", "5.13.3")
-            version("recordbuilder", "47")
+            version("recordbuilder", "51")
             version("mapstruct", "1.6.3")
-            version("springboot", "3.5.4")
+            version("springboot", "3.5.8")
 
             library("avaje-json", "io.avaje", "avaje-jsonb").versionRef("avaje-json")
             library("avaje-json-processor", "io.avaje", "avaje-jsonb-generator").versionRef("avaje-json")
@@ -44,7 +44,7 @@ dependencyResolutionManagement {
             library("spring-starter-jdbc", "org.springframework.boot", "spring-boot-starter-jdbc").versionRef("springboot")
             library("spring-test", "org.springframework.boot", "spring-boot-starter-test").versionRef("springboot")
 
-            library("publish-on-central", "org.danilopianini:publish-on-central:9.1.0")
+            library("publish-on-central", "org.danilopianini:publish-on-central:9.1.8")
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }
     }
