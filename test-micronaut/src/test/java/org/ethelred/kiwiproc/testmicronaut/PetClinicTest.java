@@ -10,9 +10,11 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.ethelred.kiwiproc.exception.UncheckedSQLException;
 import org.junit.jupiter.api.Test;
 
-@MicronautTest(environments = "test")
+@MicronautTest(environments = "test", rebuildContext = true)
 public class PetClinicTest {
     @Inject
     PetClinicDAO dao;
@@ -74,5 +76,19 @@ public class PetClinicTest {
             assertThat(visit).isNotNull();
             assertThat(visit.description()).contains("Some text");
         });
+    }
+
+    @Test
+    void happyAddPets() {
+        var message = "Don't commit an update during test.";
+        try {
+            dao.run(innerDao -> {
+                var result = innerDao.addPets(List.of("Hero", "Moth", "Rosie"), List.of(1, 1, 1), 3);
+                assertThat(result).hasSize(3);
+                throw new SQLException(message);
+            });
+        } catch (UncheckedSQLException e) {
+            assertThat(e.getCause().getMessage()).isEqualTo(message);
+        }
     }
 }

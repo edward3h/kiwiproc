@@ -10,6 +10,10 @@ import com.palantir.javapoet.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import org.ethelred.kiwiproc.processor.*;
 import org.ethelred.kiwiproc.processor.types.*;
@@ -79,24 +83,94 @@ public class InstanceGenerator {
     }
 
     private CodeBlock methodBodyForUpdate(DAOMethodInfo methodInfo) {
-        var builder = builderWithParameters(methodInfo);
+        var builder = builderWithParameters(methodInfo.parameterMapping());
         builder.addStatement("var rawResult = statement.executeUpdate()");
         KiwiType returnType = methodInfo.signature().returnType();
         if (!(returnType instanceof VoidType)) {
             var conversion = lookupConversion(
-                    methodInfo::methodElement, new TypeMapping(new PrimitiveKiwiType("int", false), returnType));
-            buildConversion(builder, conversion, returnType, "result", "rawResult", true);
+                    methodInfo::methodElement, new TypeMapping(CoreTypes.UPDATE_RETURN_TYPE, returnType));
+            buildConversion(builder, methodInfo, conversion, returnType, "result", "rawResult", true);
             builder.addStatement("return result");
         }
         return builder.build();
     }
 
     private CodeBlock methodBodyForBatch(DAOMethodInfo methodInfo) {
-        return CodeBlock.of("//TODO\n");
+        /*
+           boolean anyValues = false;
+           var someIterator = some.iterator();
+           var otherIterator = Arrays.asList(other).iterator();
+           while (someIterator.hasNext() && otherIterator.hasNext()) {
+               var someIteratorValue = someIterator.next();
+               var otherIteratorValue = otherIterator.next();
+               // set parameters
+               statement.addBatch();
+               anyValues = true;
+           }
+           if (someIterator.hasNext() || otherIterator.hasNext()) {
+               throw new UncheckedSqlException("Iterators in method x have different lengths");
+           }
+           if (anyValues) {
+               int[] rawResult = statement.executeBatch();
+               var result = doConversion(rawResult);
+               return result;
+           }
+           return someDefaultResult;
+        */
+        var builder = CodeBlock.builder();
+        builder.addStatement("var anyValues = false");
+        var iterators = methodInfo.batchIterators();
+        record IteratorVariableNames(DAOBatchIterator iterator, String iteratorName, String iteratorValueName) {}
+        var iteratorsAndNames = iterators.stream()
+                .collect(Collectors.toMap(
+                        DAOBatchIterator::source,
+                        i -> new IteratorVariableNames(
+                                i,
+                                patchName(i.source().methodParameterName() + "Iterator"),
+                                patchName(i.source().methodParameterName() + "IteratorValue"))));
+        for (var iteratorAndNames : iteratorsAndNames.values()) {
+            builder.addNamed(
+                    "var $iteratorVariable:L = "
+                            + iteratorAndNames.iterator.validCollection().toIteratorTemplate(),
+                    Map.of(
+                            "iteratorVariable",
+                            iteratorAndNames.iteratorName,
+                            "containerVariable",
+                            iteratorAndNames.iterator.source().methodParameterName()))
+                    .addStatement("");
+        }
+        var hasNextClause = iteratorsAndNames.values().stream()
+                .map(IteratorVariableNames::iteratorName)
+                .map("%s.hasNext()"::formatted)
+                .collect(Collectors.joining(" && "));
+        builder.beginControlFlow("while ($L)", hasNextClause);
+        for (var iteratorAndNames : iteratorsAndNames.values()) {
+            builder.addStatement(
+                    "var $L = $L.next()", iteratorAndNames.iteratorValueName, iteratorAndNames.iteratorName);
+        }
+        var parameterMapping = methodInfo.parameterMapping();
+        addParameters(builder, parameterMapping, methodParameterInfo -> {
+            if (iteratorsAndNames.containsKey(methodParameterInfo)) {
+                return iteratorsAndNames.get(methodParameterInfo).iteratorValueName;
+            }
+            return methodParameterInfo.methodParameterName();
+        });
+        builder.addStatement("statement.addBatch()");
+        builder.addStatement("anyValues = true");
+        builder.endControlFlow(); // while hasNext...
+        builder.addStatement("var rawResult = anyValues ? statement.executeBatch() : new int[0]");
+        KiwiType returnType = methodInfo.signature().returnType();
+        if (!(returnType instanceof VoidType)) {
+            var conversion = lookupConversion(
+                    methodInfo::methodElement, new TypeMapping(CoreTypes.BATCH_RETURN_TYPE, returnType));
+            buildConversion(builder, methodInfo, conversion, returnType, "result", "rawResult", true);
+            builder.addStatement("return result");
+        }
+        return builder.build();
     }
 
     private CodeBlock methodBodyForQuery(DAOMethodInfo methodInfo) {
-        var builder = builderWithParameters(methodInfo);
+        var builder = builderWithParameters(methodInfo.parameterMapping());
         var containerBuilder = containerBuilderFor(methodInfo);
         builder.addStatement("var rs = statement.executeQuery()");
         builder.addStatement(containerBuilder.declaration());
@@ -120,7 +194,7 @@ public class InstanceGenerator {
                 }
                 var varName = patchName(columnName(column));
                 buildConversion(
-                        builder, column.conversion(), column.asTypeMapping().target(), varName, rawName, true);
+                        builder, methodInfo, column.conversion(), column.asTypeMapping().target(), varName, rawName, true);
             }
             for (ResultPart resultPart : ResultPart.values()) {
                 var componentClass = containerBuilder.componentTypeFor(resultPart);
@@ -180,17 +254,21 @@ public class InstanceGenerator {
         return prefix + cName;
     }
 
-    private CodeBlock.Builder builderWithParameters(DAOMethodInfo methodInfo) {
+    private CodeBlock.Builder builderWithParameters(List<DAOParameterInfo> parameterMapping) {
         var builder = CodeBlock.builder();
-        methodInfo.parameterMapping().forEach(parameterInfo -> {
+        addParameters(builder, parameterMapping, MethodParameterInfo::methodParameterName);
+        return builder;
+    }
+
+    private void addParameters(
+            CodeBlock.Builder builder,
+            List<DAOParameterInfo> parameterMapping,
+            Function<MethodParameterInfo, String> sourceLookup) {
+        parameterMapping.forEach(parameterInfo -> {
             var name = "param" + parameterInfo.index();
+            String accessor = sourceLookup.apply(parameterInfo.source()) + parameterInfo.javaAccessorSuffix();
             buildConversion(
-                    builder,
-                    parameterInfo.conversion(),
-                    parameterInfo.mapper().target(),
-                    name,
-                    parameterInfo.javaAccessor(),
-                    true);
+                    builder, parameterInfo, parameterInfo.conversion(), parameterInfo.mapper().target(), name, accessor, true);
             var nullableSource = parameterInfo.mapper().source().isNullable();
             if (nullableSource) {
                 builder.beginControlFlow("if ($L == null)", name)
@@ -201,22 +279,21 @@ public class InstanceGenerator {
             if (nullableSource) {
                 builder.endControlFlow();
             }
-            parameterNames.add(parameterInfo.javaAccessor());
+            parameterNames.add(accessor);
         });
-        return builder;
     }
 
     private void buildConversion(
             CodeBlock.Builder builder,
+            Supplier<Element> methodInfo,
             Conversion conversion,
             KiwiType targetType,
             String assignee,
             String accessor,
             boolean withVar) {
         try {
-            System.err.println("Conversion " + conversion);
             var insertVar =
-                    withVar ? CodeBlock.of("$T ", kiwiTypeConverter.fromKiwiType(targetType)) : CodeBlock.of("");
+                    withVar ? CodeBlock.of("$T ", kiwiTypeConverter.fromKiwiType(targetType, true)) : CodeBlock.of("");
             if (conversion instanceof AssignmentConversion) {
                 /* e.g.
                 var param1 = id;
@@ -243,7 +320,7 @@ public class InstanceGenerator {
                         .indent()
                         .add("\n.map($L -> {\n", lambdaValue)
                         .indent();
-                buildConversion(builder, elementConversion, sac.sat().containedType(), "tmp", lambdaValue, true);
+                buildConversion(builder, methodInfo, elementConversion, sac.sat().containedType(), "tmp", lambdaValue, true);
                 builder.addStatement("return tmp")
                         .unindent()
                         .add("})\n.toArray();\n")
@@ -281,7 +358,7 @@ public class InstanceGenerator {
                                 arrayRS,
                                 sac.sat().componentType().accessorSuffix());
                 buildConversion(
-                        builder, sac.elementConversion(), sac.ct().containedType(), itemValue, rawItemValue, true);
+                        builder, methodInfo, sac.elementConversion(), sac.ct().containedType(), itemValue, rawItemValue, true);
                 builder.addStatement("$L.add($L)", arrayList, itemValue)
                         .endControlFlow()
                         .add("$L$L = ", insertVar, assignee)
@@ -289,13 +366,48 @@ public class InstanceGenerator {
                                 sac.ct().type().fromListTemplate(),
                                 Map.of("componentClass", componentClass, "listVariable", arrayList))
                         .addStatement("");
+            } else if (conversion instanceof CollectionConversion cc) {
+                /*
+                var sourceIterator = Arrays.asList(source).iterator();
+                List<Integer> arrayList = new ArrayList<>();
+                while (sourceIterator.hasNext()) {
+                    var rawItemValue = sourceIterator.next();
+                    var itemValue = rawItemValue;
+                    arrayList.add(itemValue);
+                }
+                var value = List.copyOf(arrayList);
+                 */
+
+                var sourceIterator = patchName("sourceIterator");
+                var arrayList = patchName("arrayList");
+                var rawItemValue = patchName("rawItemValue");
+                var itemValue = patchName("itemValue");
+                TypeName componentClass =
+                        kiwiTypeConverter.fromKiwiType(cc.sourceType().containedType(), true);
+                builder.addNamed("var $iteratorName:L = " + cc.sourceType().type().toIteratorTemplate(), Map.of("iteratorName", sourceIterator, "containerVariable", accessor))
+                        .addStatement("")
+                        .addStatement("List<$T> $L = new $T<>()", componentClass, arrayList, ArrayList.class)
+                        .beginControlFlow("while ($L.hasNext())", sourceIterator)
+                        .addStatement(
+                                "var $L = $L.next()",
+                                rawItemValue,
+                                sourceIterator);
+                buildConversion(
+                        builder, methodInfo, cc.containedTypeConversion(), cc.targetType().containedType(), itemValue, rawItemValue, true);
+                builder.addStatement("$L.add($L)", arrayList, itemValue)
+                        .endControlFlow()
+                        .add("$L$L = ", insertVar, assignee)
+                        .addNamed(
+                                cc.targetType().type().fromListTemplate(),
+                                Map.of("componentClass", componentClass, "listVariable", arrayList))
+                        .addStatement("");
             } else if (conversion instanceof NullableSourceConversion nsc) {
                 builder.addStatement("$T $L = null", kiwiTypeConverter.fromKiwiType(targetType), assignee)
                         .beginControlFlow("if ($L != null)", accessor);
-                buildConversion(builder, nsc.conversion(), targetType, assignee, accessor, false);
+                buildConversion(builder, methodInfo, nsc.conversion(), targetType, assignee, accessor, false);
                 builder.endControlFlow();
             } else {
-                logger.error(null, "Unsupported Conversion %s".formatted(conversion)); // TODO add Element
+                logger.error(methodInfo.get(), "Unsupported Conversion %s".formatted(conversion));
             }
         } catch (RuntimeException e) {
             throw new RuntimeException("Error in conversion " + conversion, e);

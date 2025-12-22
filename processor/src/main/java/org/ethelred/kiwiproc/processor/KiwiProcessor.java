@@ -125,8 +125,9 @@ public class KiwiProcessor extends AnnotationProcessor {
             logger.error(methodElement, "\n" + e.getMessage());
             return null;
         }
-        var parameterInfo =
-                MethodParameterInfo.fromElements(Objects.requireNonNull(typeUtils), methodElement.getParameters());
+        var parameterInfo = MethodParameterInfo.fromElements(
+                Objects.requireNonNull(typeUtils), methodElement.getParameters(), kind);
+        System.err.println(parameterInfo);
         Map<ColumnMetaData, MethodParameterInfo> parameterMapping =
                 mapParameters(methodElement, parsedSql.parameterNames(), queryMetaData.parameters(), parameterInfo);
         var typeValidator = new TypeValidator(logger, methodElement, coreTypes, config.debug());
@@ -187,13 +188,22 @@ public class KiwiProcessor extends AnnotationProcessor {
         //            singleColumnResult = new DAOResultColumn(col.name(), SqlTypeMappingRegistry.get(col),
         // returnComponentType);
         //        }
+        List<DAOBatchIterator> batchIterators = List.of();
+        if (kind == BATCH) {
+            batchIterators = parameterMapping.entrySet().stream()
+                    .map(DAOBatchIterator::from)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .toList();
+        }
         return new DAOMethodInfo(
                 methodElement,
                 Signature.fromMethod(returnType, methodElement),
                 kind,
                 parsedSql,
                 templateParameterMapping,
-                columnMapping.getColumns()); // TODO
+                columnMapping.getColumns(),
+                batchIterators);
     }
 
     private Map<ColumnMetaData, MethodParameterInfo> mapParameters(
@@ -252,10 +262,6 @@ public class KiwiProcessor extends AnnotationProcessor {
             var kind = kinds.iterator().next(); // get first element
             if (kind == DEFAULT) {
                 continue;
-            }
-
-            if (kind == BATCH) {
-                logger.error(methodElement, "@SqlBatch is not supported yet. It is planned for Milestone 2.");
             }
 
             DAOMethodInfo methodInfo = processMethod(kind, databaseWrapper, methodElement);

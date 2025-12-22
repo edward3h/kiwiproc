@@ -5,7 +5,7 @@ plugins {
 }
 
 kiwiProc {
-    debug = true
+//    debug = true
 }
 
 micronaut {

@@ -12,16 +12,14 @@ import org.ethelred.kiwiproc.processor.types.*;
 
 public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes, boolean debug) {
 
-    private static final KiwiType UPDATE_RETURN_TYPE = new PrimitiveKiwiType("int", false);
-    private static final KiwiType BATCH_RETURN_TYPE = new CollectionType(ValidCollection.ARRAY, UPDATE_RETURN_TYPE);
-
     public boolean validateParameters(Map<ColumnMetaData, MethodParameterInfo> parameterMapping, QueryMethodKind kind) {
         boolean result = true;
         for (var entry : parameterMapping.entrySet()) {
             var columnMetaData = entry.getKey();
             var methodParameterInfo = entry.getValue();
             var parameterType = methodParameterInfo.type();
-            if (kind == QueryMethodKind.BATCH && parameterType instanceof CollectionType collectionType) {
+            if (kind == QueryMethodKind.BATCH
+                    && parameterType instanceof CollectionType collectionType) {
                 // unwrap container because it will be iterated for the batch
                 parameterType = collectionType.containedType();
             }
@@ -33,8 +31,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
         }
         if (kind == QueryMethodKind.BATCH
                 && parameterMapping.values().stream()
-                        .map(MethodParameterInfo::type)
-                        .anyMatch(t -> t instanceof CollectionType)) {
+                        .noneMatch(MethodParameterInfo::batchIterate)) {
             result = false;
             logger.error(element, "SqlBatch method must have at least one iterable parameter");
         }
@@ -132,7 +129,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
             return reportError("Why would you want to return void from a query?");
         }
         if (kind == QueryMethodKind.UPDATE) {
-            var conversion = validateCompatible(UPDATE_RETURN_TYPE, returnType);
+            var conversion = validateCompatible(CoreTypes.UPDATE_RETURN_TYPE, returnType);
             if (!conversion.isValid()) {
                 return reportError(
                         "Return type %s is invalid for SqlUpdate. Must be compatible with int".formatted(returnType));
@@ -140,7 +137,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
             return new DAOResultMapping(conversion);
         }
         if (kind == QueryMethodKind.BATCH) {
-            var conversion = validateCompatible(BATCH_RETURN_TYPE, returnType);
+            var conversion = validateCompatible(CoreTypes.BATCH_RETURN_TYPE, returnType);
             if (!conversion.isValid()) {
                 return reportError(
                         "Return type %s is invalid for SqlBatch. Must be compatible with int[]".formatted(returnType));

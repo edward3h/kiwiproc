@@ -18,7 +18,7 @@ public class KiwiTypeConverter {
     public TypeName fromKiwiType(KiwiType kiwiType, boolean asParameter) {
         if (kiwiType instanceof CollectionType collectionType) {
             return ParameterizedTypeName.get(
-                    ClassName.get(collectionType.type().javaType()), fromKiwiType(collectionType.containedType()));
+                    ClassName.get(collectionType.type().javaType()), fromKiwiType(collectionType.containedType(), asParameter));
         } else if (kiwiType instanceof PrimitiveKiwiType primitiveKiwiType && asParameter) {
             var pretendNullable = primitiveKiwiType.withIsNullable(true);
             return ClassName.get(pretendNullable.packageName(), pretendNullable.className());

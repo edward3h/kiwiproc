@@ -10,7 +10,8 @@ public sealed interface Conversion
                 NullableSourceConversion,
                 StringFormatConversion,
                 ToSqlArrayConversion,
-                VoidConversion {
+                VoidConversion,
+                CollectionConversion {
     boolean isValid();
 
     boolean hasWarning();

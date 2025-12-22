@@ -62,19 +62,24 @@ public class TypeValidatorTest {
                 arguments(
                         col(false, JDBCType.INTEGER),
                         new MethodParameterInfo(
-                                mockVariableElement(), new JavaName("x"), ofClass(int.class), false, null),
+                                mockVariableElement(), new JavaName("x"), ofClass(int.class), false, null, false,null),
                         true,
                         null),
                 arguments(
                         col(true, JDBCType.INTEGER),
                         new MethodParameterInfo(
-                                mockVariableElement(), new JavaName("x"), ofClass(int.class), false, null),
+                                mockVariableElement(), new JavaName("x"), ofClass(int.class), false, null, false,null),
                         true,
                         null),
                 arguments(
                         col(true, JDBCType.INTEGER),
                         new MethodParameterInfo(
-                                mockVariableElement(), new JavaName("x"), ofClass(Integer.class, true), false, null),
+                                mockVariableElement(),
+                                new JavaName("x"),
+                                ofClass(Integer.class, true),
+                                false,
+                                null,
+                                false,null),
                         true,
                         null),
                 arguments(
@@ -84,7 +89,8 @@ public class TypeValidatorTest {
                                 new JavaName("x"),
                                 new CollectionType(ValidCollection.LIST, ofClass(Integer.class, true)),
                                 false,
-                                null),
+                                null,
+                                false,null),
                         true,
                         null));
     }

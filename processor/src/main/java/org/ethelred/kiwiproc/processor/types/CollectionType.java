@@ -27,7 +27,7 @@ public record CollectionType(As as, ValidCollection type, KiwiType containedType
 
     @Override
     public boolean isSimple() {
-        return as == As.SIMPLE || as == As.UNRESOLVED;
+        return as == As.SIMPLE;
     }
 
     @Override

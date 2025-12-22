@@ -203,4 +203,51 @@ public class ProcessorTest {
         assertThat(compilation).hadErrorContaining("Invalid return type");
         assertThat(compilation).hadErrorCount(2);
     }
+
+    @Test
+    void batchMustHaveAtLeastOneIterableParameter() throws IOException {
+        var compilation = configuredCompiler()
+                .compile(
+                        JavaFileObjects.forSourceString(
+                                "com.example.MyDAO",
+                                // language=java
+                                """
+                                        package com.example;
+
+                                        import java.util.List;
+                                        import org.ethelred.kiwiproc.annotation.DAO;
+                                        import org.ethelred.kiwiproc.annotation.SqlBatch;
+
+                                        @DAO
+                                        public interface MyDAO {
+                                            @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
+                                            List<Integer> addRestaurants(String name);
+                                        }
+                                        """));
+        assertThat(compilation).hadErrorContaining("at least one iterable parameter");
+        assertThat(compilation).hadErrorCount(2);
+    }
+
+    @Test
+    void batchIterableTypeMatchPlainType() throws IOException {
+        var compilation = configuredCompiler()
+                .compile(
+                        JavaFileObjects.forSourceString(
+                                "com.example.MyDAO",
+                                // language=java
+                                """
+                                        package com.example;
+
+                                        import java.util.List;
+                                        import org.ethelred.kiwiproc.annotation.DAO;
+                                        import org.ethelred.kiwiproc.annotation.SqlBatch;
+
+                                        @DAO
+                                        public interface MyDAO {
+                                            @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
+                                            List<Integer> addRestaurants(List<String> name);
+                                        }
+                                        """));
+        assertThat(compilation).succeeded();
+    }
 }

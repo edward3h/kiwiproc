@@ -61,6 +61,8 @@ public class CoreTypes {
             int.class, Set.of(int.class, long.class, float.class, double.class),
             long.class, Set.of(long.class, float.class, double.class),
             float.class, Set.of(float.class, double.class));
+    public static final KiwiType UPDATE_RETURN_TYPE = new PrimitiveKiwiType("int", false);
+    public static final KiwiType BATCH_RETURN_TYPE = new CollectionType(ValidCollection.ARRAY, UPDATE_RETURN_TYPE);
 
     private record ClassEntry(Class<?> first, Class<?> second) {}
 
@@ -74,7 +76,6 @@ public class CoreTypes {
         return assignableFrom.getOrDefault(source, Set.of()).contains(target);
     }
 
-    private final Conversion invalid = new InvalidConversion();
     Map<Class<?>, KiwiType> coreTypes;
     Map<TypeMapping, Conversion> simpleMappings;
 
@@ -271,16 +272,19 @@ public class CoreTypes {
 
     public Conversion lookup(KiwiType source, KiwiType target) {
         if (source.isNullable() && !target.isNullable()) {
-            return invalid;
+            return invalid(source, target);
         }
         if (source.equals(target) || source.withIsNullable(true).equals(target)) {
             return new AssignmentConversion();
         }
-        if (source instanceof CollectionType ct && ct.isSimple() && target instanceof SqlArrayType sat) {
+        if (source instanceof CollectionType ct && target instanceof SqlArrayType sat) {
             return toSqlArray(ct, sat);
         }
-        if (source instanceof SqlArrayType sat && target instanceof CollectionType ct && ct.isSimple()) {
+        if (source instanceof SqlArrayType sat && target instanceof CollectionType ct) {
             return fromSqlArray(sat, ct);
+        }
+        if (source instanceof CollectionType sct && target instanceof CollectionType tct) {
+            return new CollectionConversion(sct, tct, lookup(sct.containedType(), tct.containedType()));
         }
         // special case String
         StringFormatConversion stringConversion = null;
@@ -292,11 +296,15 @@ public class CoreTypes {
                 simpleMappings.get(new TypeMapping(source, target)),
                 simpleMappings.get(new TypeMapping(source, target.withIsNullable(false))),
                 simpleMappings.get(new TypeMapping(source.withIsNullable(false), target.withIsNullable(false))),
-                invalid);
+                invalid(source, target));
         if (result.isValid() && source.isNullable()) {
             result = new NullableSourceConversion(result);
         }
         return result;
+    }
+
+    private Conversion invalid(KiwiType source, KiwiType target) {
+        return new InvalidConversion(source, target);
     }
 
     private Conversion fromSqlArray(SqlArrayType sat, CollectionType ct) {

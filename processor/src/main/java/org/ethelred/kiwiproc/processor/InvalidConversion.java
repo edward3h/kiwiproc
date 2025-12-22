@@ -1,9 +1,11 @@
 /* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor;
 
+import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.jspecify.annotations.Nullable;
 
-public record InvalidConversion() implements Conversion {
+public record InvalidConversion(@Nullable KiwiType source,
+                                @Nullable KiwiType target) implements Conversion {
     @Override
     public boolean isValid() {
         return false;
