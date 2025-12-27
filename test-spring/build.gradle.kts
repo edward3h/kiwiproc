@@ -15,6 +15,6 @@ dependencies {
 }
 
 kiwiProc {
-    debug = true
+//    debug = true
     dependencyInjectionStyle = DependencyInjectionStyle.SPRING
 }

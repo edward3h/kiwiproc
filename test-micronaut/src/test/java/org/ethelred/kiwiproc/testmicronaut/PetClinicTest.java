@@ -10,7 +10,6 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.ethelred.kiwiproc.exception.UncheckedSQLException;
 import org.junit.jupiter.api.Test;
 

@@ -1,6 +1,7 @@
 /* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor.generator;
 
+import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
@@ -8,6 +9,7 @@ import java.util.Map;
 import org.ethelred.kiwiproc.processor.types.CollectionType;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
+import org.ethelred.kiwiproc.processor.types.ValidCollection;
 import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle;
 
 public class KiwiTypeConverter {
@@ -17,8 +19,12 @@ public class KiwiTypeConverter {
 
     public TypeName fromKiwiType(KiwiType kiwiType, boolean asParameter) {
         if (kiwiType instanceof CollectionType collectionType) {
+            if (collectionType.type() == ValidCollection.ARRAY) {
+                return ArrayTypeName.of(fromKiwiType(collectionType.containedType()));
+            }
             return ParameterizedTypeName.get(
-                    ClassName.get(collectionType.type().javaType()), fromKiwiType(collectionType.containedType(), asParameter));
+                    ClassName.get(collectionType.type().javaType()),
+                    fromKiwiType(collectionType.containedType(), asParameter));
         } else if (kiwiType instanceof PrimitiveKiwiType primitiveKiwiType && asParameter) {
             var pretendNullable = primitiveKiwiType.withIsNullable(true);
             return ClassName.get(pretendNullable.packageName(), pretendNullable.className());

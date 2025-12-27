@@ -18,8 +18,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
             var columnMetaData = entry.getKey();
             var methodParameterInfo = entry.getValue();
             var parameterType = methodParameterInfo.type();
-            if (kind == QueryMethodKind.BATCH
-                    && parameterType instanceof CollectionType collectionType) {
+            if (kind == QueryMethodKind.BATCH && parameterType instanceof CollectionType collectionType) {
                 // unwrap container because it will be iterated for the batch
                 parameterType = collectionType.containedType();
             }
@@ -30,8 +29,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
             }
         }
         if (kind == QueryMethodKind.BATCH
-                && parameterMapping.values().stream()
-                        .noneMatch(MethodParameterInfo::batchIterate)) {
+                && parameterMapping.values().stream().noneMatch(MethodParameterInfo::batchIterate)) {
             result = false;
             logger.error(element, "SqlBatch method must have at least one iterable parameter");
         }

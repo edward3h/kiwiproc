@@ -24,4 +24,5 @@ dependencies {
     testImplementation(libs.embeddedpostgres)
     testImplementation(libs.liquibase.core)
     testImplementation(libs.mapstruct.compile)
+    testCompileOnly(libs.jetbrains.annotations)
 }

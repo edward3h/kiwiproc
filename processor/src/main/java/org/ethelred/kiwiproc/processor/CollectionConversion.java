@@ -4,7 +4,9 @@ package org.ethelred.kiwiproc.processor;
 import org.ethelred.kiwiproc.processor.types.CollectionType;
 import org.jspecify.annotations.Nullable;
 
-public record CollectionConversion(CollectionType sourceType, CollectionType targetType, Conversion containedTypeConversion) implements Conversion {
+public record CollectionConversion(
+        CollectionType sourceType, CollectionType targetType, Conversion containedTypeConversion)
+        implements Conversion {
     @Override
     public boolean isValid() {
         return containedTypeConversion.isValid();

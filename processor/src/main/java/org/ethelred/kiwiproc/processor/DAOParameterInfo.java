@@ -5,14 +5,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
+import javax.lang.model.element.Element;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.processor.types.TypeUtils;
 
-import javax.lang.model.element.Element;
-
 public record DAOParameterInfo(
-        int index, MethodParameterInfo source, String setter, int sqlType, TypeMapping mapper, Conversion conversion) implements Supplier<Element> {
+        int index, MethodParameterInfo source, String setter, int sqlType, TypeMapping mapper, Conversion conversion)
+        implements Supplier<Element> {
     public static List<DAOParameterInfo> from(
             CoreTypes coreTypes, TypeUtils typeUtils, Map<ColumnMetaData, MethodParameterInfo> parameterMapping) {
         List<DAOParameterInfo> result = new ArrayList<>(parameterMapping.size());
@@ -23,7 +22,7 @@ public record DAOParameterInfo(
                 // TODO
             }
             var setter = "set" + sqlTypeMapping.accessorSuffix();
-//            System.err.println(methodParameterInfo);
+            //            System.err.println(methodParameterInfo);
             var mapper = new TypeMapping(methodParameterInfo.type(), sqlTypeMapping.kiwiType());
             result.add(new DAOParameterInfo(
                     columnMetaData.index(),

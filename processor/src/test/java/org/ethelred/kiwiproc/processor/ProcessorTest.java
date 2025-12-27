@@ -2,6 +2,7 @@
 package org.ethelred.kiwiproc.processor;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
+import static org.ethelred.kiwiproc.processor.ProcessorMethodTestCase.method;
 
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
@@ -21,6 +22,9 @@ import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @ExtendWith(CompilationExtension.class)
 public class ProcessorTest {
@@ -169,85 +173,118 @@ public class ProcessorTest {
         });
     }
 
-    @Test
-    void anArbitraryClassIsNotASupportedReturnType() throws IOException {
-        var compilation = configuredCompiler()
-                .compile(
-                        JavaFileObjects.forSourceString(
+    @ParameterizedTest
+    @MethodSource
+    void testMethods(ProcessorMethodTestCase testCase) throws IOException {
+        var compilation = configuredCompiler().compile(testCase.toFileObjects());
+        if (testCase.expectedErrorCount == 0) {
+            assertThat(compilation).succeeded();
+        }
+        assertThat(compilation).hadErrorCount(testCase.expectedErrorCount);
+        for (var message : testCase.expectedErrorMessages) {
+            assertThat(compilation).hadErrorContaining(message);
+        }
+    }
+
+    static Stream<Arguments> testMethods() {
+        return testCases().map(Arguments::of);
+    }
+
+    static Stream<ProcessorMethodTestCase> testCases() {
+        return Stream.of(
+                method(
+                                """
+                        @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
+                        List<Integer> addRestaurants(String name);
+                        """)
+                        .withDisplayName(
+                                "A SqlBatch method fails when it does not have at least one 'iterable' parameter.")
+                        .withExpectedErrorMessage("at least one iterable parameter")
+                        .withExpectedErrorCount(2),
+                method(
+                                """
+                        @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
+                        List<Integer> addRestaurants(List<String> name);
+                        """)
+                        .withDisplayName("A SqlBatch method compiles when it has an 'iterable' parameter.")
+                        .succeeds(),
+                method(
+                                """
+                        @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
+                        List<Integer> addRestaurants(String[] name);
+                        """)
+                        .withDisplayName("A SqlBatch method compiles when it has an array parameter.")
+                        .succeeds(),
+                method(
+                                """
+                        @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
+                        void addRestaurants(List<String> name);
+                        """)
+                        .withDisplayName("A SqlBatch method compiles when it has a void return type.")
+                        .succeeds(),
+                method(
+                                """
+                        @SqlBatch(sql = "INSERT INTO restaurant(name, tables) VALUES (:name, :tables)")
+                        void addRestaurants(List<String> name, int tables);
+                        """)
+                        .withDisplayName(
+                                "A SqlBatch method compiles when it has an iterable parameter and a not iterable parameter")
+                        .succeeds(),
+                method(
+                                """
+                @SqlBatch(sql = "INSERT INTO restaurant(name, tables, chain) VALUES (:name, :tables, :chain)")
+                void addRestaurants(List<String> name, int[] tables, String chain);
+                """)
+                        .withDisplayName(
+                                "A SqlBatch method compiles when it has multiple iterable parameters and a not iterable parameter")
+                        .succeeds(),
+                method(
+                                """
+                record RestaurantUpdate(String name, int tables, String chain) {}
+                @SqlBatch(sql = "INSERT INTO restaurant(name, tables, chain) VALUES (:name, :tables, :chain)")
+                void addRestaurants(List<RestaurantUpdate> updates);
+                """)
+                        .withDisplayName("A SqlBatch method compiles when it has an iterable record type")
+                        .succeeds(),
+                method(
+                                """
+                        @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
+                        int[] addRestaurants(List<String> name);
+                        """)
+                        .withDisplayName("A SqlBatch method compiles when it has an int array return type.")
+                        .succeeds(),
+                method(
+                                """
+                        @SqlQuery(sql = "SELECT * FROM restaurant WHERE name like :search || '%'")
+                        List<Restaurant> findRestaurantsByName(String search);
+                        """)
+                        .withAdditionalSource(
                                 "com.example.Restaurant",
-                                // language=java
+                                """
+                        package com.example;
+
+                        public class Restaurant {
+                            public Restaurant(int id, String name, int tables, String chain) {
+                            }
+                        }
+                        """)
+                        .withDisplayName("A SqlQuery method fails when the return type uses an arbitrary class.")
+                        .withExpectedErrorCount(2)
+                        .withExpectedErrorMessage("Invalid return type"),
+                method(
+                                """
+                        @SqlQuery(sql = "SELECT * FROM restaurant WHERE name like :search || '%'")
+                        List<Restaurant> findRestaurantsByName(String search);
+                        """)
+                        .withAdditionalSource(
+                                "com.example.Restaurant",
                                 """
                                 package com.example;
 
-                                public class Restaurant {
-                                    public Restaurant(int id, String name, int tables, String chain) {
-                                    }
-                                }
-                                """),
-                        JavaFileObjects.forSourceString(
-                                "com.example.MyDAO",
-                                // language=java
-                                """
-                                        package com.example;
-
-                                        import java.util.List;
-                                        import org.ethelred.kiwiproc.annotation.DAO;
-                                        import org.ethelred.kiwiproc.annotation.SqlQuery;
-
-                                        @DAO
-                                        public interface MyDAO {
-                                            @SqlQuery(sql = "SELECT * FROM restaurant WHERE name like :search || '%'")
-                                            List<Restaurant> findRestaurantsByName(String search);
-                                        }
-                                        """));
-        assertThat(compilation).hadErrorContaining("Invalid return type");
-        assertThat(compilation).hadErrorCount(2);
-    }
-
-    @Test
-    void batchMustHaveAtLeastOneIterableParameter() throws IOException {
-        var compilation = configuredCompiler()
-                .compile(
-                        JavaFileObjects.forSourceString(
-                                "com.example.MyDAO",
-                                // language=java
-                                """
-                                        package com.example;
-
-                                        import java.util.List;
-                                        import org.ethelred.kiwiproc.annotation.DAO;
-                                        import org.ethelred.kiwiproc.annotation.SqlBatch;
-
-                                        @DAO
-                                        public interface MyDAO {
-                                            @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
-                                            List<Integer> addRestaurants(String name);
-                                        }
-                                        """));
-        assertThat(compilation).hadErrorContaining("at least one iterable parameter");
-        assertThat(compilation).hadErrorCount(2);
-    }
-
-    @Test
-    void batchIterableTypeMatchPlainType() throws IOException {
-        var compilation = configuredCompiler()
-                .compile(
-                        JavaFileObjects.forSourceString(
-                                "com.example.MyDAO",
-                                // language=java
-                                """
-                                        package com.example;
-
-                                        import java.util.List;
-                                        import org.ethelred.kiwiproc.annotation.DAO;
-                                        import org.ethelred.kiwiproc.annotation.SqlBatch;
-
-                                        @DAO
-                                        public interface MyDAO {
-                                            @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
-                                            List<Integer> addRestaurants(List<String> name);
-                                        }
-                                        """));
-        assertThat(compilation).succeeded();
+                                import org.jspecify.annotations.Nullable;
+                                public record Restaurant(int id, String name, Integer tables, @Nullable String chain) {}
+                                """)
+                        .withDisplayName("A SqlQuery method compiles when the return type uses a record.")
+                        .succeeds());
     }
 }

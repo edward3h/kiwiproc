@@ -125,18 +125,19 @@ public class InstanceGenerator {
                 .collect(Collectors.toMap(
                         DAOBatchIterator::source,
                         i -> new IteratorVariableNames(
-                                i,
-                                patchName(i.source().methodParameterName() + "Iterator"),
-                                patchName(i.source().methodParameterName() + "IteratorValue"))));
+                                i, patchName(i.baseName() + "Iterator"), patchName(i.baseName() + "IteratorValue"))));
         for (var iteratorAndNames : iteratorsAndNames.values()) {
             builder.addNamed(
-                    "var $iteratorVariable:L = "
-                            + iteratorAndNames.iterator.validCollection().toIteratorTemplate(),
-                    Map.of(
-                            "iteratorVariable",
-                            iteratorAndNames.iteratorName,
-                            "containerVariable",
-                            iteratorAndNames.iterator.source().methodParameterName()))
+                            "var $iteratorVariable:L = "
+                                    + iteratorAndNames
+                                            .iterator
+                                            .validCollection()
+                                            .toIteratorTemplate(),
+                            Map.of(
+                                    "iteratorVariable",
+                                    iteratorAndNames.iteratorName,
+                                    "containerVariable",
+                                    iteratorAndNames.iterator.baseName()))
                     .addStatement("");
         }
         var hasNextClause = iteratorsAndNames.values().stream()
@@ -150,10 +151,14 @@ public class InstanceGenerator {
         }
         var parameterMapping = methodInfo.parameterMapping();
         addParameters(builder, parameterMapping, methodParameterInfo -> {
-            if (iteratorsAndNames.containsKey(methodParameterInfo)) {
-                return iteratorsAndNames.get(methodParameterInfo).iteratorValueName;
+            var key = methodParameterInfo;
+            if (key.recordParent() != null) {
+                key = key.recordParent();
             }
-            return methodParameterInfo.methodParameterName();
+            if (iteratorsAndNames.containsKey(key)) {
+                return iteratorsAndNames.get(key).iteratorValueName;
+            }
+            return methodParameterInfo.name().name();
         });
         builder.addStatement("statement.addBatch()");
         builder.addStatement("anyValues = true");
@@ -194,7 +199,13 @@ public class InstanceGenerator {
                 }
                 var varName = patchName(columnName(column));
                 buildConversion(
-                        builder, methodInfo, column.conversion(), column.asTypeMapping().target(), varName, rawName, true);
+                        builder,
+                        methodInfo,
+                        column.conversion(),
+                        column.asTypeMapping().target(),
+                        varName,
+                        rawName,
+                        true);
             }
             for (ResultPart resultPart : ResultPart.values()) {
                 var componentClass = containerBuilder.componentTypeFor(resultPart);
@@ -256,7 +267,12 @@ public class InstanceGenerator {
 
     private CodeBlock.Builder builderWithParameters(List<DAOParameterInfo> parameterMapping) {
         var builder = CodeBlock.builder();
-        addParameters(builder, parameterMapping, MethodParameterInfo::methodParameterName);
+        addParameters(builder, parameterMapping, methodParameterInfo -> {
+            if (methodParameterInfo.recordParent() != null) {
+                return methodParameterInfo.recordParent().name().name();
+            }
+            return methodParameterInfo.name().name();
+        });
         return builder;
     }
 
@@ -268,7 +284,13 @@ public class InstanceGenerator {
             var name = "param" + parameterInfo.index();
             String accessor = sourceLookup.apply(parameterInfo.source()) + parameterInfo.javaAccessorSuffix();
             buildConversion(
-                    builder, parameterInfo, parameterInfo.conversion(), parameterInfo.mapper().target(), name, accessor, true);
+                    builder,
+                    parameterInfo,
+                    parameterInfo.conversion(),
+                    parameterInfo.mapper().target(),
+                    name,
+                    accessor,
+                    true);
             var nullableSource = parameterInfo.mapper().source().isNullable();
             if (nullableSource) {
                 builder.beginControlFlow("if ($L == null)", name)
@@ -320,7 +342,8 @@ public class InstanceGenerator {
                         .indent()
                         .add("\n.map($L -> {\n", lambdaValue)
                         .indent();
-                buildConversion(builder, methodInfo, elementConversion, sac.sat().containedType(), "tmp", lambdaValue, true);
+                buildConversion(
+                        builder, methodInfo, elementConversion, sac.sat().containedType(), "tmp", lambdaValue, true);
                 builder.addStatement("return tmp")
                         .unindent()
                         .add("})\n.toArray();\n")
@@ -358,7 +381,13 @@ public class InstanceGenerator {
                                 arrayRS,
                                 sac.sat().componentType().accessorSuffix());
                 buildConversion(
-                        builder, methodInfo, sac.elementConversion(), sac.ct().containedType(), itemValue, rawItemValue, true);
+                        builder,
+                        methodInfo,
+                        sac.elementConversion(),
+                        sac.ct().containedType(),
+                        itemValue,
+                        rawItemValue,
+                        true);
                 builder.addStatement("$L.add($L)", arrayList, itemValue)
                         .endControlFlow()
                         .add("$L$L = ", insertVar, assignee)
@@ -384,16 +413,22 @@ public class InstanceGenerator {
                 var itemValue = patchName("itemValue");
                 TypeName componentClass =
                         kiwiTypeConverter.fromKiwiType(cc.sourceType().containedType(), true);
-                builder.addNamed("var $iteratorName:L = " + cc.sourceType().type().toIteratorTemplate(), Map.of("iteratorName", sourceIterator, "containerVariable", accessor))
+                builder.addNamed(
+                                "var $iteratorName:L = "
+                                        + cc.sourceType().type().toIteratorTemplate(),
+                                Map.of("iteratorName", sourceIterator, "containerVariable", accessor))
                         .addStatement("")
                         .addStatement("List<$T> $L = new $T<>()", componentClass, arrayList, ArrayList.class)
                         .beginControlFlow("while ($L.hasNext())", sourceIterator)
-                        .addStatement(
-                                "var $L = $L.next()",
-                                rawItemValue,
-                                sourceIterator);
+                        .addStatement("var $L = $L.next()", rawItemValue, sourceIterator);
                 buildConversion(
-                        builder, methodInfo, cc.containedTypeConversion(), cc.targetType().containedType(), itemValue, rawItemValue, true);
+                        builder,
+                        methodInfo,
+                        cc.containedTypeConversion(),
+                        cc.targetType().containedType(),
+                        itemValue,
+                        rawItemValue,
+                        true);
                 builder.addStatement("$L.add($L)", arrayList, itemValue)
                         .endControlFlow()
                         .add("$L$L = ", insertVar, assignee)
