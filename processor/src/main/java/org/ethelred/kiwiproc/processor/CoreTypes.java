@@ -46,9 +46,8 @@ public class CoreTypes {
             entry(float.class, Float.class),
             entry(double.class, Double.class));
 
-    public static final Map<String, String> primitiveToBoxedStrings = primitiveToBoxed.entrySet().stream()
-            .map(e -> entry(e.getKey().getSimpleName(), e.getValue().getSimpleName()))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    public static final Map<String, Class<?>> primitiveNameToType =
+            primitiveToBoxed.keySet().stream().collect(Collectors.toMap(Class::getSimpleName, x -> x));
 
     /*
     The key type can be assigned to any of the value types without casting.
