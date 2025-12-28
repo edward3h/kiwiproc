@@ -25,9 +25,9 @@ public class KiwiTypeConverter {
             return ParameterizedTypeName.get(
                     ClassName.get(collectionType.type().javaType()),
                     fromKiwiType(collectionType.containedType(), asParameter));
-        } else if (kiwiType instanceof PrimitiveKiwiType primitiveKiwiType && asParameter) {
-            var pretendNullable = primitiveKiwiType.withIsNullable(true);
-            return ClassName.get(pretendNullable.packageName(), pretendNullable.className());
+        } else if (kiwiType instanceof PrimitiveKiwiType primitiveKiwiType) {
+            var effectiveType = asParameter ? primitiveKiwiType.withIsNullable(true) : primitiveKiwiType;
+            return TypeName.get(effectiveType.type());
         } else {
             return ClassName.get(kiwiType.packageName(), kiwiType.className());
         }

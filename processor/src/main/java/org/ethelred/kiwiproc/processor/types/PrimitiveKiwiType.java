@@ -5,14 +5,18 @@ import org.ethelred.kiwiproc.processor.CoreTypes;
 
 /**
  * Represent the duality of primitive and boxed types.
- * @param primitiveName
+ * @param primitiveClass
  * @param isNullable
  */
-public record PrimitiveKiwiType(String primitiveName, boolean isNullable) implements KiwiType {
+public record PrimitiveKiwiType(Class<?> primitiveClass, boolean isNullable) implements KiwiType {
     public PrimitiveKiwiType {
-        if (!CoreTypes.primitiveToBoxedStrings.containsKey(primitiveName)) {
-            throw new IllegalArgumentException("Unknown primitive " + primitiveName);
+        if (!CoreTypes.primitiveToBoxed.containsKey(primitiveClass)) {
+            throw new IllegalArgumentException("Unknown primitive " + primitiveClass);
         }
+    }
+
+    public PrimitiveKiwiType(String primitiveName, boolean isNullable) {
+        this(CoreTypes.primitiveNameToType.get(primitiveName), isNullable);
     }
 
     @Override
@@ -26,9 +30,16 @@ public record PrimitiveKiwiType(String primitiveName, boolean isNullable) implem
     @Override
     public String className() {
         if (isNullable) {
-            return CoreTypes.primitiveToBoxedStrings.get(primitiveName);
+            return CoreTypes.primitiveToBoxed.get(primitiveClass).getSimpleName();
         }
-        return primitiveName;
+        return primitiveClass.getSimpleName();
+    }
+
+    public Class<?> type() {
+        if (isNullable) {
+            return CoreTypes.primitiveToBoxed.get(primitiveClass);
+        }
+        return primitiveClass;
     }
 
     @Override
@@ -37,12 +48,12 @@ public record PrimitiveKiwiType(String primitiveName, boolean isNullable) implem
     }
 
     @Override
-    public KiwiType withIsNullable(boolean b) {
-        return new PrimitiveKiwiType(primitiveName, b);
+    public PrimitiveKiwiType withIsNullable(boolean b) {
+        return new PrimitiveKiwiType(primitiveClass, b);
     }
 
     @Override
     public String toString() {
-        return primitiveName + (isNullable ? "/nullable" : "/non-null");
+        return primitiveClass.getSimpleName() + (isNullable ? "/nullable" : "/non-null");
     }
 }
