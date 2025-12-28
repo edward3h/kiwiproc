@@ -2,8 +2,8 @@
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
-            version("avaje-json", "3.6")
-            version("junit", "5.13.3")
+            version("avaje-json", "3.9")
+            version("junit", "5.14.1")
             version("recordbuilder", "51")
             version("mapstruct", "1.6.3")
             version("springboot", "3.5.8")
@@ -14,10 +14,10 @@ dependencyResolutionManagement {
 
             library("jakarta-inject", "jakarta.inject:jakarta.inject-api:2.0.1")
 
-            library("jetbrains-annotations", "org.jetbrains:annotations:26.0.2")
+            library("jetbrains-annotations", "org.jetbrains:annotations:26.0.2-1")
 
             library("utilitary", "com.karuslabs:utilitary:3.0.0")
-            library("postgresql", "org.postgresql:postgresql:42.7.7")
+            library("postgresql", "org.postgresql:postgresql:42.7.8")
 
             library("junit-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit")
             library("junit-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit")
@@ -34,8 +34,8 @@ dependencyResolutionManagement {
             library("jspecify", "org.jspecify:jspecify:1.0.0")
 
             library("javapoet", "com.palantir.javapoet:javapoet:0.9.0")
-            library("guava", "com.google.guava:guava:33.4.8-jre")
-            library("compile-testing", "com.google.testing.compile:compile-testing:0.21.0")
+            library("guava", "com.google.guava:guava:33.5.0-jre")
+            library("compile-testing", "com.google.testing.compile:compile-testing:0.23.0")
             library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
 
             library("yaml", "org.yaml:snakeyaml:2.4")
@@ -46,7 +46,6 @@ dependencyResolutionManagement {
 
             library("publish-on-central", "org.danilopianini:publish-on-central:9.1.8")
 
-            library("jetbrains-annotations", "org.jetbrains:annotations:26.0.2-1")
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }
     }
