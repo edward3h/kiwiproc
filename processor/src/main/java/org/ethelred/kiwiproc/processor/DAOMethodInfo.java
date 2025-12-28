@@ -3,6 +3,8 @@ package org.ethelred.kiwiproc.processor;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import org.ethelred.kiwiproc.meta.ParsedQuery;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
@@ -15,7 +17,9 @@ public record DAOMethodInfo(
         QueryMethodKind kind,
         ParsedQuery parsedSql,
         List<DAOParameterInfo> parameterMapping,
-        List<DAOResultColumn> columns) {
+        List<DAOResultColumn> columns,
+        List<DAOBatchIterator> batchIterators)
+        implements Supplier<Element> {
 
     public KiwiType valueComponentType() {
         var kiwiType = signature.returnType();
@@ -33,5 +37,10 @@ public record DAOMethodInfo(
     public RowCount expectedRows() {
         var kiwiType = signature.returnType();
         return kiwiType.expectedRows();
+    }
+
+    @Override
+    public Element get() {
+        return methodElement;
     }
 }

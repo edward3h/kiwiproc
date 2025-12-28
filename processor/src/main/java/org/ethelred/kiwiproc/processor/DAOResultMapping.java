@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 public class DAOResultMapping {
-    public static DAOResultMapping INVALID = new DAOResultMapping(new InvalidConversion());
+    public static DAOResultMapping INVALID = new DAOResultMapping(new InvalidConversion(null, null));
     private @Nullable Conversion conversion;
 
     private final List<DAOResultColumn> columns = new ArrayList<>();

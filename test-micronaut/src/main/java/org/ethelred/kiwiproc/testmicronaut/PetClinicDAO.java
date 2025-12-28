@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.ethelred.kiwiproc.annotation.DAO;
+import org.ethelred.kiwiproc.annotation.SqlBatch;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
 import org.ethelred.kiwiproc.annotation.SqlUpdate;
 import org.ethelred.kiwiproc.api.TransactionalDAO;
@@ -71,4 +72,10 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
             INSERT INTO vets(first_name, last_name)
             VALUES (:firstName, :lastName)""")
     void addVet(String firstName, String lastName);
+
+    @SqlBatch(
+            """
+            INSERT INTO pets(name, type_id, owner_id)
+            VALUES(:name, :type_id, :owner_id)""")
+    List<Integer> addPets(List<String> name, List<Integer> typeId, int ownerId);
 }

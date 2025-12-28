@@ -125,10 +125,18 @@ public class KiwiProcessor extends AnnotationProcessor {
             logger.error(methodElement, "\n" + e.getMessage());
             return null;
         }
-        var parameterInfo =
-                MethodParameterInfo.fromElements(Objects.requireNonNull(typeUtils), methodElement.getParameters());
+        var parameterInfo = MethodParameterInfo.fromElements(
+                Objects.requireNonNull(typeUtils), methodElement.getParameters(), kind);
         Map<ColumnMetaData, MethodParameterInfo> parameterMapping =
                 mapParameters(methodElement, parsedSql.parameterNames(), queryMetaData.parameters(), parameterInfo);
+        if (kind == BATCH) {
+            System.err.println("processMethod parameterInfo "
+                    + parameterInfo.stream()
+                            .map(Objects::toString)
+                            .collect(Collectors.joining("\n    ", "\n    ", "")));
+            parameterMapping.forEach(
+                    (col, mpi) -> System.err.println("col " + col.index() + " parameter " + mpi.name()));
+        }
         var typeValidator = new TypeValidator(logger, methodElement, coreTypes, config.debug());
         if (!typeValidator.validateParameters(parameterMapping, kind)) {
             return null;
@@ -187,13 +195,23 @@ public class KiwiProcessor extends AnnotationProcessor {
         //            singleColumnResult = new DAOResultColumn(col.name(), SqlTypeMappingRegistry.get(col),
         // returnComponentType);
         //        }
+        List<DAOBatchIterator> batchIterators = List.of();
+        if (kind == BATCH) {
+            batchIterators = parameterMapping.entrySet().stream()
+                    .map(DAOBatchIterator::from)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .distinct()
+                    .toList();
+        }
         return new DAOMethodInfo(
                 methodElement,
                 Signature.fromMethod(returnType, methodElement),
                 kind,
                 parsedSql,
                 templateParameterMapping,
-                columnMapping.getColumns()); // TODO
+                columnMapping.getColumns(),
+                batchIterators);
     }
 
     private Map<ColumnMetaData, MethodParameterInfo> mapParameters(
@@ -252,10 +270,6 @@ public class KiwiProcessor extends AnnotationProcessor {
             var kind = kinds.iterator().next(); // get first element
             if (kind == DEFAULT) {
                 continue;
-            }
-
-            if (kind == BATCH) {
-                logger.error(methodElement, "@SqlBatch is not supported yet. It is planned for Milestone 2.");
             }
 
             DAOMethodInfo methodInfo = processMethod(kind, databaseWrapper, methodElement);

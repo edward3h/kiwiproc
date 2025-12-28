@@ -5,8 +5,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import javax.lang.model.element.VariableElement;
 import org.ethelred.kiwiproc.meta.JavaName;
-import org.ethelred.kiwiproc.processor.types.KiwiType;
-import org.ethelred.kiwiproc.processor.types.TypeUtils;
+import org.ethelred.kiwiproc.processor.types.*;
 import org.jspecify.annotations.Nullable;
 
 @KiwiRecordBuilder
@@ -14,47 +13,62 @@ public record MethodParameterInfo(
         VariableElement variableElement,
         JavaName name,
         KiwiType type,
-        boolean isRecordComponent,
-        @Nullable String recordParameterName) {
+        @Nullable MethodParameterInfo recordParent,
+        @Nullable ValidCollection batchCollection)
+        implements MethodParameterInfoBuilder.With {
 
-    static Set<MethodParameterInfo> fromElements(TypeUtils types, List<? extends VariableElement> variableElements) {
+    static Set<MethodParameterInfo> fromElements(
+            TypeUtils types, List<? extends VariableElement> variableElements, QueryMethodKind kind) {
         return variableElements.stream()
-                .flatMap(variableElement -> fromElement(types, variableElement).stream())
+                .flatMap(variableElement -> fromElement(types, variableElement, kind).stream())
                 .collect(Collectors.toSet());
     }
 
-    static Set<MethodParameterInfo> fromElement(TypeUtils types, VariableElement variableElement) {
-        if (types.isRecord(variableElement.asType())) {
-            return fromRecord(types, variableElement);
-        } else {
-            return fromSingle(types, variableElement);
+    static Set<MethodParameterInfo> fromElement(
+            TypeUtils types, VariableElement variableElement, QueryMethodKind kind) {
+        var effectiveType = types.kiwiType(variableElement.asType());
+        ValidCollection batchCollection = null;
+        if (kind == QueryMethodKind.BATCH
+                && effectiveType instanceof CollectionType collectionType
+                && !collectionType.isSimple()) {
+            effectiveType = collectionType.containedType();
+            batchCollection = collectionType.type();
         }
-    }
+        Set<MethodParameterInfo> result = new HashSet<>();
 
-    private static Set<MethodParameterInfo> fromSingle(TypeUtils types, VariableElement variableElement) {
-        var info = MethodParameterInfoBuilder.builder()
+        var simple = MethodParameterInfoBuilder.builder()
                 .variableElement(variableElement)
                 .name(new JavaName(variableElement.getSimpleName().toString()))
-                .type(types.kiwiType(variableElement.asType()))
-                .isRecordComponent(false)
-                .recordParameterName(null)
+                .type(effectiveType)
+                .batchCollection(batchCollection)
                 .build();
-        return Set.of(info);
+        result.add(simple);
+
+        if (effectiveType instanceof RecordType recordType) {
+            result.addAll(fromRecord(recordType, variableElement, simple));
+        }
+
+        return result;
     }
 
-    private static Set<MethodParameterInfo> fromRecord(TypeUtils types, VariableElement variableElement) {
-        var type = types.asTypeElement(variableElement.asType());
-        var components = Objects.requireNonNull(type).getRecordComponents();
-        var parameterInfos = components.stream()
+    private static Set<MethodParameterInfo> fromRecord(
+            RecordType recordType, VariableElement variableElement, MethodParameterInfo recordParent) {
+        var components = recordType.components();
+        return components.stream()
                 .map(component -> MethodParameterInfoBuilder.builder()
                         .variableElement(variableElement)
-                        .name(new JavaName(component.getSimpleName().toString()))
-                        .type(types.kiwiType(component.asType()))
-                        .isRecordComponent(true)
-                        .recordParameterName(variableElement.getSimpleName().toString())
+                        .name(component.name())
+                        .type(component.type())
+                        .recordParent(recordParent)
                         .build())
                 .collect(Collectors.toCollection(HashSet::new));
-        parameterInfos.addAll(fromSingle(types, variableElement));
-        return parameterInfos;
+    }
+
+    public boolean isRecordComponent() {
+        return recordParent != null;
+    }
+
+    public boolean batchIterate() {
+        return batchCollection != null || (recordParent != null && recordParent.batchIterate());
     }
 }
