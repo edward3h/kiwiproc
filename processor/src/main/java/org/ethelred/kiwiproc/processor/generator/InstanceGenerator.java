@@ -227,25 +227,27 @@ public class InstanceGenerator {
                             params);
                 }
             }
-            //            builder.addStatement(containerBuilder.add());
+            if (methodInfo.expectedRows() == RowCount.EXACTLY_ONE) {
+                builder.beginControlFlow("if (rs.next())")
+                        .addStatement(
+                                "throw new $T($S)",
+                                IllegalStateException.class,
+                                "Expected exactly one row in result, but more were selected.")
+                        .endControlFlow();
+            }
             builder.add(containerBuilder.add());
         } else {
             throw new IllegalStateException("Expected columns");
         }
         if (methodInfo.expectedRows() == RowCount.EXACTLY_ONE) {
-            // TODO test for exactly one row case
+            builder.nextControlFlow("else")
+                    .addStatement(
+                            "throw new $T($S)",
+                            IllegalStateException.class,
+                            "Expected exactly one row in result, but none were selected.");
         }
         builder.endControlFlow(); // end while or if
-        builder.addStatement(containerBuilder.returnValue());
-        //        if (methodInfo.signature().returnType() instanceof CollectionType collectionType) {
-        //            builder.add("return ")
-        //                    .addNamed(
-        //                            collectionType.type().fromListTemplate(),
-        //                            Map.of("componentClass", componentClass, "containerVariable", containerVariable))
-        //                    .addStatement("");
-        //        } else {
-        //            builder.addStatement("return $1L.isEmpty() ? null : $1L.get(0)", containerVariable);
-        //        }
+        builder.add(containerBuilder.returnValue());
         return builder.build();
     }
 
@@ -533,28 +535,34 @@ public class InstanceGenerator {
 
         @Override
         public CodeBlock add() {
+            var builder = CodeBlock.builder();
             var valueVariable = returnType.valueComponentType().isSimple()
                     ? columnName(firstColumnOfPart(ResultPart.SIMPLE))
                     : prefixName(ResultPart.SIMPLE, "Value");
             var patchedValueVariable = patchedNames.get(valueVariable);
             if (returnType instanceof OptionalType optionalType) {
                 if (!returnType.valueComponentType().isNullable()) {
-                    return CodeBlock.of("return $T.of($L);", optionalType.optionalClass(), patchedValueVariable);
+                    return builder.addStatement("return $T.of($L)", optionalType.optionalClass(), patchedValueVariable)
+                            .build();
                 }
-                return CodeBlock.of(
-                        "return $1L == null ? $2T.empty() : $2T.of($1L);",
-                        patchedValueVariable,
-                        optionalType.optionalClass());
+                return builder.addStatement(
+                                "return $1L == null ? $2T.empty() : $2T.of($1L)",
+                                patchedValueVariable,
+                                optionalType.optionalClass())
+                        .build();
             }
-            return CodeBlock.of("return $L;", patchedValueVariable);
+            return builder.addStatement("return $L", patchedValueVariable).build();
         }
 
         @Override
         public CodeBlock returnValue() {
             if (returnType instanceof OptionalType optionalType) {
-                return CodeBlock.of("return $T.empty()", optionalType.optionalClass());
+                return CodeBlock.builder()
+                        .addStatement("return $T.empty()", optionalType.optionalClass())
+                        .build();
             }
-            return CodeBlock.of("return null"); // TODO
+            // unreachable case due to "exactly one" checks.
+            return CodeBlock.builder().build();
         }
     }
 
@@ -606,6 +614,7 @@ public class InstanceGenerator {
                                     kiwiTypeConverter.fromKiwiType(returnType.valueComponentType()),
                                     "listVariable",
                                     containerVariable))
+                    .addStatement("")
                     .build();
         }
     }
