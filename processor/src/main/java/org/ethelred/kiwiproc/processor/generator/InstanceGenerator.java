@@ -227,6 +227,8 @@ public class InstanceGenerator {
                             params);
                 }
             }
+            System.err.println(
+                    "expected rows " + methodInfo.methodElement().getSimpleName() + " " + methodInfo.expectedRows());
             if (methodInfo.expectedRows() == RowCount.EXACTLY_ONE) {
                 builder.beginControlFlow("if (rs.next())")
                         .addStatement(
@@ -561,6 +563,9 @@ public class InstanceGenerator {
                         .addStatement("return $T.empty()", optionalType.optionalClass())
                         .build();
             }
+            if (returnType.isNullable()) {
+                return CodeBlock.builder().addStatement("return null").build();
+            }
             // unreachable case due to "exactly one" checks.
             return CodeBlock.builder().build();
         }
@@ -702,7 +707,9 @@ public class InstanceGenerator {
 
         @Override
         public CodeBlock returnValue() {
-            return CodeBlock.of("return $T.copyOf($L)", Map.class, containerVariable);
+            return CodeBlock.builder()
+                    .addStatement("return $T.copyOf($L)", Map.class, containerVariable)
+                    .build();
         }
     }
 }
