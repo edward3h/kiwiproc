@@ -1,7 +1,7 @@
 plugins {
     id("java-convention")
     id("org.ethelred.kiwiproc")
-    id("io.micronaut.library") version "4.5.4"
+    id("io.micronaut.library") version "4.6.1"
 }
 
 kiwiProc {
@@ -9,7 +9,7 @@ kiwiProc {
 }
 
 micronaut {
-    version = "4.9.2"
+    version = "4.10.6"
 }
 
 dependencies {
