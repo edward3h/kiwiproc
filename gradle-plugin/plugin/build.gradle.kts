@@ -2,7 +2,7 @@ plugins {
     `java-gradle-plugin`
     id("com.gradle.plugin-publish") version "1.3.1"
     id("com.diffplug.spotless").version("7.2.1")
-    id("org.danilopianini.publish-on-central").version("9.1.8")
+    id("org.danilopianini.publish-on-central").version("9.1.9")
 }
 
 apply(from = "../../version.gradle.kts")
