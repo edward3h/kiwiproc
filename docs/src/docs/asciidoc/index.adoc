@@ -18,5 +18,10 @@ include::databases.adoc[]
 
 include::gradle_plugin.adoc[]
 
+== API Reference
+
+* link:javadoc/shared/index.html[Annotations API (shared)]
+* link:javadoc/runtime/index.html[Runtime API (runtime)]
+
 [appendix]
 include::types.adoc[]
