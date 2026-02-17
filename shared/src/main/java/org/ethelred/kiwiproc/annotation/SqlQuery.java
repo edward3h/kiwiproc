@@ -8,28 +8,39 @@ import java.lang.annotation.Target;
 import org.intellij.lang.annotations.Language;
 
 /**
- * <p>
- *     Annotates a DAO method to mark it as a query that returns results. Typically, a SELECT, but could be an update with a
+ * Annotates a DAO method as a query that returns results. Typically a SELECT, but may also be a statement with a
  * RETURNING clause.
- * </p>
- * <p>
- * Exactly one of the 'value' or 'sql' parameters must be set, and will contain the SQL statement.
- * </p>
- * <p>
- *     The method parameters and return types must be "supported types" TODO link
- *     The method parameter names must match placeholder names in the SQL statement, unless a method parameter is a
- *     Record, in which case record component names may match placeholder names.
- * </p>
+ *
+ * <p>Exactly one of {@link #value()} or {@link #sql()} must be set, containing the SQL statement. Named parameters
+ * use the {@code :paramName} syntax and are bound from method parameter names. If a method parameter is a Record,
+ * its component names may match placeholder names instead.
+ *
+ * <p><b>Supported return types:</b>
+ * <ul>
+ *   <li>A single value or Record &ndash; expects exactly one row; throws if zero or more than one row returned</li>
+ *   <li>{@link java.util.Optional Optional&lt;T&gt;} &ndash; returns empty if no rows, throws if more than one</li>
+ *   <li>A {@link org.jspecify.annotations.Nullable @Nullable} type &ndash; returns null if no rows</li>
+ *   <li>{@link java.util.List List&lt;T&gt;} or other Collection types &ndash; returns all rows</li>
+ *   <li>{@link java.util.Map Map&lt;K, V&gt;} &ndash; returns rows as key-value pairs (see {@link #keyColumn()} and
+ *       {@link #valueColumn()})</li>
+ * </ul>
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SqlQuery {
     /**
-     * Alias for "sql"
+     * The SQL statement to execute. Alias for {@link #sql()}.
+     *
+     * @return the SQL query string
      */
     @Language("SQL")
     String value() default "";
 
+    /**
+     * The SQL statement to execute. Alias for {@link #value()}.
+     *
+     * @return the SQL query string
+     */
     @Language("SQL")
     String sql() default "";
 
@@ -49,5 +60,11 @@ public @interface SqlQuery {
      */
     String valueColumn() default "";
 
+    /**
+     * JDBC fetch size hint for the query. When set to a positive value, the JDBC driver may use this as a hint for
+     * the number of rows to fetch from the database at a time. Defaults to the driver's own fetch size.
+     *
+     * @return the fetch size, or {@link Integer#MIN_VALUE} to use the driver default
+     */
     int fetchSize() default Integer.MIN_VALUE;
 }
