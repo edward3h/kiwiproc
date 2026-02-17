@@ -30,6 +30,21 @@ tasks.named<AsciidoctorTask>("asciidoctor").configure {
     )
 }
 
+val copyJavadoc = tasks.register<Copy>("copyJavadoc") {
+    dependsOn(":shared:javadoc", ":runtime:javadoc")
+    into(layout.buildDirectory.dir("docs/asciidoc/javadoc"))
+    from(project(":shared").tasks.named<Javadoc>("javadoc").map { it.destinationDir!! }) {
+        into("shared")
+    }
+    from(project(":runtime").tasks.named<Javadoc>("javadoc").map { it.destinationDir!! }) {
+        into("runtime")
+    }
+}
+
+tasks.named("asciidoctor") {
+    finalizedBy(copyJavadoc)
+}
+
 tasks.named("build") {
     dependsOn(tasks.named("asciidoctor"))
 }
