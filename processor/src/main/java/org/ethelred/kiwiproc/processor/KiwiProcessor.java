@@ -22,6 +22,7 @@ import javax.lang.model.util.ElementFilter;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.meta.*;
 import org.ethelred.kiwiproc.processor.generator.PoetDAOGenerator;
+import org.ethelred.kiwiproc.processor.types.MapType;
 import org.ethelred.kiwiproc.processor.types.TypeUtils;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfigJsonAdapter;
@@ -145,6 +146,10 @@ public class KiwiProcessor extends AnnotationProcessor {
         }
         List<DAOParameterInfo> templateParameterMapping = DAOParameterInfo.from(coreTypes, typeUtils, parameterMapping);
         var returnType = typeUtils.kiwiType(methodElement.getReturnType());
+        if (returnType instanceof MapType mapType && mapType.isSortedMap() && !mapType.comparableKey()) {
+            logger.error(methodElement, "SortedMap key type must implement Comparable");
+            return null;
+        }
         var resultContext = new QueryResultContext(
                 kind,
                 queryMetaData.resultColumns(),

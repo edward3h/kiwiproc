@@ -31,7 +31,7 @@ public class MapTypeHandler extends DeclaredTypeHandler {
     }
 
     private boolean isComparable(TypeMirror typeMirror) {
-        return utils.isSubtype(typeMirror, utils.type(Comparable.class));
+        return utils.isSubtype(utils.erasure(typeMirror), utils.erasure(utils.type(Comparable.class)));
     }
 
     @Override
