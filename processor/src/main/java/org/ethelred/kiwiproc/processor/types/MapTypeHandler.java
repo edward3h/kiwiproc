@@ -2,6 +2,7 @@
 package org.ethelred.kiwiproc.processor.types;
 
 import java.util.Map;
+import java.util.SortedMap;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
@@ -21,8 +22,12 @@ public class MapTypeHandler extends DeclaredTypeHandler {
         if (!(valueType.isSimple() || valueType instanceof RecordType || valueType instanceof CollectionType)) {
             return KiwiType.unsupported();
         }
+        boolean isSortedMap = isSameType(t, SortedMap.class);
         return new MapType(
-                keyType.withIsNullable(false), valueType.withIsNullable(false), isComparable(typeArguments.get(0)));
+                keyType.withIsNullable(false),
+                valueType.withIsNullable(false),
+                isComparable(typeArguments.get(0)),
+                isSortedMap);
     }
 
     private boolean isComparable(TypeMirror typeMirror) {
@@ -31,6 +36,6 @@ public class MapTypeHandler extends DeclaredTypeHandler {
 
     @Override
     public boolean test(DeclaredType t) {
-        return isSameType(t, Map.class);
+        return isSameType(t, Map.class) || isSameType(t, SortedMap.class);
     }
 }

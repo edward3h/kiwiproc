@@ -286,6 +286,20 @@ public class ProcessorTest {
                                 public record Restaurant(int id, String name, Integer tables, @Nullable String chain) {}
                                 """)
                         .withDisplayName("A SqlQuery method compiles when the return type uses a record.")
+                        .succeeds(),
+                method(
+                                """
+                        @SqlQuery(sql = "SELECT name FROM restaurant", fetchSize = 100)
+                        List<String> getRestaurantNames();
+                        """)
+                        .withDisplayName("A SqlQuery method with fetchSize compiles successfully.")
+                        .succeeds(),
+                method(
+                                """
+                        @SqlQuery(sql = "SELECT name, tables FROM restaurant", keyColumn = "name", valueColumn = "tables")
+                        SortedMap<String, Integer> tablesByRestaurantName();
+                        """)
+                        .withDisplayName("A SqlQuery method with SortedMap return type compiles successfully.")
                         .succeeds());
     }
 }

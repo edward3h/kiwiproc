@@ -67,6 +67,9 @@ public class InstanceGenerator {
         methodSpecBuilder.beginControlFlow(
                 "try (var statement = connection.prepareStatement($S))",
                 methodInfo.parsedSql().parsedSql());
+        if (methodInfo.fetchSize() != Integer.MIN_VALUE) {
+            methodSpecBuilder.addStatement("statement.setFetchSize($L)", methodInfo.fetchSize());
+        }
         methodSpecBuilder.addCode(
                 switch (methodInfo.kind()) {
                     case QUERY -> methodBodyForQuery(methodInfo);
@@ -642,16 +645,15 @@ public class InstanceGenerator {
 
         @Override
         public CodeBlock declaration() {
-            // TODO imposing comparable ordering probably isn't right. Maybe if declared as SortedMap
-            //            var implementationType = returnType.comparableKey() ? TreeMap.class : HashMap.class;
-            var implementationType = LinkedHashMap.class;
+            var implementationType = returnType.isSortedMap() ? TreeMap.class : LinkedHashMap.class;
+            var baseType = returnType.isSortedMap() ? SortedMap.class : Map.class;
             var valueDeclarationType = valueIsCollection
                     ? ParameterizedTypeName.get(
                             ClassName.get(List.class),
                             kiwiTypeConverter.fromKiwiType(returnType.valueComponentType(), true))
                     : kiwiTypeConverter.fromKiwiType(returnType.valueType(), true);
             var declarationType = ParameterizedTypeName.get(
-                    ClassName.get(Map.class),
+                    ClassName.get(baseType),
                     kiwiTypeConverter.fromKiwiType(returnType.keyType(), true),
                     valueDeclarationType);
             return CodeBlock.of("$T $L = new $T<>()", declarationType, containerVariable, implementationType);
@@ -705,6 +707,11 @@ public class InstanceGenerator {
 
         @Override
         public CodeBlock returnValue() {
+            if (returnType.isSortedMap()) {
+                return CodeBlock.builder()
+                        .addStatement("return $T.unmodifiableSortedMap($L)", Collections.class, containerVariable)
+                        .build();
+            }
             return CodeBlock.builder()
                     .addStatement("return $T.copyOf($L)", Map.class, containerVariable)
                     .build();

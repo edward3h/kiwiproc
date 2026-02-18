@@ -213,7 +213,8 @@ public class KiwiProcessor extends AnnotationProcessor {
                 parsedSql,
                 templateParameterMapping,
                 columnMapping.getColumns(),
-                batchIterators);
+                batchIterators,
+                kind.getFetchSize(methodElement));
     }
 
     private Map<ColumnMetaData, MethodParameterInfo> mapParameters(

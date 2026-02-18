@@ -30,6 +30,11 @@ public enum QueryMethodKind {
             var prism = SqlQueryPrism.getInstanceOn(element);
             return QueryMethodKind.blankAsNull(prism.valueColumn());
         }
+
+        @Override
+        public int getFetchSize(ExecutableElement element) {
+            return SqlQueryPrism.getInstanceOn(element).fetchSize();
+        }
     },
     UPDATE(SqlUpdatePrism::isPresent) {
         @Override
@@ -95,5 +100,9 @@ public enum QueryMethodKind {
 
     public @Nullable String getValueColumn(ExecutableElement element) {
         return null;
+    }
+
+    public int getFetchSize(ExecutableElement element) {
+        return Integer.MIN_VALUE;
     }
 }
