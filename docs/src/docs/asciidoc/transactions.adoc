@@ -15,3 +15,6 @@ include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/transaction/Cou
 include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/transaction/CountryCityService.java[tag=body]
 ----
 <1> Use the `call` or `run` methods, which are passed an instance of "dao" in a transaction.
+
+If the callback completes normally the transaction is committed.
+If the callback throws a `SQLException` (or an `UncheckedSQLException` from a nested DAO call), the transaction is rolled back and the exception is re-thrown wrapped in an `UncheckedSQLException`.

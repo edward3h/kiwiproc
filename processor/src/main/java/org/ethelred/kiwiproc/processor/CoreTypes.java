@@ -271,7 +271,11 @@ public class CoreTypes {
 
     public Conversion lookup(KiwiType source, KiwiType target) {
         if (source.isNullable() && !target.isNullable()) {
-            return invalid(source, target);
+            // Allow nullable primitive SQL source to non-nullable primitive Java target (e.g. count(*) → int).
+            // If the SQL value is ever actually null this will cause a NullPointerException at runtime.
+            if (!(source instanceof PrimitiveKiwiType && target instanceof PrimitiveKiwiType)) {
+                return invalid(source, target);
+            }
         }
         if (source.equals(target) || source.withIsNullable(true).equals(target)) {
             return new AssignmentConversion();
@@ -297,7 +301,11 @@ public class CoreTypes {
                 simpleMappings.get(new TypeMapping(source.withIsNullable(false), target.withIsNullable(false))),
                 invalid(source, target));
         if (result.isValid() && source.isNullable()) {
-            result = new NullableSourceConversion(result);
+            // Don't wrap in NullableSourceConversion for non-nullable primitive targets:
+            // primitives cannot hold null, so the cast proceeds directly (potential NPE if value is null).
+            if (!(target instanceof PrimitiveKiwiType pkt && !pkt.isNullable())) {
+                result = new NullableSourceConversion(result);
+            }
         }
         return result;
     }

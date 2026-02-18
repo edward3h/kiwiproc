@@ -129,13 +129,15 @@ public class KiwiProcessor extends AnnotationProcessor {
                 Objects.requireNonNull(typeUtils), methodElement.getParameters(), kind);
         Map<ColumnMetaData, MethodParameterInfo> parameterMapping =
                 mapParameters(methodElement, parsedSql.parameterNames(), queryMetaData.parameters(), parameterInfo);
-        if (kind == BATCH) {
-            System.err.println("processMethod parameterInfo "
-                    + parameterInfo.stream()
-                            .map(Objects::toString)
-                            .collect(Collectors.joining("\n    ", "\n    ", "")));
+        if (kind == BATCH && config.debug()) {
+            logger.note(
+                    methodElement,
+                    "processMethod parameterInfo "
+                            + parameterInfo.stream()
+                                    .map(Objects::toString)
+                                    .collect(Collectors.joining("\n    ", "\n    ", "")));
             parameterMapping.forEach(
-                    (col, mpi) -> System.err.println("col " + col.index() + " parameter " + mpi.name()));
+                    (col, mpi) -> logger.note(methodElement, "col " + col.index() + " parameter " + mpi.name()));
         }
         var typeValidator = new TypeValidator(logger, methodElement, coreTypes, config.debug());
         if (!typeValidator.validateParameters(parameterMapping, kind)) {

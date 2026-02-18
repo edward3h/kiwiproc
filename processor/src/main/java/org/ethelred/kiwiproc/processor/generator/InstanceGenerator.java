@@ -227,8 +227,6 @@ public class InstanceGenerator {
                             params);
                 }
             }
-            System.err.println(
-                    "expected rows " + methodInfo.methodElement().getSimpleName() + " " + methodInfo.expectedRows());
             if (methodInfo.expectedRows() == RowCount.EXACTLY_ONE) {
                 builder.beginControlFlow("if (rs.next())")
                         .addStatement(

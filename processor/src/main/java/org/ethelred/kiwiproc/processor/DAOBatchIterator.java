@@ -13,13 +13,11 @@ public record DAOBatchIterator(MethodParameterInfo source, ValidCollection valid
     }
 
     private static Optional<DAOBatchIterator> from(ColumnMetaData columnMetaData, MethodParameterInfo parameterInfo) {
-        System.err.println("batchiterator.from " + parameterInfo);
         if (!parameterInfo.isRecordComponent()
                 && columnMetaData.jdbcType() != JDBCType.ARRAY
                 && parameterInfo.batchCollection() != null) {
             return Optional.of(new DAOBatchIterator(parameterInfo, parameterInfo.batchCollection()));
         } else if (parameterInfo.recordParent() != null) {
-            System.err.println("recordParent? " + parameterInfo);
             return from(columnMetaData, parameterInfo.recordParent());
         }
         return Optional.empty();

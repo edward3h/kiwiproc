@@ -20,10 +20,19 @@ public abstract class AbstractTransactionalDAO<T> implements TransactionalDAO<T>
     public <R> R call(DAOCallable<T, R> callback) {
         try (var connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
-            var result = callback.call(withContext(() -> connection));
-            connection.commit();
-            connection.setAutoCommit(true);
-            return result;
+            try {
+                var result = callback.call(withContext(() -> connection));
+                connection.commit();
+                connection.setAutoCommit(true);
+                return result;
+            } catch (SQLException e) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackException) {
+                    e.addSuppressed(rollbackException);
+                }
+                throw new UncheckedSQLException(e);
+            }
         } catch (SQLException e) {
             throw new UncheckedSQLException(e);
         }
@@ -33,9 +42,18 @@ public abstract class AbstractTransactionalDAO<T> implements TransactionalDAO<T>
     public void run(DAORunnable<T> callback) {
         try (var connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
-            callback.run(withContext(() -> connection));
-            connection.commit();
-            connection.setAutoCommit(true);
+            try {
+                callback.run(withContext(() -> connection));
+                connection.commit();
+                connection.setAutoCommit(true);
+            } catch (SQLException e) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackException) {
+                    e.addSuppressed(rollbackException);
+                }
+                throw new UncheckedSQLException(e);
+            }
         } catch (SQLException e) {
             throw new UncheckedSQLException(e);
         }

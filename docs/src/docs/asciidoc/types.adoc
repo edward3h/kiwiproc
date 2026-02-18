@@ -61,6 +61,13 @@ In practice, the Postgres driver _always_ returns 'unknown' for parameters.
 (As do a couple of other drivers I checked for comparison.)
 _The way that Kiwiproc deals with unknown nullability could do with more design work._
 
+[NOTE]
+====
+SQL result columns are often reported as nullable even when they cannot practically be null at runtime — for example, `count(*)` returns a `BIGINT` that PostgreSQL metadata marks as nullable.
+When the declared Java return type is a non-nullable primitive (e.g. `int`), Kiwiproc permits the narrowing conversion and emits a compile-time warning about the lossy cast, rather than rejecting it as an error.
+If the SQL value _is_ ever actually null at runtime a `NullPointerException` will occur.
+====
+
 === Exhaustiveness
 
 * For each Java method parameter, there must be a corresponding parameter in the SQL statement. When the method parameter is a record, at least one of its components must correspond to a parameter in the SQL statement.
