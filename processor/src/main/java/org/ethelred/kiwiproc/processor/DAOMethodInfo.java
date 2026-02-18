@@ -18,7 +18,8 @@ public record DAOMethodInfo(
         ParsedQuery parsedSql,
         List<DAOParameterInfo> parameterMapping,
         List<DAOResultColumn> columns,
-        List<DAOBatchIterator> batchIterators)
+        List<DAOBatchIterator> batchIterators,
+        int fetchSize)
         implements Supplier<Element> {
 
     public KiwiType valueComponentType() {

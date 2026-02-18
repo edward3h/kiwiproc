@@ -4,7 +4,8 @@ package org.ethelred.kiwiproc.processor.types;
 import java.util.Map;
 import org.ethelred.kiwiproc.processor.RowCount;
 
-public record MapType(KiwiType keyType, KiwiType valueType, boolean comparableKey) implements KiwiType {
+public record MapType(KiwiType keyType, KiwiType valueType, boolean comparableKey, boolean isSortedMap)
+        implements KiwiType {
     @Override
     public String packageName() {
         return Map.class.getPackageName();
