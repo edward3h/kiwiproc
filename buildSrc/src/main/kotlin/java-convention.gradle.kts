@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    jacoco
     id("com.diffplug.spotless")
 }
 
@@ -15,6 +16,15 @@ java {
 
 tasks.named<Test>("test") {
     useJUnitPlatform()
+    finalizedBy(tasks.named("jacocoTestReport"))
+}
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.named("test"))
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
 
 val junitVersion = "5.14.1"

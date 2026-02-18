@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
 
     steps:
     - uses: actions/checkout@v6
@@ -41,6 +42,18 @@ jobs:
       if: success() || failure() # always run even if the previous step fails
       with:
         report_paths: '**/build/test-results/test/TEST-*.xml'
+
+    - name: Generate coverage report
+      run: ./gradlew testCodeCoverageReport
+      if: success() || failure()
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: success() || failure()
+      with:
+        name: coverage-report
+        path: build/reports/jacoco/testCodeCoverageReport/
+        retention-days: 14
 
     # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
     # If your project does not have the Gradle Wrapper configured, you can use the following configuration to run Gradle with a specified version.

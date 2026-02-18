@@ -1,5 +1,6 @@
 plugins {
     `java-gradle-plugin`
+    jacoco
     id("com.gradle.plugin-publish") version "1.3.1"
     id("com.diffplug.spotless").version("7.2.1")
     id("org.danilopianini.publish-on-central").version("9.1.9")
@@ -77,6 +78,15 @@ tasks.named<Task>("check") {
 tasks.named<Test>("test") {
     // Use JUnit Jupiter for unit tests.
     useJUnitPlatform()
+    finalizedBy(tasks.named("jacocoTestReport"))
+}
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.named("test"))
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
 
 tasks.named<ProcessResources>("processResources") {
