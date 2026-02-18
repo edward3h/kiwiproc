@@ -37,7 +37,7 @@ public class KiwiTypeVisitor extends SimpleTypeVisitor14<KiwiType, Void> {
                 .filter(h -> h.test(t))
                 .map(h -> h.apply(t))
                 .findFirst()
-                .orElse(KiwiType.unsupported());
+                .orElse(KiwiType.unsupported("unrecognised type '%s'".formatted(t)));
     }
 
     @Override
@@ -45,6 +45,6 @@ public class KiwiTypeVisitor extends SimpleTypeVisitor14<KiwiType, Void> {
         if (t.getKind().equals(TypeKind.VOID)) {
             return new VoidType();
         }
-        return KiwiType.unsupported();
+        return KiwiType.unsupported("unsupported no-type kind '%s'".formatted(t.getKind()));
     }
 }

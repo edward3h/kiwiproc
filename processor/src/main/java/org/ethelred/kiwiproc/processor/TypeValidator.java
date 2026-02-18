@@ -42,6 +42,10 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
     }
 
     private boolean validateSingleParameter(KiwiType parameterType, KiwiType columnType) {
+        if (parameterType instanceof UnsupportedType ut) {
+            logger.error(element, "Unsupported type for parameter %s: %s".formatted(simpleName(), ut.reason()));
+            return false;
+        }
         if (!validateGeneral(parameterType)) {
             logger.error(element, "Unsupported type %s for parameter %s".formatted(parameterType, simpleName()));
             return false;
@@ -120,6 +124,9 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
     public DAOResultMapping validateReturn(
             QueryResultContext context, KiwiType returnType, Consumer<ColumnMetaData> mappedColumn) {
         //        debug("validateReturn %s, %s, %s".formatted(columnMetaDataList, returnType, kind));
+        if (returnType instanceof UnsupportedType ut) {
+            return reportError("Unsupported return type: " + ut.reason());
+        }
         var kind = context.kind();
         if (returnType instanceof VoidType && kind != QueryMethodKind.QUERY) {
             return new DAOResultMapping(new VoidConversion());
@@ -172,7 +179,7 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
         }
         if (returnType instanceof MapType mapType) {
             debug("Return type %s".formatted(mapType));
-            System.err.println("map type columns" + context.columns());
+            debug("map type columns" + context.columns());
             var keyMapping = validateReturn(
                     context.withMapMapping(ResultPart.KEY).withAsParameter(true),
                     mapType.keyType().withIsNullable(false),
@@ -202,13 +209,15 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
         if (returnType instanceof RecordType recordType) {
             debug("Return type record %s.%s".formatted(recordType.packageName(), recordType.className()));
             var components = recordType.components();
+            var matchedColumns = new HashSet<ColumnMetaData>();
             try {
-                return components.stream()
+                var result = components.stream()
                         .map(component -> {
                             ColumnMetaData columnMetaData = getColumnMetaData(context, recordType, component);
                             SqlTypeMapping sqlTypeMapping = SqlTypeMappingRegistry.get(columnMetaData);
                             var columnType = sqlTypeMapping.kiwiType();
                             mappedColumn.accept(columnMetaData);
+                            matchedColumns.add(columnMetaData);
                             var conversion = validateCompatible(columnType, component.type());
                             if (!conversion.isValid()) {
                                 reportError("Missing or incompatible column type %s for component %s type %s"
@@ -222,6 +231,22 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
                                     conversion);
                         })
                         .collect(DAOResultMapping::new, DAOResultMapping::addColumn, DAOResultMapping::merge);
+                // Check the reverse: columns not matched by any record component.
+                // Only applicable in the SIMPLE context; for map KEY/VALUE parts the other columns
+                // belong to a different part and are validated separately.
+                if (context.resultPart() == ResultPart.SIMPLE) {
+                    var unmappedColumns = context.columns().stream()
+                            .filter(col -> !matchedColumns.contains(col))
+                            .toList();
+                    for (var col : unmappedColumns) {
+                        reportError("Record '%s' does not have a component matching column '%s'"
+                                .formatted(recordType.className(), col.name().name()));
+                    }
+                    if (!unmappedColumns.isEmpty()) {
+                        return INVALID;
+                    }
+                }
+                return result;
             } catch (IllegalArgumentException e) {
                 // already reported above, just return
                 return INVALID;

@@ -20,6 +20,10 @@ public sealed interface KiwiType
         return new UnsupportedType();
     }
 
+    static KiwiType unsupported(String reason) {
+        return new UnsupportedType(reason);
+    }
+
     String packageName();
 
     String className();

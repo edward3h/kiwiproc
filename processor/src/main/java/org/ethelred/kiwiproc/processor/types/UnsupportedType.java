@@ -1,19 +1,28 @@
 /* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor.types;
 
-public record UnsupportedType() implements KiwiType {
+public record UnsupportedType(String reason) implements KiwiType {
+    public UnsupportedType() {
+        this("unsupported type");
+    }
+
     @Override
     public String packageName() {
-        throw new UnsupportedOperationException("UnsupportedType.packageName");
+        return "";
     }
 
     @Override
     public String className() {
-        throw new UnsupportedOperationException("UnsupportedType.className");
+        return "<unsupported>";
     }
 
     @Override
     public boolean isSimple() {
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return "UnsupportedType(" + reason + ")";
     }
 }

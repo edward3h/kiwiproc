@@ -269,7 +269,8 @@ public class ProcessorTest {
                         }
                         """)
                         .withDisplayName("A SqlQuery method fails when the return type uses an arbitrary class.")
-                        .withExpectedErrorCount(2)
+                        .withExpectedErrorCount(3)
+                        .withExpectedErrorMessage("Unsupported return type")
                         .withExpectedErrorMessage("Invalid return type"),
                 method(
                                 """

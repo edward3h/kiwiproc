@@ -139,13 +139,12 @@ public class TypeValidatorTest {
                         false,
                         "Record component 'TestRecord.test2' does not have a matching column",
                         col(false, JDBCType.INTEGER)),
-                //                testCase( TODO separate exhaustiveness check
-                //                        new CollectionType(ValidCollection.LIST, recordType("TestRecord", "test1",
-                // ofClass(int.class))),
-                //                        false,
-                //                        "Record 'TestRecord' does not have a component matching column 'test2'",
-                //                        col(false, JDBCType.INTEGER),
-                //                        col(false, JDBCType.VARCHAR)),
+                testCase(
+                        new CollectionType(ValidCollection.LIST, recordType("TestRecord", "test1", ofClass(int.class))),
+                        false,
+                        "Record 'TestRecord' does not have a component matching column 'test2'",
+                        col(false, JDBCType.INTEGER),
+                        col(false, JDBCType.VARCHAR)),
                 testCase(
                         new CollectionType(
                                 ValidCollection.LIST,
