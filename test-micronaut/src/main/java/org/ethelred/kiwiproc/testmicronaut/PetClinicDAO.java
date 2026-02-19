@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlBatch;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
@@ -31,6 +32,12 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
             SELECT t.id, t.name, coalesce(count(*), 0) AS count
             FROM types t JOIN pets p ON t.id = p.type_id GROUP BY 1,2""", valueColumn = "count")
     Map<PetType, Long> getPetTypesWithCount();
+
+    @SqlQuery(sql = """
+                SELECT t.name, count(*) AS count
+                FROM types t JOIN pets p ON t.id = p.type_id
+                GROUP BY t.name""", keyColumn = "name", valueColumn = "count")
+    SortedMap<String, Long> getPetCountByTypeName();
 
     @SqlQuery("""
                 SELECT id, first_name, last_name FROM owners WHERE id = ANY(:ids)""")
