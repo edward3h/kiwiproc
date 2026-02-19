@@ -9,7 +9,7 @@ kiwiProc {
 }
 
 micronaut {
-    version = "4.10.6"
+    version = "4.10.8"
 }
 
 dependencies {
