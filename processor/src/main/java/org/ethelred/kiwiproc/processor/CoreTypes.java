@@ -116,8 +116,7 @@ public class CoreTypes {
         });
 
         TypeMapping t = new TypeMapping(STRING_TYPE, coreTypes.get(boolean.class));
-        String format =
-                """
+        String format = """
                 ($1N.matches("\\d+") && !"0".equals($1N)) || Boolean.parseBoolean($1N)
                 """;
         entries.add(entry(t, new StringFormatConversion(null, format)));
@@ -350,8 +349,7 @@ public class CoreTypes {
             try (var bw = Files.newBufferedWriter(
                             Path.of(args[0]), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                     var w = new PrintWriter(bw)) {
-                w.println(
-                        """
+                w.println("""
                         .Conversions
                         [%autowidth]
                         |===

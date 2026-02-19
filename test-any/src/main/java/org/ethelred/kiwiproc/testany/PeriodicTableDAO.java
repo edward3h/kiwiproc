@@ -8,18 +8,19 @@ import org.jspecify.annotations.Nullable;
 
 @DAO(dataSourceName = "periodic-table")
 public interface PeriodicTableDAO {
-    record ElementStub(int AtomicNumber, @Nullable String Element, @Nullable String Symbol) {}
+    record ElementStub(
+            int AtomicNumber,
+            @Nullable String Element,
+            @Nullable String Symbol) {}
 
-    @SqlQuery(
-            """
+    @SqlQuery("""
             select "AtomicNumber", "Element", "Symbol"
             from periodic_table
             where "Year" is null or "Year" < :year
             """)
     List<ElementStub> elementsDiscoveredBefore(int year);
 
-    @SqlQuery(
-            """
+    @SqlQuery("""
             select "AtomicNumber"
             from periodic_table
             where "AtomicNumber" < :number

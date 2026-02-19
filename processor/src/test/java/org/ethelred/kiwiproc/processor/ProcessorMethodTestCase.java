@@ -76,9 +76,7 @@ class ProcessorMethodTestCase {
     }
 
     private JavaFileObject methodToFileObject() {
-        return JavaFileObjects.forSourceString(
-                MyDAO,
-                """
+        return JavaFileObjects.forSourceString(MyDAO, """
                 package com.example;
 
                 import java.util.*;
@@ -87,7 +85,6 @@ class ProcessorMethodTestCase {
                 @DAO
                 public interface MyDAO {
                     %s
-                }"""
-                        .formatted(method));
+                }""".formatted(method));
     }
 }

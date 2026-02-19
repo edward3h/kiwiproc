@@ -7,24 +7,16 @@ import java.util.List;
 import java.util.Set;
 
 public enum ValidCollection {
-    ARRAY(
-            Array.class,
-            """
+    ARRAY(Array.class, """
             l.toArray(new $componentClass:T[$listVariable:L.size()])
-            """,
-            """
+            """, """
                     java.util.stream.Stream.of($containerVariable:L)
-                    """,
-            """
+                    """, """
                     org.ethelred.kiwiproc.impl.ArraySupport.iterator($containerVariable:L)"""),
-    ITERABLE(
-            Iterable.class,
-            """
-            List.copyOf($listVariable:L)""",
-            """
+    ITERABLE(Iterable.class, """
+            List.copyOf($listVariable:L)""", """
                     java.util.stream.StreamSupport.stream($containerVariable:L.spliterator(), false)
-                    """,
-            """
+                    """, """
                     $containerVariable:L.iterator()"""),
     COLLECTION(Collection.class),
     LIST(List.class),
