@@ -12,7 +12,7 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -31,10 +31,9 @@ public class PetClinicTest {
     static class TestConfiguration {
         @Bean
         @Qualifier("default") public DataSource testDataSource(Environment environment) {
-            var dataSourceProperties = new DataSourceProperties();
-            // TODO @ConfigurationProperties mapping wasn't working for this
-            dataSourceProperties.setUrl(environment.getProperty("datasources.default.url"));
-            return dataSourceProperties.initializeDataSourceBuilder().build();
+            return DataSourceBuilder.create()
+                    .url(environment.getProperty("datasources.default.url"))
+                    .build();
         }
     }
 
