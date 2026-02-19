@@ -14,7 +14,7 @@ val junitVersion = "6.0.3"
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testRuntimeOnly("org.postgresql:postgresql:42.7.8")
+    testRuntimeOnly("org.postgresql:postgresql:42.7.10")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
