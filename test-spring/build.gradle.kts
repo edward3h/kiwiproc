@@ -10,7 +10,7 @@ dependencies {
     implementation(project(":runtime"))
     implementation(libs.spring.starter)
     testImplementation(libs.spring.test)
-    testRuntimeOnly(libs.spring.starter.jdbc)
+    testImplementation(libs.spring.starter.jdbc)
     testRuntimeOnly(libs.postgresql)
 }
 
