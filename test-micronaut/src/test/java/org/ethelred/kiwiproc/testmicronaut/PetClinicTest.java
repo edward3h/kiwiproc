@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import java.util.SortedMap;
 import java.util.stream.Collectors;
 import org.ethelred.kiwiproc.exception.UncheckedSQLException;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,14 @@ public class PetClinicTest {
         var countsByType = dao.call(PetClinicDAO::getPetTypesWithCount);
         assertThat(countsByType).hasSize(6);
         assertThat(countsByType).containsEntry(new PetType(2, "dog"), 4L);
+    }
+
+    @Test
+    void happySortedMapReturn() {
+        var countsByTypeName = dao.call(PetClinicDAO::getPetCountByTypeName);
+        assertThat(countsByTypeName).isInstanceOf(SortedMap.class);
+        assertThat(countsByTypeName).containsEntry("dog", 4L);
+        assertThat(countsByTypeName.keySet()).isInOrder();
     }
 
     @Test
