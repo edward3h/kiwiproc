@@ -3,7 +3,7 @@ plugins {
     jacoco
     id("com.gradle.plugin-publish") version "2.0.0"
     id("com.diffplug.spotless").version("8.2.1")
-    id("org.danilopianini.publish-on-central").version("9.1.9")
+    id("org.danilopianini.publish-on-central").version("9.1.13")
 }
 
 apply(from = "../../version.gradle.kts")
