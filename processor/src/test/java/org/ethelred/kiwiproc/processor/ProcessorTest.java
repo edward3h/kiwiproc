@@ -39,11 +39,10 @@ public class ProcessorTest {
     void whenNoConfigurationFileFailCompilation() {
         var compilation = Compiler.javac()
                 .withProcessors(new KiwiProcessor())
-                .compile(
-                        JavaFileObjects.forSourceString(
-                                "com.example.MyDAO",
-                                // language=java
-                                """
+                .compile(JavaFileObjects.forSourceString(
+                        "com.example.MyDAO",
+                        // language=java
+                        """
                                 package com.example;
 
                                 public interface MyDAO {
@@ -57,11 +56,10 @@ public class ProcessorTest {
         var compilation = Compiler.javac()
                 .withProcessors(new KiwiProcessor())
                 .withOptions("-Aorg.ethelred.kiwiproc.configuration=bogus.json")
-                .compile(
-                        JavaFileObjects.forSourceString(
-                                "com.example.MyDAO",
-                                // language=java
-                                """
+                .compile(JavaFileObjects.forSourceString(
+                        "com.example.MyDAO",
+                        // language=java
+                        """
                                 package com.example;
 
                                 public interface MyDAO {
@@ -79,11 +77,10 @@ public class ProcessorTest {
         var compilation = Compiler.javac()
                 .withProcessors(new KiwiProcessor())
                 .withOptions("-Aorg.ethelred.kiwiproc.configuration=%s".formatted(config))
-                .compile(
-                        JavaFileObjects.forSourceString(
-                                "com.example.MyDAO",
-                                // language=java
-                                """
+                .compile(JavaFileObjects.forSourceString(
+                        "com.example.MyDAO",
+                        // language=java
+                        """
                                 package com.example;
 
                                 import org.ethelred.kiwiproc.annotation.DAO;
@@ -117,11 +114,10 @@ public class ProcessorTest {
     @Test
     void whenDAOInterfaceHasNoQueryMethodsFailCompilation() throws IOException {
         var compilation = configuredCompiler()
-                .compile(
-                        JavaFileObjects.forSourceString(
-                                "com.example.MyDAO",
-                                // language=java
-                                """
+                .compile(JavaFileObjects.forSourceString(
+                        "com.example.MyDAO",
+                        // language=java
+                        """
                                         package com.example;
 
                                         import org.ethelred.kiwiproc.annotation.DAO;
@@ -192,8 +188,7 @@ public class ProcessorTest {
 
     static Stream<ProcessorMethodTestCase> testCases() {
         return Stream.of(
-                method(
-                                """
+                method("""
                         @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
                         List<Integer> addRestaurants(String name);
                         """)
@@ -201,66 +196,56 @@ public class ProcessorTest {
                                 "A SqlBatch method fails when it does not have at least one 'iterable' parameter.")
                         .withExpectedErrorMessage("at least one iterable parameter")
                         .withExpectedErrorCount(2),
-                method(
-                                """
+                method("""
                         @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
                         List<Integer> addRestaurants(List<String> name);
                         """)
                         .withDisplayName("A SqlBatch method compiles when it has an 'iterable' parameter.")
                         .succeeds(),
-                method(
-                                """
+                method("""
                         @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
                         List<Integer> addRestaurants(String[] name);
                         """)
                         .withDisplayName("A SqlBatch method compiles when it has an array parameter.")
                         .succeeds(),
-                method(
-                                """
+                method("""
                         @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
                         void addRestaurants(List<String> name);
                         """)
                         .withDisplayName("A SqlBatch method compiles when it has a void return type.")
                         .succeeds(),
-                method(
-                                """
+                method("""
                         @SqlBatch(sql = "INSERT INTO restaurant(name, tables) VALUES (:name, :tables)")
                         void addRestaurants(List<String> name, int tables);
                         """)
                         .withDisplayName(
                                 "A SqlBatch method compiles when it has an iterable parameter and a not iterable parameter")
                         .succeeds(),
-                method(
-                                """
+                method("""
                 @SqlBatch(sql = "INSERT INTO restaurant(name, tables, chain) VALUES (:name, :tables, :chain)")
                 void addRestaurants(List<String> name, int[] tables, String chain);
                 """)
                         .withDisplayName(
                                 "A SqlBatch method compiles when it has multiple iterable parameters and a not iterable parameter")
                         .succeeds(),
-                method(
-                                """
+                method("""
                 record RestaurantUpdate(String name, int tables, String chain) {}
                 @SqlBatch(sql = "INSERT INTO restaurant(name, tables, chain) VALUES (:name, :tables, :chain)")
                 void addRestaurants(List<RestaurantUpdate> updates);
                 """)
                         .withDisplayName("A SqlBatch method compiles when it has an iterable record type")
                         .succeeds(),
-                method(
-                                """
+                method("""
                         @SqlBatch(sql = "INSERT INTO restaurant(name) VALUES (:name)")
                         int[] addRestaurants(List<String> name);
                         """)
                         .withDisplayName("A SqlBatch method compiles when it has an int array return type.")
                         .succeeds(),
-                method(
-                                """
+                method("""
                         @SqlQuery(sql = "SELECT * FROM restaurant WHERE name like :search || '%'")
                         List<Restaurant> findRestaurantsByName(String search);
                         """)
-                        .withAdditionalSource(
-                                "com.example.Restaurant",
-                                """
+                        .withAdditionalSource("com.example.Restaurant", """
                         package com.example;
 
                         public class Restaurant {
@@ -272,14 +257,11 @@ public class ProcessorTest {
                         .withExpectedErrorCount(3)
                         .withExpectedErrorMessage("Unsupported return type")
                         .withExpectedErrorMessage("Invalid return type"),
-                method(
-                                """
+                method("""
                         @SqlQuery(sql = "SELECT * FROM restaurant WHERE name like :search || '%'")
                         List<Restaurant> findRestaurantsByName(String search);
                         """)
-                        .withAdditionalSource(
-                                "com.example.Restaurant",
-                                """
+                        .withAdditionalSource("com.example.Restaurant", """
                                 package com.example;
 
                                 import org.jspecify.annotations.Nullable;
@@ -287,22 +269,19 @@ public class ProcessorTest {
                                 """)
                         .withDisplayName("A SqlQuery method compiles when the return type uses a record.")
                         .succeeds(),
-                method(
-                                """
+                method("""
                         @SqlQuery(sql = "SELECT name FROM restaurant", fetchSize = 100)
                         List<String> getRestaurantNames();
                         """)
                         .withDisplayName("A SqlQuery method with fetchSize compiles successfully.")
                         .succeeds(),
-                method(
-                                """
+                method("""
                         @SqlQuery(sql = "SELECT name, tables FROM restaurant", keyColumn = "name", valueColumn = "tables")
                         SortedMap<String, Integer> tablesByRestaurantName();
                         """)
                         .withDisplayName("A SqlQuery method with SortedMap return type compiles successfully.")
                         .succeeds(),
-                method(
-                                """
+                method("""
                         record RestaurantKey(String name) {}
                         @SqlQuery(sql = "SELECT name, id FROM restaurant", keyColumn = "name", valueColumn = "id")
                         SortedMap<RestaurantKey, Integer> restaurantKeys();

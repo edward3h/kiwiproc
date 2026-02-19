@@ -219,15 +219,11 @@ public class InstanceGenerator {
                             .map(p -> CodeBlock.of("$L", patchedNames.get(columnName(p))))
                             .collect(CodeBlock.joining(",\n"));
                     params = CodeBlock.builder().indent().add(params).unindent().build();
-                    builder.add(
-                            """
+                    builder.add("""
                                     var $L = new $T(
                                     $L
                                     );
-                                    """,
-                            resultVar,
-                            kiwiTypeConverter.fromKiwiType(componentClass),
-                            params);
+                                    """, resultVar, kiwiTypeConverter.fromKiwiType(componentClass), params);
                 }
             }
             if (methodInfo.expectedRows() == RowCount.EXACTLY_ONE) {
