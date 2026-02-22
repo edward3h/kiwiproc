@@ -3,7 +3,7 @@ import org.asciidoctor.gradle.jvm.AsciidoctorTask
 
 plugins {
     id("org.asciidoctor.jvm.convert") version "4.0.5"
-        id("de.undercouch.download") version "5.6.0"
+        id("de.undercouch.download") version "5.7.0"
 }
 
 repositories {
