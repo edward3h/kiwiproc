@@ -14,7 +14,7 @@ dependencyResolutionManagement {
 
             library("jakarta-inject", "jakarta.inject:jakarta.inject-api:2.0.1")
 
-            library("jetbrains-annotations", "org.jetbrains:annotations:26.0.2-1")
+            library("jetbrains-annotations", "org.jetbrains:annotations:26.1.0")
 
             library("utilitary", "com.karuslabs:utilitary:3.0.0")
             library("postgresql", "org.postgresql:postgresql:42.7.10")
