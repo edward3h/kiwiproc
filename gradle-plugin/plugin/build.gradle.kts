@@ -2,7 +2,7 @@ plugins {
     `java-gradle-plugin`
     jacoco
     id("com.gradle.plugin-publish") version "2.0.0"
-    id("com.diffplug.spotless").version("8.2.1")
+    id("com.diffplug.spotless").version("8.3.0")
     id("org.danilopianini.publish-on-central").version("9.1.13")
 }
 
@@ -29,7 +29,7 @@ dependencies {
     implementation(libs.liquibase.core)
     implementation(libs.postgresql)
     // quick fix - should make postgres version/arch configurable
-    runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:18.2.0"))
+    runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:18.3.0"))
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-linux-arm64v8")
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-darwin-arm64v8")
     testImplementation(gradleTestKit())

@@ -25,7 +25,7 @@ dependencyResolutionManagement {
             library("recordbuilder-processor", "io.soabase.record-builder", "record-builder-processor").versionRef("recordbuilder")
             library("recordbuilder-core", "io.soabase.record-builder", "record-builder-core").versionRef("recordbuilder")
 
-            library("embeddedpostgres", "io.zonky.test:embedded-postgres:2.2.0")
+            library("embeddedpostgres", "io.zonky.test:embedded-postgres:2.2.2")
             library("liquibase-core", "org.liquibase:liquibase-core:5.0.1")
 
             library("mapstruct-processor", "org.mapstruct", "mapstruct-processor").versionRef("mapstruct")
@@ -33,12 +33,12 @@ dependencyResolutionManagement {
 
             library("jspecify", "org.jspecify:jspecify:1.0.0")
 
-            library("javapoet", "com.palantir.javapoet:javapoet:0.11.0")
+            library("javapoet", "com.palantir.javapoet:javapoet:0.12.0")
             library("guava", "com.google.guava:guava:33.5.0-jre")
             library("compile-testing", "com.google.testing.compile:compile-testing:0.23.0")
             library("compile-testing-extension", "io.github.kiskae:compile-testing-extension:1.0.2")
 
-            library("yaml", "org.yaml:snakeyaml:2.5")
+            library("yaml", "org.yaml:snakeyaml:2.6")
 
             library("spring-starter", "org.springframework.boot", "spring-boot-starter").versionRef("springboot")
             library("spring-starter-jdbc", "org.springframework.boot", "spring-boot-starter-jdbc").versionRef("springboot")
