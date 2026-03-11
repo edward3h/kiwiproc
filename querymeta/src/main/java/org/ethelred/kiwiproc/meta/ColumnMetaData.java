@@ -2,9 +2,7 @@
 package org.ethelred.kiwiproc.meta;
 
 import java.sql.*;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import org.postgresql.core.BaseConnection;
 
 public record ColumnMetaData(
         int index,
@@ -30,7 +28,8 @@ public record ColumnMetaData(
         this(index, isParameter, new SqlName(name), nullable, sqlType, dbTypeName, dbClassName, componentType);
     }
 
-    public static ColumnMetaData from(Connection connection, int index, ResultSetMetaData resultSetMetaData)
+    public static ColumnMetaData from(
+            DatabaseDialect dialect, Connection connection, int index, ResultSetMetaData resultSetMetaData)
             throws SQLException {
         return new ColumnMetaData(
                 index,
@@ -40,31 +39,14 @@ public record ColumnMetaData(
                 JDBCType.valueOf(resultSetMetaData.getColumnType(index)),
                 resultSetMetaData.getColumnTypeName(index),
                 resultSetMetaData.getColumnClassName(index),
-                componentType(
+                dialect.componentType(
                         connection,
                         resultSetMetaData.getColumnType(index),
                         resultSetMetaData.getColumnTypeName(index)));
     }
 
-    @Nullable private static ArrayComponent componentType(Connection connection, int columnType, String columnTypeName) {
-        if (columnType != Types.ARRAY) {
-            return null;
-        }
-        try {
-            var pgConnection = connection.unwrap(BaseConnection.class);
-            var typeInfo = pgConnection.getTypeInfo();
-            var oid = typeInfo.getPGType(columnTypeName);
-            var componentOid = typeInfo.getPGArrayElement(oid);
-            return new ArrayComponent(
-                    JDBCType.valueOf(typeInfo.getSQLType(componentOid)),
-                    Objects.requireNonNull(typeInfo.getPGType(componentOid)));
-        } catch (SQLException ignored) {
-
-        }
-        return null;
-    }
-
-    public static ColumnMetaData from(Connection connection, int index, ParameterMetaData parameterMetaData)
+    public static ColumnMetaData from(
+            DatabaseDialect dialect, Connection connection, int index, ParameterMetaData parameterMetaData)
             throws SQLException {
         return new ColumnMetaData(
                 index,
@@ -75,7 +57,7 @@ public record ColumnMetaData(
                 JDBCType.valueOf(parameterMetaData.getParameterType(index)),
                 parameterMetaData.getParameterTypeName(index),
                 parameterMetaData.getParameterClassName(index),
-                componentType(
+                dialect.componentType(
                         connection,
                         parameterMetaData.getParameterType(index),
                         parameterMetaData.getParameterTypeName(index)));

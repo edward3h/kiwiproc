@@ -1,5 +1,40 @@
 == Database Support
 
-Kiwiproc is currently _only_ tested with Postgresql.
-Support for SQL Arrays is known to be specific to Postgresql.
-Other databases using standard JDBC _may_ work, as long as you don't use Arrays.
+=== PostgreSQL
+
+PostgreSQL is fully supported with all features:
+
+* All standard SQL types
+* SQL arrays
+* `RETURNING` clause in `INSERT`/`UPDATE`/`DELETE` statements
+* Full parameter type checking at compile time
+* Embedded database via https://github.com/zonkyio/embedded-postgres[io.zonky.test embedded-postgres] — no Docker required
+
+=== MySQL
+
+MySQL is supported with some limitations. See <<mysql-limitations>> below.
+
+Embedded MySQL uses https://testcontainers.com/[Testcontainers] at build time, which requires Docker to be available on the build machine.
+
+To select embedded MySQL, set `driverClassName` to `com.mysql.cj.jdbc.Driver` in the datasource configuration:
+
+[source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
+----
+kiwiProc {
+    dataSources {
+        register("default") {
+            driverClassName = "com.mysql.cj.jdbc.Driver" // <1>
+            liquibaseChangelog = file("$projectDir/src/main/resources/changelog.xml")
+        }
+    }
+}
+----
+<1> Setting `driverClassName` to the MySQL driver selects embedded MySQL via Testcontainers.
+
+[#mysql-limitations]
+==== MySQL Limitations
+
+1. *Parameter type checking is weaker* — the MySQL JDBC driver does not reliably provide parameter metadata, so parameter types are not validated at compile time.
+2. *SQL arrays are not supported* — MySQL has no native array type.
+3. *The `RETURNING` clause is not supported* — use a separate `SELECT` query after an `INSERT` if you need generated values.
+4. *Embedded MySQL requires Docker* — Testcontainers is used at build time to start a MySQL container.

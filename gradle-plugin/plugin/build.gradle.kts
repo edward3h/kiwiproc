@@ -28,6 +28,8 @@ dependencies {
     implementation(libs.embeddedpostgres)
     implementation(libs.liquibase.core)
     implementation(libs.postgresql)
+    implementation(libs.mysql)
+    implementation(libs.testcontainers.mysql)
     // quick fix - should make postgres version/arch configurable
     runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:18.3.0"))
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-linux-arm64v8")

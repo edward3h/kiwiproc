@@ -1,6 +1,7 @@
 /* (C) Edward Harman 2025 */
 package org.ethelred.kiwiproc.gradle;
 
+import com.mysql.cj.jdbc.MysqlDataSource;
 import io.avaje.jsonb.JsonType;
 import io.avaje.jsonb.Jsonb;
 import java.io.File;
@@ -31,10 +32,13 @@ import org.postgresql.ds.PGSimpleDataSource;
 
 @UntrackedTask(
         because =
-                "A new Postgres instance is started for each Gradle run, and the database port and name are chosen at random.")
+                "A new database instance is started for each Gradle run, and the database port and name are chosen at random.")
 public abstract class KiwiProcConfigTask extends DefaultTask {
     @ServiceReference(EmbeddedPostgresService.DEFAULT_NAME)
     abstract Property<EmbeddedPostgresService> getService();
+
+    @ServiceReference(EmbeddedMySQLService.DEFAULT_NAME)
+    abstract Property<EmbeddedMySQLService> getMySQLService();
 
     @OutputFile
     public abstract RegularFileProperty getConfigFile();
@@ -111,11 +115,25 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
         return dataSource.getJdbcUrl().isPresent();
     }
 
+    private boolean isMySQL(KiwiProcDataSource dataSource) {
+        return "com.mysql.cj.jdbc.Driver".equals(dataSource.getDriverClassName().getOrNull());
+    }
+
     private DataSourceConfig toDataSourceConfig(KiwiProcDataSource kiwiProcDataSource) {
         if (isExternal(kiwiProcDataSource)) {
             return externalDataSourceConfig(kiwiProcDataSource);
         }
         var liquibaseFile = kiwiProcDataSource.getLiquibaseChangelog().get().getAsFile();
+        if (isMySQL(kiwiProcDataSource)) {
+            var connectionInfo = getMySQLService().get().getPreparedDatabase(liquibaseFile);
+            return new DataSourceConfig(
+                    kiwiProcDataSource.getName(),
+                    connectionInfo.url(),
+                    null,
+                    connectionInfo.username(),
+                    connectionInfo.password(),
+                    "com.mysql.cj.jdbc.Driver");
+        }
         var connectionInfo = getService().get().getPreparedDatabase(liquibaseFile);
         return new DataSourceConfig(
                 kiwiProcDataSource.getName(),
@@ -129,13 +147,24 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
 
     private DataSourceConfig externalDataSourceConfig(KiwiProcDataSource kiwiProcDataSource) {
         if (kiwiProcDataSource.getLiquibaseChangelog().isPresent()) {
-            var pgSimpleDataSource = new PGSimpleDataSource();
-            pgSimpleDataSource.setURL(kiwiProcDataSource.getJdbcUrl().get());
-            ifPresent(kiwiProcDataSource.getDatabase(), pgSimpleDataSource::setDatabaseName);
-            ifPresent(kiwiProcDataSource.getUsername(), pgSimpleDataSource::setUser);
-            ifPresent(kiwiProcDataSource.getPassword(), pgSimpleDataSource::setPassword);
+            DataSource ds;
+            var url = kiwiProcDataSource.getJdbcUrl().get();
+            if (isMySQL(kiwiProcDataSource) || url.startsWith("jdbc:mysql:")) {
+                var mysqlDs = new MysqlDataSource();
+                mysqlDs.setURL(url);
+                ifPresent(kiwiProcDataSource.getUsername(), mysqlDs::setUser);
+                ifPresent(kiwiProcDataSource.getPassword(), mysqlDs::setPassword);
+                ds = mysqlDs;
+            } else {
+                var pgDs = new PGSimpleDataSource();
+                pgDs.setURL(url);
+                ifPresent(kiwiProcDataSource.getDatabase(), pgDs::setDatabaseName);
+                ifPresent(kiwiProcDataSource.getUsername(), pgDs::setUser);
+                ifPresent(kiwiProcDataSource.getPassword(), pgDs::setPassword);
+                ds = pgDs;
+            }
             liquibaseUpdate(
-                    kiwiProcDataSource.getLiquibaseChangelog().getAsFile().get(), pgSimpleDataSource);
+                    kiwiProcDataSource.getLiquibaseChangelog().getAsFile().get(), ds);
         }
 
         return new DataSourceConfig(
@@ -144,7 +173,7 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
                 kiwiProcDataSource.getDatabase().getOrNull(),
                 kiwiProcDataSource.getUsername().getOrNull(),
                 kiwiProcDataSource.getPassword().getOrNull(),
-                null);
+                kiwiProcDataSource.getDriverClassName().getOrNull());
     }
 
     private <T> void ifPresent(Property<T> property, Consumer<T> consumer) {

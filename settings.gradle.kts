@@ -3,7 +3,7 @@ pluginManagement {
 }
 
 rootProject.name = "kiwiproc"
-include("shared", "querymeta", "processor", "runtime", "test-spring", "test-micronaut", "docs", ":docs:example", "test-any")
+include("shared", "querymeta", "processor", "runtime", "test-spring", "test-micronaut", "docs", ":docs:example", "test-any", "test-mysql")
 includeBuild("gradle-plugin")
 includeBuild(".")
 apply(from = "catalog.settings.gradle.kts")
