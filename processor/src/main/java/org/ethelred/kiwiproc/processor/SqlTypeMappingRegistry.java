@@ -70,7 +70,8 @@ public class SqlTypeMappingRegistry {
                     .baseType(OffsetDateTime.class)
                     .dbType("timestamptz")
                     .build(),
-            new SqlTypeMapping(JDBCType.NULL, void.class, "", true, true, null, null, null)
+            new SqlTypeMapping(JDBCType.NULL, void.class, "", true, true, null, null, null),
+            jdbcType(JDBCType.OTHER).baseType(Object.class).build()
 
             // TODO fill out types as necessary
             );

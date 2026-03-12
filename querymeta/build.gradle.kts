@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation(project(":shared"))
     implementation(libs.postgresql)
+    implementation(libs.mysql)
     implementation("org.ethelred.kiwiproc:plugin:${project.version}")
 
     annotationProcessor(libs.recordbuilder.processor)

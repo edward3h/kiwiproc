@@ -37,6 +37,26 @@ kiwiProc {
 When using an embedded database, a schema must be defined. Liquibase is the supported way to do this.
 Therefore, a Liquibase changelog file is _required_, except when using an external database.
 
+=== Embedded MySQL
+
+To use embedded MySQL instead of PostgreSQL, set `driverClassName` to the MySQL driver class name.
+This requires Docker to be available on the build machine (Testcontainers is used internally).
+
+[source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
+----
+kiwiProc {
+    dataSources {
+        register("default") {
+            driverClassName = "com.mysql.cj.jdbc.Driver" // <1>
+            liquibaseChangelog = file("$projectDir/src/main/resources/changelog.xml")
+        }
+    }
+}
+----
+<1> Setting `driverClassName` to the MySQL driver selects embedded MySQL via Testcontainers/Docker.
+
+See xref:databases.adoc#mysql-limitations[MySQL Limitations] for a list of features not available with MySQL.
+
 === Multiple and External Datasources
 
 KiwiProc supports using more than one datasource in a project.
@@ -67,12 +87,18 @@ kiwiProc {
             username = "..."
             password = "..." // <3>
         }
+        register("externalMySQL") { // <4>
+            jdbcUrl = "jdbc:mysql://db.example.com/database"
+            username = "..."
+            password = "..."
+        }
     }
 }
 ----
 <1> Register one or more datasources.
-<2> An external datasource is specified by giving a JDBC URL. Liquibase changelog is _optional_ for an external datasource.
+<2> An external PostgreSQL datasource is specified by giving a JDBC URL. Liquibase changelog is _optional_ for an external datasource.
 <3> How to manage secret values for Gradle builds, is out of scope for this document.
+<4> An external MySQL datasource uses a `jdbc:mysql://` URL.
 
 [source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
 ----
@@ -94,6 +120,13 @@ It contains lines of the form:
 [source,properties]
 ----
 datasources.default.url=jdbc\:postgresql\://localhost\:42581/rgtnmpgbihhy?user\=postgres
+----
+
+For MySQL, credentials are embedded in the URL as query parameters:
+
+[source,properties]
+----
+datasources.default.url=jdbc\:mysql\://localhost\:3306/test?user\=root&password\=secret
 ----
 
 This is natively supported by Micronaut, and can be used with Spring with a small extra configuration.

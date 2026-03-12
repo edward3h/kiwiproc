@@ -7,7 +7,6 @@ import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
 import org.jspecify.annotations.Nullable;
-import org.postgresql.ds.PGSimpleDataSource;
 
 public class DatabaseWrapper {
     private static final Pattern SQL_EXCEPTION_POSITION = Pattern.compile("Position: (\\d+)", Pattern.MULTILINE);
@@ -16,34 +15,16 @@ public class DatabaseWrapper {
 
     private DatabaseWrapperException error;
     private DataSource dataSource;
+    private DatabaseDialect dialect;
 
     public DatabaseWrapper(String name, @Nullable DataSourceConfig dataSourceConfig) {
         if (dataSourceConfig == null) {
             valid = false;
             error = new DatabaseWrapperException("No config found for data source name %s".formatted(name));
-        } else if (invalidDriver(dataSourceConfig.driverClassName())) {
-            valid = false;
-            error = new DatabaseWrapperException("Sorry, I only support Postgres at the moment.");
         } else {
-            var pgSimpleDataSource = new PGSimpleDataSource();
-            pgSimpleDataSource.setURL(dataSourceConfig.url());
-            if (dataSourceConfig.database() != null) {
-                pgSimpleDataSource.setDatabaseName(dataSourceConfig.database());
-            }
-            if (dataSourceConfig.username() != null) {
-                pgSimpleDataSource.setUser(dataSourceConfig.username());
-            }
-            if (dataSourceConfig.password() != null) {
-                pgSimpleDataSource.setPassword(dataSourceConfig.password());
-            }
-            dataSource = pgSimpleDataSource;
+            dialect = DatabaseDialects.fromConfig(dataSourceConfig);
+            dataSource = dialect.createDataSource(dataSourceConfig);
         }
-    }
-
-    private boolean invalidDriver(@Nullable String driverClassName) {
-        return driverClassName != null
-                && !driverClassName.isBlank()
-                && !"org.postgresql.Driver".equals(driverClassName);
     }
 
     public boolean isValid() {
@@ -69,12 +50,11 @@ public class DatabaseWrapper {
             var rsmd = statement.getMetaData();
             if (rsmd != null) { // null for update, batch
                 for (var index = 1; index <= rsmd.getColumnCount(); index++) {
-                    builder.addResultColumns(ColumnMetaData.from(connection, index, rsmd));
+                    builder.addResultColumns(ColumnMetaData.from(dialect, connection, index, rsmd));
                 }
             }
-            var pmd = statement.getParameterMetaData();
-            for (var index = 1; index <= pmd.getParameterCount(); index++) {
-                builder.addParameters(ColumnMetaData.from(connection, index, pmd));
+            for (var parameter : dialect.getParameters(connection, statement, sql)) {
+                builder.addParameters(parameter);
             }
             return builder.build();
         } catch (SQLException e) {

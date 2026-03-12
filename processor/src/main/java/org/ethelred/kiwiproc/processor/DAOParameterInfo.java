@@ -1,6 +1,7 @@
 /* (C) Edward Harman 2024 */
 package org.ethelred.kiwiproc.processor;
 
+import java.sql.JDBCType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,13 +25,18 @@ public record DAOParameterInfo(
             var setter = "set" + sqlTypeMapping.accessorSuffix();
             //            System.err.println(methodParameterInfo);
             var mapper = new TypeMapping(methodParameterInfo.type(), sqlTypeMapping.kiwiType());
+            var conversion = coreTypes.lookup(mapper);
+            // For unknown SQL types (e.g. MySQL parameter metadata unavailable), fall back to assignment
+            if (!conversion.isValid() && columnMetaData.jdbcType() == JDBCType.OTHER) {
+                conversion = new AssignmentConversion();
+            }
             result.add(new DAOParameterInfo(
                     columnMetaData.index(),
                     methodParameterInfo,
                     setter,
                     columnMetaData.jdbcType().getVendorTypeNumber(),
                     mapper,
-                    coreTypes.lookup(mapper)));
+                    conversion));
         }));
         return result;
     }

@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import javax.lang.model.element.Element;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.processor.types.*;
+import org.ethelred.kiwiproc.processor.types.ObjectType;
 
 public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes, boolean debug) {
 
@@ -49,6 +50,10 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
         if (!validateGeneral(parameterType)) {
             logger.error(element, "Unsupported type %s for parameter %s".formatted(parameterType, simpleName()));
             return false;
+        }
+        // When SQL type is unknown (e.g. MySQL parameter metadata unavailable), skip compatibility check
+        if (columnType instanceof ObjectType ot && "Object".equals(ot.className())) {
+            return true;
         }
         Conversion conversion = validateCompatible(parameterType, columnType);
         if (!conversion.isValid()) {
