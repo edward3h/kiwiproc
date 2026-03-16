@@ -4,7 +4,7 @@ plugins {
     id("com.gradle.plugin-publish") version "2.1.0"
     id("com.diffplug.spotless").version("8.3.0")
     id("signing")
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
 apply(from = "../../version.gradle.kts")
@@ -110,7 +110,7 @@ spotless {
 
 // plugin is published as a library as well, for the shared processorconfig classes
 mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral()
     signAllPublications()
     pom {
         name = "kiwiproc"
