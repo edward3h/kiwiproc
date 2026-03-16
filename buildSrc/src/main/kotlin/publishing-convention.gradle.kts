@@ -1,11 +1,10 @@
-import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.javadoc.Javadoc
 
 plugins {
     java
     id("maven-publish")
     id("signing")
-    id("org.danilopianini.publish-on-central")
+    id("com.vanniktech.maven.publish")
 }
 
 group = rootProject.group
@@ -17,29 +16,27 @@ tasks.withType<Javadoc> {
     }
 }
 
-java {
-    withJavadocJar()
-    withSourcesJar()
-}
-
-publishOnCentral {
-    repoOwner = "edward3h"
-    projectDescription = "Java build time SQL support"
-    projectLongName = "kiwiproc"
-    projectUrl = "https://github.com/edward3h/kiwiproc"
-    scmConnection = "https://github.com/edward3h/kiwiproc.git"
-}
-
-publishing {
-    publications {
-        withType<MavenPublication> {
-            pom {
-                developers {
-                    developer {
-                        name = "Edward Harman"
-                        email = "jaq@ethelred.org"
-                    }
-                }
+mavenPublishing {
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+    pom {
+        name = "kiwiproc"
+        description = "Java build time SQL support"
+        url = "https://github.com/edward3h/kiwiproc"
+        licenses {
+            license {
+                name = "Apache-2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0"
+            }
+        }
+        scm {
+            connection = "https://github.com/edward3h/kiwiproc.git"
+            url = "https://github.com/edward3h/kiwiproc"
+        }
+        developers {
+            developer {
+                name = "Edward Harman"
+                email = "jaq@ethelred.org"
             }
         }
     }

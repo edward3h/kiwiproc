@@ -16,13 +16,13 @@ fi
 pushd gradle-plugin/
 gw clean
 gw build
-gw publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication releaseMavenCentralPortalPublication
+gw publishAllPublicationsToMavenCentralRepository
 popd
 # publish main libraries to maven
 gw clean
 gw build
 
-gw publishAllPublicationsToProjectLocalRepository zipMavenCentralPortalPublication releaseMavenCentralPortalPublication
+gw publishAllPublicationsToMavenCentralRepository
 # publish gradle plugin
 pushd gradle-plugin/
 gw publishPlugins

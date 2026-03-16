@@ -3,7 +3,8 @@ plugins {
     jacoco
     id("com.gradle.plugin-publish") version "2.1.0"
     id("com.diffplug.spotless").version("8.3.0")
-    id("org.danilopianini.publish-on-central").version("9.1.13")
+    id("signing")
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
 apply(from = "../../version.gradle.kts")
@@ -108,33 +109,27 @@ spotless {
 }
 
 // plugin is published as a library as well, for the shared processorconfig classes
-publishOnCentral {
-    repoOwner = "edward3h"
-    projectDescription = "Java build time SQL support"
-    projectLongName = "kiwiproc"
-    projectUrl = "https://github.com/edward3h/kiwiproc"
-    scmConnection = "https://github.com/edward3h/kiwiproc.git"
-}
-
-// java-gradle-plugin creates a `pluginMaven` publication with the same Maven coordinates as
-// publish-on-central's `OSSRH` publication. Disable publishing pluginMaven to the local
-// Maven Central portal staging repo to avoid duplicate artifacts in the upload zip.
-afterEvaluate {
-    tasks.named("publishPluginMavenPublicationToProjectLocalRepository") {
-        enabled = false
-    }
-}
-
-publishing {
-    publications {
-        withType<MavenPublication> {
-            pom {
-                developers {
-                    developer {
-                        name = "Edward Harman"
-                        email = "jaq@ethelred.org"
-                    }
-                }
+mavenPublishing {
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+    pom {
+        name = "kiwiproc"
+        description = "Java build time SQL support"
+        url = "https://github.com/edward3h/kiwiproc"
+        licenses {
+            license {
+                name = "Apache-2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0"
+            }
+        }
+        scm {
+            connection = "https://github.com/edward3h/kiwiproc.git"
+            url = "https://github.com/edward3h/kiwiproc"
+        }
+        developers {
+            developer {
+                name = "Edward Harman"
+                email = "jaq@ethelred.org"
             }
         }
     }
