@@ -47,7 +47,7 @@ dependencyResolutionManagement {
             library("spring-starter-jdbc", "org.springframework.boot", "spring-boot-starter-jdbc").versionRef("springboot")
             library("spring-test", "org.springframework.boot", "spring-boot-starter-test").versionRef("springboot")
 
-            library("vanniktech-maven-publish", "com.vanniktech:gradle-maven-publish-plugin:0.30.0")
+            library("vanniktech-maven-publish", "com.vanniktech:gradle-maven-publish-plugin:0.36.0")
 
             bundle("compile-testing", listOf("guava", "compile-testing", "compile-testing-extension"))
         }
