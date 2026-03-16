@@ -38,8 +38,7 @@ public abstract class EmbeddedMySQLService implements BuildService<EmbeddedMySQL
         try (var conn = DriverManager.getConnection(adminUrl, "root", c.getPassword());
                 var stmt = conn.createStatement()) {
             stmt.executeUpdate("CREATE DATABASE `" + dbName + "`");
-            stmt.executeUpdate(
-                    "GRANT ALL PRIVILEGES ON `" + dbName + "`.* TO '" + c.getUsername() + "'@'%'");
+            stmt.executeUpdate("GRANT ALL PRIVILEGES ON `" + dbName + "`.* TO '" + c.getUsername() + "'@'%'");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
