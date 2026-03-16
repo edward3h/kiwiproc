@@ -116,6 +116,15 @@ publishOnCentral {
     scmConnection = "https://github.com/edward3h/kiwiproc.git"
 }
 
+// java-gradle-plugin creates a `pluginMaven` publication with the same Maven coordinates as
+// publish-on-central's `OSSRH` publication. Disable publishing pluginMaven to the local
+// Maven Central portal staging repo to avoid duplicate artifacts in the upload zip.
+afterEvaluate {
+    tasks.named("publishPluginMavenPublicationToProjectLocalRepository") {
+        enabled = false
+    }
+}
+
 publishing {
     publications {
         withType<MavenPublication> {
