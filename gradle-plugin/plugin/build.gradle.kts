@@ -108,12 +108,6 @@ spotless {
     }
 }
 
-// vanniktech looks for mavenCentralUsername/mavenCentralPassword; map from our stored property names
-if (findProperty("mavenCentralUsername") == null) {
-    findProperty("mavenCentralPortalUsername")?.let { extra["mavenCentralUsername"] = it }
-    findProperty("mavenCentralPortalPassword")?.let { extra["mavenCentralPassword"] = it }
-}
-
 // plugin is published as a library as well, for the shared processorconfig classes
 mavenPublishing {
     publishToMavenCentral()

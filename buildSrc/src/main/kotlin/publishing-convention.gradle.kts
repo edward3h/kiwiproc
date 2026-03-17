@@ -16,12 +16,6 @@ tasks.withType<Javadoc> {
     }
 }
 
-// vanniktech looks for mavenCentralUsername/mavenCentralPassword; map from our stored property names
-if (findProperty("mavenCentralUsername") == null) {
-    findProperty("mavenCentralPortalUsername")?.let { extra["mavenCentralUsername"] = it }
-    findProperty("mavenCentralPortalPassword")?.let { extra["mavenCentralPassword"] = it }
-}
-
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
