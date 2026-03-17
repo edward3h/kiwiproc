@@ -14,18 +14,18 @@ fi
 
 # publish plugin library to maven
 pushd gradle-plugin/
-gw $GRADLE_OPTS clean
-gw $GRADLE_OPTS build
-gw $GRADLE_OPTS publishAllPublicationsToMavenCentralRepository
+gw $GW_OPTS clean
+gw $GW_OPTS build
+gw $GW_OPTS publishAllPublicationsToMavenCentralRepository
 popd
 # publish main libraries to maven
-gw $GRADLE_OPTS clean
-gw $GRADLE_OPTS build
+gw $GW_OPTS clean
+gw $GW_OPTS build
 
-gw $GRADLE_OPTS publishAllPublicationsToMavenCentralRepository
+gw $GW_OPTS publishAllPublicationsToMavenCentralRepository
 # publish gradle plugin
 pushd gradle-plugin/
-gw $GRADLE_OPTS publishPlugins
+gw $GW_OPTS publishPlugins
 popd
 # publish docs
 gh workflow run docs.yml
