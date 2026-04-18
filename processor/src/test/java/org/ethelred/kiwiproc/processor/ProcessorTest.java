@@ -289,6 +289,82 @@ public class ProcessorTest {
                         .withDisplayName(
                                 "A SqlQuery method with SortedMap and non-Comparable key type fails compilation.")
                         .withExpectedErrorCount(2)
-                        .withExpectedErrorMessage("SortedMap key type must implement Comparable"));
+                        .withExpectedErrorMessage("SortedMap key type must implement Comparable"),
+                // UpdateMethodValid — success cases
+                method("""
+                        @SqlUpdate(sql = "UPDATE restaurant SET tables = :tables WHERE name = :name")
+                        void updateTables(String name, int tables);
+                        """)
+                        .withDisplayName("A SqlUpdate method with void return type compiles successfully.")
+                        .succeeds(),
+                method("""
+                        @SqlUpdate(sql = "UPDATE restaurant SET tables = :tables WHERE name = :name")
+                        boolean updateTables(String name, int tables);
+                        """)
+                        .withDisplayName("A SqlUpdate method with boolean return type compiles successfully.")
+                        .succeeds(),
+                method("""
+                        @SqlUpdate(sql = "UPDATE restaurant SET tables = :tables WHERE name = :name")
+                        int updateTables(String name, int tables);
+                        """)
+                        .withDisplayName("A SqlUpdate method with int return type compiles successfully.")
+                        .succeeds(),
+                method("""
+                        record RestaurantUpdate(String name, int tables) {}
+                        @SqlUpdate(sql = "UPDATE restaurant SET tables = :tables WHERE name = :name")
+                        void updateRestaurant(RestaurantUpdate update);
+                        """)
+                        .withDisplayName("A SqlUpdate method with a record parameter compiles successfully.")
+                        .succeeds(),
+                method("""
+                        record RestaurantPartialUpdate(String name, int tables, String chain) {}
+                        @SqlUpdate(sql = "UPDATE restaurant SET tables = :tables WHERE name = :name")
+                        void updateRestaurant(RestaurantPartialUpdate update);
+                        """)
+                        .withDisplayName(
+                                "A SqlUpdate method compiles when a record parameter has more components than placeholders.")
+                        .succeeds(),
+                // UpdateMethodValid — failure case
+                method("""
+                        @SqlUpdate(sql = "UPDATE restaurant SET tables = :tables WHERE name = :name AND chain = :chain")
+                        void updateTables(String name, int tables);
+                        """)
+                        .withDisplayName("A SqlUpdate method fails when a SQL placeholder has no matching parameter.")
+                        .withExpectedErrorMessage("No method parameter found for query parameter")
+                        .withExpectedErrorCount(1),
+                // QueryMethodValid — unmatched placeholder
+                method("""
+                        @SqlQuery(sql = "SELECT name FROM restaurant WHERE name = :name AND tables > :minTables")
+                        List<String> findByNameAndTables(String name);
+                        """)
+                        .withDisplayName("A SqlQuery method fails when a SQL placeholder has no matching parameter.")
+                        .withExpectedErrorMessage("No method parameter found for query parameter")
+                        .withExpectedErrorCount(1),
+                // QueryMethodValid — Map without key_column or 'key' column in SQL
+                method("""
+                        @SqlQuery(sql = "SELECT name, tables FROM restaurant")
+                        Map<String, Integer> tablesByName();
+                        """)
+                        .withDisplayName(
+                                "A SqlQuery with Map return type fails without key_column or 'key' column in SQL.")
+                        .withExpectedErrorMessage("Invalid return type")
+                        .withExpectedErrorCount(2),
+                // Spec gap: non-record parameter not matched to any placeholder — processor does not yet enforce this
+                method("""
+                        @SqlQuery(sql = "SELECT name FROM restaurant WHERE name = :name")
+                        List<String> findByName(String name, String unusedParam);
+                        """)
+                        .withDisplayName(
+                                "[SPEC GAP] A SqlQuery method succeeds even when a non-record parameter matches no placeholder (spec requires error).")
+                        .succeeds(),
+                // Spec gap: record parameter with no components in placeholders — processor does not yet enforce this
+                method("""
+                        record UnusedRecord(String foo, int bar) {}
+                        @SqlQuery(sql = "SELECT name FROM restaurant WHERE name = :name")
+                        List<String> findByName(String name, UnusedRecord unused);
+                        """)
+                        .withDisplayName(
+                                "[SPEC GAP] A SqlQuery method succeeds even when a record parameter has no components matching any placeholder (spec requires error).")
+                        .succeeds());
     }
 }
