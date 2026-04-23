@@ -1,3 +1,4 @@
+import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.tasks.javadoc.Javadoc
 
 plugins {
@@ -17,7 +18,7 @@ tasks.withType<Javadoc> {
 }
 
 mavenPublishing {
-    publishToMavenCentral()
+    publishToMavenCentral(SonatypeHost.DEFAULT, automaticRelease = true)
     signAllPublications()
     pom {
         name = "kiwiproc"
