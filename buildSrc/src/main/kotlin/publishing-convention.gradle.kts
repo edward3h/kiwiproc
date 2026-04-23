@@ -17,7 +17,7 @@ tasks.withType<Javadoc> {
 }
 
 mavenPublishing {
-    publishToMavenCentral()
+    publishToMavenCentral(automaticRelease = true)
     signAllPublications()
     pom {
         name = "kiwiproc"

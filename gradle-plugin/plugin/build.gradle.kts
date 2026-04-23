@@ -110,7 +110,7 @@ spotless {
 
 // plugin is published as a library as well, for the shared processorconfig classes
 mavenPublishing {
-    publishToMavenCentral()
+    publishToMavenCentral(automaticRelease = true)
     signAllPublications()
     pom {
         name = "kiwiproc"
