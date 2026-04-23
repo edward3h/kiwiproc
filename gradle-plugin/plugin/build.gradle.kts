@@ -1,5 +1,3 @@
-import com.vanniktech.maven.publish.SonatypeHost
-
 plugins {
     `java-gradle-plugin`
     jacoco
@@ -112,7 +110,7 @@ spotless {
 
 // plugin is published as a library as well, for the shared processorconfig classes
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.DEFAULT, automaticRelease = true)
+    publishToMavenCentral(automaticRelease = true)
     signAllPublications()
     pom {
         name = "kiwiproc"
