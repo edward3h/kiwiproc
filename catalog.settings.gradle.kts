@@ -19,7 +19,7 @@ dependencyResolutionManagement {
             library("utilitary", "com.karuslabs:utilitary:3.0.0")
             library("postgresql", "org.postgresql:postgresql:42.7.11")
             library("mysql", "com.mysql:mysql-connector-j:9.7.0")
-            library("h2", "com.h2database:h2:2.3.232")
+            library("h2", "com.h2database:h2:2.4.240")
             library("testcontainers-mysql", "org.testcontainers:mysql:1.21.4")
             library("testcontainers-junit5", "org.testcontainers:junit-jupiter:1.21.4")
 
