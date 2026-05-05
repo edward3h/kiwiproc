@@ -31,6 +31,36 @@ kiwiProc {
 ----
 <1> Setting `driverClassName` to the MySQL driver selects embedded MySQL via Testcontainers.
 
+=== H2
+
+H2 is supported as a lightweight alternative to embedded PostgreSQL for build-time schema validation.
+No Docker is required — H2 is a pure-Java database that runs in-memory within the Gradle build.
+
+To select embedded H2, set `driverClassName` to `org.h2.Driver` in the datasource configuration:
+
+[source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
+----
+kiwiProc {
+    dataSources {
+        register("default") {
+            driverClassName = "org.h2.Driver" // <1>
+            liquibaseChangelog = file("$projectDir/src/main/resources/changelog.xml")
+        }
+    }
+}
+----
+<1> Setting `driverClassName` to the H2 driver selects embedded H2 — no Docker required.
+
+H2 is started in PostgreSQL compatibility mode (`MODE=PostgreSQL`) to maximise SQL compatibility.
+
+[#h2-limitations]
+==== H2 Limitations
+
+1. *Parameter type checking may be weaker* — H2's JDBC driver does not always provide reliable parameter metadata; types fall back to `UNKNOWN` when unavailable.
+2. *SQL arrays are not supported* — array type introspection is not implemented for H2.
+3. *The `RETURNING` clause is not supported* — use a separate `SELECT` query after an `INSERT` if you need generated values.
+4. *PostgreSQL-specific types are not available* — types such as `jsonb`, `timetz`, and `timestamptz` are not supported in H2.
+
 [#mysql-limitations]
 ==== MySQL Limitations
 

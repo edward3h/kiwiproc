@@ -37,6 +37,26 @@ kiwiProc {
 When using an embedded database, a schema must be defined. Liquibase is the supported way to do this.
 Therefore, a Liquibase changelog file is _required_, except when using an external database.
 
+=== Embedded H2
+
+To use embedded H2 instead of PostgreSQL, set `driverClassName` to the H2 driver class name.
+H2 is a pure-Java in-memory database — no Docker required.
+
+[source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
+----
+kiwiProc {
+    dataSources {
+        register("default") {
+            driverClassName = "org.h2.Driver" // <1>
+            liquibaseChangelog = file("$projectDir/src/main/resources/changelog.xml")
+        }
+    }
+}
+----
+<1> Setting `driverClassName` to the H2 driver selects embedded H2.
+
+See xref:databases.adoc#h2-limitations[H2 Limitations] for a list of features not available with H2.
+
 === Embedded MySQL
 
 To use embedded MySQL instead of PostgreSQL, set `driverClassName` to the MySQL driver class name.
@@ -92,6 +112,9 @@ kiwiProc {
             username = "..."
             password = "..."
         }
+        register("externalH2") { // <5>
+            jdbcUrl = "jdbc:h2:file:/path/to/database"
+        }
     }
 }
 ----
@@ -99,6 +122,7 @@ kiwiProc {
 <2> An external PostgreSQL datasource is specified by giving a JDBC URL. Liquibase changelog is _optional_ for an external datasource.
 <3> How to manage secret values for Gradle builds, is out of scope for this document.
 <4> An external MySQL datasource uses a `jdbc:mysql://` URL.
+<5> An external H2 datasource uses a `jdbc:h2:` URL.
 
 [source,kotlin,indent=0,subs="verbatim,attributes",role="primary"]
 ----
