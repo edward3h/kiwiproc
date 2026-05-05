@@ -34,7 +34,7 @@ public record ColumnMetaData(
         return new ColumnMetaData(
                 index,
                 false,
-                new SqlName(resultSetMetaData.getColumnLabel(index)),
+                new SqlName(dialect.normalizeColumnName(resultSetMetaData.getColumnLabel(index))),
                 JDBCNullable.fromCode(resultSetMetaData.isNullable(index)),
                 JDBCType.valueOf(resultSetMetaData.getColumnType(index)),
                 resultSetMetaData.getColumnTypeName(index),

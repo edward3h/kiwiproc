@@ -16,6 +16,10 @@ public interface DatabaseDialect {
 
     @Nullable ArrayComponent componentType(Connection connection, int columnType, String columnTypeName);
 
+    default String normalizeColumnName(String name) {
+        return name;
+    }
+
     default List<ColumnMetaData> getParameters(Connection connection, PreparedStatement statement, String sql)
             throws SQLException {
         var pmd = statement.getParameterMetaData();

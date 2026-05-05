@@ -10,6 +10,9 @@ public class DatabaseDialects {
         if ("com.mysql.cj.jdbc.Driver".equals(driver) || url.startsWith("jdbc:mysql:")) {
             return new MySQLDialect();
         }
+        if ("org.h2.Driver".equals(driver) || url.startsWith("jdbc:h2:")) {
+            return new H2Dialect();
+        }
         return new PostgresDialect();
     }
 }

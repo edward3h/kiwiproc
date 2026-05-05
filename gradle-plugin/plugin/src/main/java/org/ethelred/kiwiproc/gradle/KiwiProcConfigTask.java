@@ -3,6 +3,7 @@ package org.ethelred.kiwiproc.gradle;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.avaje.jsonb.JsonType;
+import org.h2.jdbcx.JdbcDataSource;
 import io.avaje.jsonb.Jsonb;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,6 +40,9 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
 
     @ServiceReference(EmbeddedMySQLService.DEFAULT_NAME)
     abstract Property<EmbeddedMySQLService> getMySQLService();
+
+    @ServiceReference(EmbeddedH2Service.DEFAULT_NAME)
+    abstract Property<EmbeddedH2Service> getH2Service();
 
     @OutputFile
     public abstract RegularFileProperty getConfigFile();
@@ -119,6 +123,10 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
         return "com.mysql.cj.jdbc.Driver".equals(dataSource.getDriverClassName().getOrNull());
     }
 
+    private boolean isH2(KiwiProcDataSource dataSource) {
+        return "org.h2.Driver".equals(dataSource.getDriverClassName().getOrNull());
+    }
+
     private DataSourceConfig toDataSourceConfig(KiwiProcDataSource kiwiProcDataSource) {
         if (isExternal(kiwiProcDataSource)) {
             return externalDataSourceConfig(kiwiProcDataSource);
@@ -133,6 +141,11 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
                     connectionInfo.username(),
                     connectionInfo.password(),
                     "com.mysql.cj.jdbc.Driver");
+        }
+        if (isH2(kiwiProcDataSource)) {
+            var connectionInfo = getH2Service().get().getPreparedDatabase(liquibaseFile);
+            return new DataSourceConfig(
+                    kiwiProcDataSource.getName(), connectionInfo.url(), null, null, null, "org.h2.Driver");
         }
         var connectionInfo = getService().get().getPreparedDatabase(liquibaseFile);
         return new DataSourceConfig(
@@ -155,6 +168,12 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
                 ifPresent(kiwiProcDataSource.getUsername(), mysqlDs::setUser);
                 ifPresent(kiwiProcDataSource.getPassword(), mysqlDs::setPassword);
                 ds = mysqlDs;
+            } else if (isH2(kiwiProcDataSource) || url.startsWith("jdbc:h2:")) {
+                var h2Ds = new JdbcDataSource();
+                h2Ds.setURL(url);
+                ifPresent(kiwiProcDataSource.getUsername(), h2Ds::setUser);
+                ifPresent(kiwiProcDataSource.getPassword(), h2Ds::setPassword);
+                ds = h2Ds;
             } else {
                 var pgDs = new PGSimpleDataSource();
                 pgDs.setURL(url);

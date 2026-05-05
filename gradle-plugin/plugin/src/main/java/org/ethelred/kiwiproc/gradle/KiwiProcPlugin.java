@@ -28,6 +28,10 @@ public class KiwiProcPlugin implements Plugin<Project> {
                 .getSharedServices()
                 .registerIfAbsent(EmbeddedMySQLService.DEFAULT_NAME, EmbeddedMySQLService.class);
 
+        project.getGradle()
+                .getSharedServices()
+                .registerIfAbsent(EmbeddedH2Service.DEFAULT_NAME, EmbeddedH2Service.class);
+
         var version = loadVersion();
 
         var extension = project.getExtensions().create("kiwiProc", KiwiProcExtension.class);
