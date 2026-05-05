@@ -76,7 +76,7 @@ public class DatabaseWrapperTest {
                         JDBCNullable.NULLABLE,
                         JDBCType.OTHER,
                         "jsonb",
-                        "java.lang.String",
+                        "org.postgresql.util.PGobject",
                         null));
         assertThat(queryMetaData.resultColumns().get(3))
                 .isEqualTo(new ColumnMetaData(
