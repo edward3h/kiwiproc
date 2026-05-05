@@ -3,7 +3,6 @@ package org.ethelred.kiwiproc.gradle;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.avaje.jsonb.JsonType;
-import org.h2.jdbcx.JdbcDataSource;
 import io.avaje.jsonb.Jsonb;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,6 +27,7 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.*;
+import org.h2.jdbcx.JdbcDataSource;
 import org.jspecify.annotations.Nullable;
 import org.postgresql.ds.PGSimpleDataSource;
 

@@ -28,7 +28,8 @@ public abstract class EmbeddedH2Service implements BuildService<EmbeddedH2Params
     private synchronized Server getServer() {
         if (tcpServer == null) {
             try {
-                tcpServer = Server.createTcpServer("-tcpPort", "0", "-ifNotExists").start();
+                tcpServer =
+                        Server.createTcpServer("-tcpPort", "0", "-ifNotExists").start();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
