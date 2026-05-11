@@ -13,7 +13,7 @@ import liquibase.resource.DirectoryResourceAccessor;
 import org.gradle.api.services.BuildService;
 import org.testcontainers.containers.MySQLContainer;
 
-public abstract class EmbeddedMySQLService implements BuildService<EmbeddedMySQLParams> {
+public abstract class EmbeddedMySQLService implements BuildService<EmbeddedMySQLParams>, AutoCloseable {
     public static final String DEFAULT_NAME = "embeddedMySQL";
 
     private MySQLContainer<?> container;
@@ -64,5 +64,12 @@ public abstract class EmbeddedMySQLService implements BuildService<EmbeddedMySQL
         }
 
         return new MySQLConnectionInfo(url, c.getUsername(), c.getPassword());
+    }
+
+    @Override
+    public void close() {
+        if (container != null) {
+            container.stop();
+        }
     }
 }
