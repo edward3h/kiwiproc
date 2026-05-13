@@ -6,6 +6,7 @@ import static com.google.common.truth.Truth.assertThat;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Properties;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,5 +60,42 @@ public class ProductDAOTest {
     void findByIdReturnsNullWhenNotFound() {
         var result = dao.findById(Integer.MAX_VALUE);
         assertThat(result).isNull();
+    }
+
+    @Test
+    void listAllAsCollectionReturnsProducts() {
+        dao.insertProduct("Alpha", 1.00);
+        dao.insertProduct("Beta", 2.00);
+        var result = dao.listAllAsCollection();
+        assertThat(result).hasSize(2);
+    }
+
+    @Test
+    void listAllAsIterableReturnsProducts() {
+        dao.insertProduct("Alpha", 1.00);
+        var result = dao.listAllAsIterable();
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void listAllNamesAsArrayReturnsNames() {
+        dao.insertProduct("Widget", 9.99);
+        dao.insertProduct("Gadget", 19.99);
+        var names = dao.listAllNamesAsArray();
+        assertThat(names).asList().containsExactly("Widget", "Gadget").inOrder();
+    }
+
+    @Test
+    void listAllWithFetchSizeReturnsCorrectResults() {
+        dao.insertProduct("X", 1.00);
+        dao.insertProduct("Y", 2.00);
+        var result = dao.listAllWithFetchSize();
+        assertThat(result).hasSize(2);
+    }
+
+    @Test
+    void batchInsertWithCustomSizeInsertsAllRows() {
+        dao.batchInsertWithSize(List.of("P1", "P2", "P3", "P4", "P5"), List.of(1.0, 2.0, 3.0, 4.0, 5.0));
+        assertThat(dao.listAll()).hasSize(5);
     }
 }
