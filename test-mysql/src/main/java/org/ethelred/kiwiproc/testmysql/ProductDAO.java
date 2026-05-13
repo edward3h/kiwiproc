@@ -3,6 +3,7 @@ package org.ethelred.kiwiproc.testmysql;
 
 import java.util.List;
 import org.ethelred.kiwiproc.annotation.DAO;
+import org.ethelred.kiwiproc.annotation.SqlBatch;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
 import org.ethelred.kiwiproc.annotation.SqlUpdate;
 import org.jspecify.annotations.Nullable;
@@ -19,6 +20,12 @@ public interface ProductDAO {
 
     @SqlQuery("SELECT id, name, price FROM product ORDER BY id")
     List<Product> listAll();
+
+    @SqlUpdate("DELETE FROM product WHERE id = :id")
+    boolean deleteById(int id);
+
+    @SqlBatch("INSERT INTO product (name, price) VALUES (:name, :price)")
+    int[] batchInsertProducts(List<String> name, List<Double> price);
 
     @SqlUpdate("DELETE FROM product")
     void deleteAll();
