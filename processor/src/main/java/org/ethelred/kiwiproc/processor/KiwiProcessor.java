@@ -35,9 +35,14 @@ import org.jspecify.annotations.Nullable;
     "org.ethelred.kiwiproc.annotation.ResultQuery",
     "org.ethelred.kiwiproc.annotation.UpdateQuery"
 })
-@SupportedSourceVersion(SourceVersion.RELEASE_17)
 @SupportedOptions({KiwiProcessor.CONFIGURATION_OPTION})
 public class KiwiProcessor extends AnnotationProcessor {
+
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.latestSupported();
+    }
+
     public static final String CONFIGURATION_OPTION = "org.ethelred.kiwiproc.configuration";
 
     private ProcessorConfig config = ProcessorConfig.EMPTY;
