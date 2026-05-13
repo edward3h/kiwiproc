@@ -19,7 +19,7 @@ class H2DialectTest {
                 arguments("NAME", "name"),
                 arguments("ProductName", "productname"),
                 arguments("already_lower", "already_lower"),
-                arguments("MIXED_CASE", "mixed_case"));
+                arguments("Mixed_Case", "mixed_case"));
     }
 
     @ParameterizedTest
