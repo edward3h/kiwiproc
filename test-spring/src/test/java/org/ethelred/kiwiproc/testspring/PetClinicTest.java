@@ -9,6 +9,8 @@ import java.time.Month;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
+import org.ethelred.kiwiproc.exception.UncheckedSQLException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -89,6 +91,19 @@ public class PetClinicTest {
 
         var notAffected = dao.setVisitDescription(-999, "no match");
         assertThat(notAffected).isEqualTo(0);
+    }
+
+    @Test
+    void callRollsBackOnException() {
+        var visitBefore = dao.getVisitById(1);
+        Assertions.assertThrows(
+                UncheckedSQLException.class,
+                () -> dao.<Void>call(innerDao -> {
+                    innerDao.setVisitDescription(1, "Should be rolled back");
+                    throw new SQLException("force rollback");
+                }));
+        var visitAfter = dao.getVisitById(1);
+        assertThat(visitAfter.description()).isEqualTo(visitBefore.description());
     }
 
     @Test

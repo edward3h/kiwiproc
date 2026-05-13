@@ -7,6 +7,7 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Properties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,5 +60,24 @@ public class ProductDAOTest {
     void findByIdReturnsNullWhenNotFound() {
         var result = dao.findById(Integer.MAX_VALUE);
         assertThat(result).isNull();
+    }
+
+    @Test
+    void deleteByIdReturnsBooleanAffectedRows() {
+        dao.insertProduct("ToDelete", 5.00);
+        var id = dao.listAll().get(0).id();
+
+        var deleted = dao.deleteById(id);
+        assertThat(deleted).isTrue();
+
+        var notDeleted = dao.deleteById(id);
+        assertThat(notDeleted).isFalse();
+    }
+
+    @Test
+    void batchInsertReturnsCountsArray() {
+        var counts = dao.batchInsertProducts(List.of("BatchA", "BatchB", "BatchC"), List.of(1.0, 2.0, 3.0));
+        assertThat(counts).hasLength(3);
+        assertThat(dao.listAll()).hasSize(3);
     }
 }
