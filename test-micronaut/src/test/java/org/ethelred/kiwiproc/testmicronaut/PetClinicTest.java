@@ -73,6 +73,15 @@ public class PetClinicTest {
     }
 
     @Test
+    void happySetVisitDescription() {
+        var affected = dao.setVisitDescription(1, "updated description");
+        assertThat(affected).isEqualTo(1);
+
+        var notAffected = dao.setVisitDescription(-999, "no match");
+        assertThat(notAffected).isEqualTo(0);
+    }
+
+    @Test
     void happyAddVisit() {
         var visitId =
                 dao.addVisit(new PetClinicDAO.Visit("Jewel", LocalDate.of(2025, Month.JUNE, 13), "Some text here."));
@@ -84,6 +93,31 @@ public class PetClinicTest {
             assertThat(visit).isNotNull();
             assertThat(visit.description()).contains("Some text");
         });
+    }
+
+    @Test
+    void happyUpdateVetFirstNameReturnsBooleanAffectedRows() {
+        var updated = dao.updateVetFirstName(1, "James");
+        assertThat(updated).isTrue();
+
+        var notUpdated = dao.updateVetFirstName(-999, "Nobody");
+        assertThat(notUpdated).isFalse();
+    }
+
+    @Test
+    void happyBatchAddVetsReturnsIntArray() {
+        var message = "rollback batch vet insert";
+        try {
+            dao.run(innerDao -> {
+                var counts = innerDao.batchAddVets(List.of("Batch1", "Batch2"), List.of("Vet1", "Vet2"));
+                assertThat(counts).hasLength(2);
+                assertThat(counts[0]).isEqualTo(1);
+                assertThat(counts[1]).isEqualTo(1);
+                throw new SQLException(message);
+            });
+        } catch (UncheckedSQLException e) {
+            assertThat(e.getCause().getMessage()).isEqualTo(message);
+        }
     }
 
     @Test
