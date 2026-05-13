@@ -83,6 +83,15 @@ public class PetClinicTest {
     }
 
     @Test
+    void happySetVisitDescription() {
+        var affected = dao.setVisitDescription(1, "updated description");
+        assertThat(affected).isEqualTo(1);
+
+        var notAffected = dao.setVisitDescription(-999, "no match");
+        assertThat(notAffected).isEqualTo(0);
+    }
+
+    @Test
     void happyAddVisit() {
         var visitId =
                 dao.addVisit(new PetClinicDAO.Visit("Jewel", LocalDate.of(2025, Month.JUNE, 13), "Some text here."));

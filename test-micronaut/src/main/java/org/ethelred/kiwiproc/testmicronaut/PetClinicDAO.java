@@ -75,8 +75,17 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
             VALUES (:firstName, :lastName)""")
     void addVet(String firstName, String lastName);
 
+    @SqlUpdate("""
+            UPDATE vets SET first_name = :firstName WHERE id = :id""")
+    boolean updateVetFirstName(int id, String firstName);
+
     @SqlBatch("""
             INSERT INTO pets(name, type_id, owner_id)
             VALUES(:name, :type_id, :owner_id)""")
     List<Integer> addPets(List<String> name, List<Integer> typeId, int ownerId);
+
+    @SqlBatch("""
+            INSERT INTO vets(first_name, last_name)
+            VALUES(:firstName, :lastName)""")
+    int[] batchAddVets(List<String> firstName, List<String> lastName);
 }
