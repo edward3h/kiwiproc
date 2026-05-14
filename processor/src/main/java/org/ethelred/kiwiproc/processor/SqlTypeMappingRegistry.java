@@ -11,6 +11,8 @@ import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.meta.DBType;
 import org.jspecify.annotations.Nullable;
 
+import java.util.UUID;
+
 public class SqlTypeMappingRegistry {
 
     private static final List<SqlTypeMapping> types = List.of(
@@ -71,6 +73,11 @@ public class SqlTypeMappingRegistry {
                     .dbType("timestamptz")
                     .build(),
             new SqlTypeMapping(JDBCType.NULL, void.class, "", true, true, null, null, null),
+            jdbcType(JDBCType.OTHER)
+                    .baseType(UUID.class)
+                    .dbType("uuid")
+                    .accessorSuffix("Object")
+                    .build(),
             jdbcType(JDBCType.OTHER).baseType(Object.class).build()
 
             // TODO fill out types as necessary
@@ -86,7 +93,7 @@ public class SqlTypeMappingRegistry {
     }
 
     private static final Map<JDBCType, SqlTypeMapping> JDBC_TYPE_SQL_TYPE_MAPPING_MAP =
-            types.stream().collect(Collectors.toMap(SqlTypeMapping::jdbcType, t -> t));
+            types.stream().collect(Collectors.toMap(SqlTypeMapping::jdbcType, t -> t, (a, b) -> a));
     private static final Map<String, SqlTypeMapping> DB_TYPE_SQL_TYPE_MAPPING =
             types.stream().filter(t -> t.dbType() != null).collect(Collectors.toMap(SqlTypeMapping::dbType, t -> t));
 

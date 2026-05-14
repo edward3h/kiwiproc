@@ -144,6 +144,14 @@ public class CoreTypesTest {
     static boolean exclude(TypeMapping typeMapping) {
         var source = typeMapping.source();
         var target = typeMapping.target();
+
+        if (source.className().equals("UUID")) {
+            return !target.className().equals("UUID") && !target.className().equals("String");
+        }
+        if (target.className().equals("UUID")) {
+            return !source.className().equals("UUID") && !source.className().equals("String");
+        }
+
         if (source.className().matches("char")) {
             return target.className().matches(".*(Big|Date|Time).*");
         }
