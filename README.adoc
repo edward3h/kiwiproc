@@ -14,6 +14,18 @@ Inspired by:
 * https://micronaut-projects.github.io/micronaut-data/latest/guide/#dbc[micronaut-data-jdbc]
 * https://github.com/cashapp/sqldelight[SQL Delight]
 
+== Features
+
+* Type-safe SQL queries validated at compile time via annotation processing
+* PostgreSQL, H2, and MySQL support
+* Spring and Micronaut integration
+
+== Documentation
+
+Full documentation: https://edward3h.github.io/kiwiproc/
+
 == Databases
 
-For now, _only_ Postgresql is supported. It's an "MVP".
+PostgreSQL is fully supported. H2 and MySQL are also supported with some limitations.
+
+See the https://edward3h.github.io/kiwiproc/#_database_support[Database Support] section of the documentation for details.
