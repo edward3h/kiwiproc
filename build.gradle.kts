@@ -1,9 +1,14 @@
 plugins {
 	id("org.ethelred.kiwiproc").apply(false) // needed so the shared service can be used by sibling subprojects
 	id("jacoco-report-aggregation")
+	id("com.github.jakemarsden.git-hooks")
 }
 
 apply(from = "version.gradle.kts")
+
+gitHooks {
+    hooks.set(mapOf("pre-commit" to "build"))
+}
 
 group = "org.ethelred.kiwiproc"
 
