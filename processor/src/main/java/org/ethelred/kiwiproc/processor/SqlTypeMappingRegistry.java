@@ -6,6 +6,7 @@ import java.sql.JDBCType;
 import java.time.*;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.meta.DBType;
@@ -71,6 +72,11 @@ public class SqlTypeMappingRegistry {
                     .dbType("timestamptz")
                     .build(),
             new SqlTypeMapping(JDBCType.NULL, void.class, "", true, true, null, null, null),
+            jdbcType(JDBCType.OTHER)
+                    .baseType(UUID.class)
+                    .dbType("uuid")
+                    .accessorSuffix("Object")
+                    .build(),
             jdbcType(JDBCType.OTHER).baseType(Object.class).build()
 
             // TODO fill out types as necessary
@@ -86,17 +92,22 @@ public class SqlTypeMappingRegistry {
     }
 
     private static final Map<JDBCType, SqlTypeMapping> JDBC_TYPE_SQL_TYPE_MAPPING_MAP =
-            types.stream().collect(Collectors.toMap(SqlTypeMapping::jdbcType, t -> t));
+            types.stream().collect(Collectors.toMap(SqlTypeMapping::jdbcType, t -> t, (a, b) -> b));
     private static final Map<String, SqlTypeMapping> DB_TYPE_SQL_TYPE_MAPPING =
             types.stream().filter(t -> t.dbType() != null).collect(Collectors.toMap(SqlTypeMapping::dbType, t -> t));
 
     private static @Nullable SqlTypeMapping lookup(DBType type) {
-        // prefer dbType mapping if present
-        var r = DB_TYPE_SQL_TYPE_MAPPING.get(type.dbType());
-        if (r == null) {
-            r = JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(type.jdbcType());
+        // Always prefer dbType mapping if present, EXCEPT for parameters.
+        // MySQL reports ALL parameters as JDBCType.OTHER with unreliable dbType names,
+        // so skip dbType lookup for parameters entirely.
+        boolean isParameter = (type instanceof ColumnMetaData cd) && cd.isParameter();
+        if (!isParameter) {
+            var r = DB_TYPE_SQL_TYPE_MAPPING.get(type.dbType());
+            if (r != null) {
+                return r;
+            }
         }
-        return r;
+        return JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(type.jdbcType());
     }
 
     public static SqlTypeMapping get(ColumnMetaData columnMetaData) {

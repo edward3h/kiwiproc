@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.ethelred.kiwiproc.processor.types.*;
@@ -34,7 +35,8 @@ public class CoreTypes {
             LocalTime.class,
             OffsetTime.class,
             LocalDateTime.class,
-            OffsetDateTime.class);
+            OffsetDateTime.class,
+            UUID.class);
 
     public static final Map<Class<?>, Class<?>> primitiveToBoxed = Map.ofEntries(
             entry(boolean.class, Boolean.class),
@@ -92,6 +94,7 @@ public class CoreTypes {
         addPrimitiveParseMappings(entries);
         addBigNumberMappings(entries);
         addDateTimeMappings(entries);
+        addUUIDMappings(entries);
 
         return entries.stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
@@ -168,6 +171,16 @@ public class CoreTypes {
                 "$2N.atStartOfDay().atZone($1T.systemDefault()).toOffsetDateTime()",
                 ZoneId.class));
         entries.add(mappingEntry(OffsetTime.class, LocalTime.class, null, "$N.toLocalTime()"));
+    }
+
+    private void addUUIDMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {
+        entries.add(mappingEntry(
+                String.class,
+                UUID.class,
+                "possible IllegalArgumentException parsing String to UUID",
+                "$T.fromString($N)",
+                UUID.class));
+        entries.add(mappingEntry(UUID.class, String.class, null, "$N.toString()"));
     }
 
     private void addBigNumberMappings(Collection<Map.Entry<TypeMapping, Conversion>> entries) {

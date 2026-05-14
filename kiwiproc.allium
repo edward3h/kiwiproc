@@ -269,7 +269,7 @@ deferred SqlTypeCompatibility.validate
     --   Primitives and boxed: boolean, byte, char, short, int, long, float, double
     --                         (and Boolean, Byte, Character, Short, Integer, Long, Float, Double)
     --   Object types: String, BigInteger, BigDecimal,
-    --                 LocalDate, LocalTime, OffsetTime, LocalDateTime, OffsetDateTime
+    --                 LocalDate, LocalTime, OffsetTime, LocalDateTime, OffsetDateTime, UUID
     --
     -- java.util.UUID is not a core type and is not supported for direct binding.
 

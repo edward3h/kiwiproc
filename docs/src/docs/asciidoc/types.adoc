@@ -17,7 +17,7 @@ These are generalized types, not Java or SQL types.
 |V |void
 |I |int or a compatible type
 |P |A primitive or boxed primitive
-|O |Object type. Specifically, one of: String, BigInteger, BigDecimal, LocalDate, LocalTime, OffsetTime, LocalDateTime, OffsetDateTime
+|O |Object type. Specifically, one of: String, BigInteger, BigDecimal, LocalDate, LocalTime, OffsetTime, LocalDateTime, OffsetDateTime, UUID
 |S | P \| O
 |?S |@Nullable (specifically org.jspecify.annotations.Nullable), or Optional<S>. A boxed primitive is also treated as nullable when it is not a type parameter of a container. Optional is only accepted as the return type of a query method.
 |SC<S> | A Collection or array, _only_ in a context where it is mapped to or from a SQL array.
