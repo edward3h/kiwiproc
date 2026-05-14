@@ -18,12 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.ethelred.kiwiproc.processor.types.*;
 import org.jspecify.annotations.Nullable;
-
-import java.util.UUID;
 
 public class CoreTypes {
     public static final ObjectType STRING_TYPE =
