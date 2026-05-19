@@ -2,7 +2,7 @@ plugins {
     `java-gradle-plugin`
     jacoco
     id("com.gradle.plugin-publish") version "2.1.1"
-    id("com.diffplug.spotless").version("8.4.0")
+    id("com.diffplug.spotless").version("8.5.1")
     id("signing")
     id("com.vanniktech.maven.publish") version "0.36.0"
 }
