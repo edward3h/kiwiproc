@@ -312,8 +312,12 @@ public class InstanceGenerator {
     }
 
     private static boolean isEnumConversion(Conversion conversion) {
-        if (conversion instanceof EnumToStringConversion) return true;
-        if (conversion instanceof NullableSourceConversion nsc) return isEnumConversion(nsc.conversion());
+        if (conversion instanceof EnumToStringConversion) {
+            return true;
+        }
+        if (conversion instanceof NullableSourceConversion nsc) {
+            return isEnumConversion(nsc.conversion());
+        }
         return false;
     }
 
