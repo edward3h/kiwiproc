@@ -57,6 +57,16 @@ public class KiwiProcPlugin implements Plugin<Project> {
                         extension.getAddDependencies(),
                         project.getDependencies(),
                         "org.ethelred.kiwiproc:runtime:" + version));
+        configurations.named("implementation", conf -> conf.getDependencies()
+                .addAllLater(extension
+                        .getAddDependencies()
+                        .zip(extension.getDependencyInjectionStyle(), (addDeps, diStyle) -> {
+                            if (Boolean.TRUE.equals(addDeps) && diStyle == DependencyInjectionStyle.SPRING) {
+                                return List.of(project.getDependencies()
+                                        .create("org.ethelred.kiwiproc:spring-autoconfigure:" + version));
+                            }
+                            return List.of();
+                        })));
 
         var processorConfigTask = project.getTasks().register("processorConfig", KiwiProcConfigTask.class, task -> {
             task.getConfigFile().set(project.getLayout().getBuildDirectory().file("processorConfig/config.json"));
