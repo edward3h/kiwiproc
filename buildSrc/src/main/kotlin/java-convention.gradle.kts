@@ -41,6 +41,26 @@ checkstyle {
     configFile = rootProject.file("config/checkstyle/checkstyle.xml")
 }
 
+configurations.named("checkstyle") {
+    resolutionStrategy.force(
+        "commons-beanutils:commons-beanutils:1.11.0",
+        "org.codehaus.plexus:plexus-utils:3.6.1"
+    )
+}
+
+dependencies {
+    constraints {
+        implementation("org.apache.commons:commons-lang3") {
+            version { require("3.18.0") }
+            because("Dependabot CVE: uncontrolled recursion below 3.18.0")
+        }
+        implementation("org.apache.commons:commons-compress") {
+            version { require("1.26.0") }
+            because("Dependabot CVE: DoS/OOM below 1.26.0")
+        }
+    }
+}
+
 spotless {
     java {
         cleanthat()
