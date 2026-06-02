@@ -48,6 +48,24 @@ document.addEventListener('DOMContentLoaded', function () {
     var blocks = Array.from(document.querySelectorAll('.listingblock.primary, .listingblock.secondary'));
     if (!blocks.length) return;
 
+    function activateLabel(label) {
+        document.querySelectorAll('.tabbed-block').forEach(function (container) {
+            var matched = false;
+            container.querySelectorAll('.tab-button').forEach(function (btn) {
+                if (btn.textContent === label) matched = true;
+            });
+            if (!matched) return;
+            container.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+            container.querySelectorAll('.tab-button').forEach(function (btn) {
+                btn.classList.remove('active');
+                if (btn.textContent === label) {
+                    btn.classList.add('active');
+                    btn.closest('.tabbed-block').querySelectorAll('.tab-panel')[Array.from(btn.parentNode.children).indexOf(btn)].classList.add('active');
+                }
+            });
+        });
+    }
+
     function nextColist(el) {
         var sib = el.nextElementSibling;
         return sib && sib.classList.contains('colist') ? sib : null;
@@ -63,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var colist = nextColist(last);
             var candidate = (colist || last).nextElementSibling;
             var next = blocks[i + group.length];
-            if (next && candidate === next) {
+            if (next && candidate === next && !last.classList.contains('primary')) {
                 group.push(next);
             } else {
                 break;
@@ -104,12 +122,14 @@ document.addEventListener('DOMContentLoaded', function () {
             tabBar.appendChild(tab);
 
             tab.addEventListener('click', function () {
-                container.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
-                container.querySelectorAll('.tab-button').forEach(function (t) { t.classList.remove('active'); });
-                panel.classList.add('active');
-                tab.classList.add('active');
+                var label = tab.textContent;
+                localStorage.setItem('kiwiproc-tab', label);
+                activateLabel(label);
             });
         });
     });
+
+    var saved = localStorage.getItem('kiwiproc-tab');
+    if (saved) activateLabel(saved);
 });
 </script>
