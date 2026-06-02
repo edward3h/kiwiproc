@@ -21,8 +21,12 @@ public record SqlName(String name) {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         SqlName sqlName = (SqlName) o;
         return name.equalsIgnoreCase(sqlName.name);
     }

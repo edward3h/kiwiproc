@@ -1,6 +1,7 @@
 plugins {
     `java-library`
     jacoco
+    checkstyle
     id("com.diffplug.spotless")
 }
 
@@ -34,6 +35,10 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     testImplementation("com.google.truth:truth:1.4.5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+checkstyle {
+    configFile = rootProject.file("config/checkstyle/checkstyle.xml")
 }
 
 spotless {
