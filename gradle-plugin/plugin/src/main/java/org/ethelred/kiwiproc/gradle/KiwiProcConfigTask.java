@@ -112,7 +112,15 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
                 .dataSources()
                 .values()
                 .forEach(dataSourceConfig -> properties.setProperty(
-                        "datasources.%s.url".formatted(dataSourceConfig.named()), dataSourceConfig.url()));
+                        propertyKey(processorConfig.dependencyInjectionStyle(), dataSourceConfig.named()),
+                        dataSourceConfig.url()));
+    }
+
+    private String propertyKey(DependencyInjectionStyle style, String datasourceName) {
+        if (style == DependencyInjectionStyle.SPRING && "default".equals(datasourceName)) {
+            return "spring.datasource.url";
+        }
+        return "datasources.%s.url".formatted(datasourceName);
     }
 
     private boolean isExternal(KiwiProcDataSource dataSource) {

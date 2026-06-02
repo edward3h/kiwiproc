@@ -34,7 +34,7 @@ public class PetClinicTest {
         @Bean
         @Qualifier("default") public DataSource testDataSource(Environment environment) {
             return DataSourceBuilder.create()
-                    .url(environment.getProperty("datasources.default.url"))
+                    .url(environment.getProperty("spring.datasource.url"))
                     .build();
         }
     }
