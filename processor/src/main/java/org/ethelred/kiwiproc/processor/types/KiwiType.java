@@ -8,6 +8,7 @@ import org.ethelred.kiwiproc.processor.RowCount;
  */
 public sealed interface KiwiType
         permits CollectionType,
+                EnumType,
                 MapType,
                 ObjectType,
                 OptionalType,

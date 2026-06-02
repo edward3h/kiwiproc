@@ -6,6 +6,7 @@ import java.sql.JDBCType;
 import java.time.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
@@ -114,6 +115,13 @@ public class SqlTypeMappingRegistry {
         var r = lookup(columnMetaData);
         if (r == null) {
             throw new IllegalArgumentException("Unsupported JDBCType type " + columnMetaData.jdbcType());
+        }
+        // PostgreSQL native enum result columns: JDBC reports OTHER, driver returns java.lang.String.
+        // Treat them as VARCHAR (String) so getString() and subsequent enum conversion work.
+        if (!columnMetaData.isParameter()
+                && Object.class.equals(r.baseType())
+                && "java.lang.String".equals(columnMetaData.dbClassName())) {
+            r = Objects.requireNonNull(JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(JDBCType.VARCHAR));
         }
         if (r.jdbcType() == JDBCType.ARRAY) {
             if (columnMetaData.componentType() == null) {

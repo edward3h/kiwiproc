@@ -101,7 +101,10 @@ public class CoreTypesTest {
                         true,
                         false,
                         "fail"),
-                arguments(ofClass(int.class), ofClass(boolean.class), true, false, "value != 0"));
+                arguments(ofClass(int.class), ofClass(boolean.class), true, false, "value != 0"),
+                // enum conversions
+                arguments(ofClass(String.class), new EnumType("com.example", "TestEnum", false), true, true, "fail"),
+                arguments(new EnumType("com.example", "TestEnum", false), ofClass(String.class), true, false, "fail"));
     }
 
     @ParameterizedTest

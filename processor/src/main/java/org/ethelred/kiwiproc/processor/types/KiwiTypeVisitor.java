@@ -14,6 +14,7 @@ public class KiwiTypeVisitor extends SimpleTypeVisitor14<KiwiType, Void> {
         collectionTypeHandler = new CollectionTypeHandler(this, utils);
         declaredTypeHandlers = List.of(
                 new BoxedTypeHandler(this, utils),
+                new EnumTypeHandler(this, utils),
                 new ObjectTypeHandler(this, utils),
                 collectionTypeHandler,
                 new MapTypeHandler(this, utils),
