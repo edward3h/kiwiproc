@@ -84,6 +84,27 @@ Key conventions:
 
 ---
 
+## Releasing (maintainers only)
+
+1. Ensure all desired changes are on `main` and CI is green.
+2. Edit `version.gradle.kts` — remove the `-SNAPSHOT` suffix (e.g. `"0.11"`).
+3. Commit the version change and push directly to `main`:
+   ```bash
+   git commit -am "chore: release v0.11"
+   git push
+   ```
+   *(Note: this bypasses branch protection — disable the rule temporarily if needed.)*
+4. Run `./publish.bash` — this builds and publishes to Maven Central and the Gradle Plugin Portal,
+   creates a `v0.11` git tag, pushes commits and tag, and triggers the docs deployment workflow.
+5. Edit `version.gradle.kts` — bump to the next SNAPSHOT (e.g. `"0.12-SNAPSHOT"`).
+6. Commit and push:
+   ```bash
+   git commit -am "chore: bump version to 0.12-SNAPSHOT"
+   git push
+   ```
+
+---
+
 ## Licence
 
 Kiwiproc is licensed under the [Apache 2.0 Licence](LICENSE). By submitting a pull request, you agree that your contributions will be licensed under the same terms.

@@ -12,6 +12,8 @@ if grep SNAPSHOT version.gradle.kts; then
   exit 2
 fi
 
+VERSION=$(grep -oP '(?<=")[^"]+(?=")' version.gradle.kts)
+
 # publish plugin library to maven
 pushd gradle-plugin/
 gw $GW_OPTS clean
@@ -27,8 +29,9 @@ gw $GW_OPTS publishAllPublicationsToMavenCentralRepository
 pushd gradle-plugin/
 gw $GW_OPTS publishPlugins
 popd
-# ensure release commit is on remote before triggering docs
-git push
+# tag the release commit and push commits + tag together
+git tag -a "v$VERSION" -m "Release v$VERSION"
+git push --follow-tags
 # publish docs
 gh workflow run docs.yml
 
