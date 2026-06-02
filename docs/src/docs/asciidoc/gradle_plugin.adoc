@@ -136,15 +136,29 @@ kiwiProc {
 ----
 <1> To use an external database for the "default" datasource, configure it in the dataSources block.
 
+[[test-properties]]
 === Test properties
 
 A file named `application-test.properties` will be written to the test resources path, so that automated tests can use the same database.
-It contains lines of the form:
+
+The property key depends on the `dependencyInjectionStyle`:
+
+For `JAKARTA` (the default) and Micronaut:
 
 [source,properties]
 ----
 datasources.default.url=jdbc\:postgresql\://localhost\:42581/rgtnmpgbihhy?user\=postgres
 ----
+
+For `SPRING`:
+
+[source,properties]
+----
+spring.datasource.url=jdbc\:postgresql\://localhost\:42581/rgtnmpgbihhy?user\=postgres
+----
+
+This is the standard Spring Boot property for datasource auto-configuration.
+Combined with the `kiwiproc-spring-autoconfigure` module (added automatically by the plugin), no manual `DataSource` bean definition is needed in tests.
 
 For MySQL, credentials are embedded in the URL as query parameters:
 
@@ -153,5 +167,4 @@ For MySQL, credentials are embedded in the URL as query parameters:
 datasources.default.url=jdbc\:mysql\://localhost\:3306/test?user\=root&password\=secret
 ----
 
-This is natively supported by Micronaut, and can be used with Spring with a small extra configuration.
-Other code can read it with `java.util.Properties`.
+Other code can read the properties file with `java.util.Properties`.

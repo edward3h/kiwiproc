@@ -3,7 +3,26 @@
 Kiwiproc uses only the Jakarta annotations `@Singleton` and `@Named`, so should work with any Dependency Injection framework that supports those.
 It expects a `DataSource` to be injected, with a name matching that specified on the `@DAO` annotation.
 
-For Spring, the `@Repository` and `@Qualifier` annotations are used instead.
-
 * Micronaut test cases are in the "test-micronaut" subproject.
 * Spring test cases are in the "test-spring" subproject.
+
+=== Spring Boot
+
+Set `dependencyInjectionStyle = DependencyInjectionStyle.SPRING` in the Gradle plugin configuration.
+This changes the generated code to use `@Repository` and `@Qualifier` instead of `@Singleton` and `@Named`.
+
+The Gradle plugin will automatically add the `kiwiproc-spring-autoconfigure` module as a dependency.
+This module provides a Spring Boot auto-configuration (`KiwiProcAutoConfiguration`) that registers the primary `DataSource` bean under the `"default"` qualifier, so no manual `DataSource` bean definition is needed.
+
+A typical Spring Boot project only needs:
+
+[source,properties]
+----
+spring.datasource.url=jdbc:postgresql://localhost:5432/mydb
+----
+
+The Gradle plugin generates this property automatically for embedded test databases when `dependencyInjectionStyle = DependencyInjectionStyle.SPRING` is configured.
+See xref:gradle_plugin.adoc#test-properties[Test Properties] for details.
+
+NOTE: The `spring-autoconfigure` module uses `@ConditionalOnSingleCandidate(DataSource.class)`, so the automatic `"default"` alias is only created when there is exactly one `DataSource` bean.
+For projects with multiple datasources, define the `"default"` (or named) `DataSource` bean explicitly.
