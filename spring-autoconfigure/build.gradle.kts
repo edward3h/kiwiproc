@@ -9,5 +9,5 @@ dependencies {
     compileOnly(libs.spring.starter.jdbc)
     testImplementation(libs.spring.test)
     testImplementation(libs.spring.starter.jdbc)
-    testRuntimeOnly("com.h2database:h2:2.3.232")
+    testRuntimeOnly(libs.h2)
 }
