@@ -27,6 +27,8 @@ gw $GW_OPTS publishAllPublicationsToMavenCentralRepository
 pushd gradle-plugin/
 gw $GW_OPTS publishPlugins
 popd
+# ensure release commit is on remote before triggering docs
+git push
 # publish docs
 gh workflow run docs.yml
 
