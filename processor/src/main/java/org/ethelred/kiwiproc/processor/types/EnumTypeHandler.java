@@ -12,7 +12,12 @@ class EnumTypeHandler extends DeclaredTypeHandler {
 
     @Override
     public KiwiType apply(DeclaredType t) {
-        return new EnumType(utils.packageName(t), utils.className(t), utils.isNullable(t));
+        var typeElement = (TypeElement) t.asElement();
+        var constants = typeElement.getEnclosedElements().stream()
+                .filter(e -> e.getKind() == ElementKind.ENUM_CONSTANT)
+                .map(e -> e.getSimpleName().toString())
+                .toList();
+        return new EnumType(utils.packageName(t), utils.className(t), utils.isNullable(t), constants);
     }
 
     @Override

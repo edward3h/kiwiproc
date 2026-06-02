@@ -5,6 +5,8 @@ import java.sql.Connection;
 import java.sql.JDBCType;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import javax.sql.DataSource;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
@@ -27,6 +29,26 @@ public class PostgresDialect implements DatabaseDialect {
             ds.setPassword(config.password());
         }
         return ds;
+    }
+
+    @Override
+    public List<String> queryEnumConstants(Connection connection, String typeName) throws SQLException {
+        var sql = """
+                SELECT e.enumlabel
+                FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid
+                WHERE t.typname = ?
+                ORDER BY e.enumsortorder
+                """;
+        try (var stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, typeName);
+            try (var rs = stmt.executeQuery()) {
+                var result = new ArrayList<String>();
+                while (rs.next()) {
+                    result.add(rs.getString(1));
+                }
+                return List.copyOf(result);
+            }
+        }
     }
 
     @Override

@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -145,7 +146,8 @@ public class KiwiProcessor extends AnnotationProcessor {
             parameterMapping.forEach(
                     (col, mpi) -> logger.note(methodElement, "col " + col.index() + " parameter " + mpi.name()));
         }
-        var typeValidator = new TypeValidator(logger, methodElement, coreTypes, config.debug());
+        Function<String, List<String>> nativeEnumLookup = typeName -> databaseWrapper.queryEnumConstants(typeName);
+        var typeValidator = new TypeValidator(logger, methodElement, coreTypes, config.debug(), nativeEnumLookup);
         if (!typeValidator.validateParameters(parameterMapping, kind)) {
             return null;
         }

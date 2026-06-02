@@ -153,7 +153,7 @@ public class ProcessorTest {
 
                                         @DAO
                                         public interface MyDAO {
-                                            @SqlQuery(sql = "SELECT * FROM restaurant WHERE name like :search || '%'")
+                                            @SqlQuery(sql = "SELECT id, name, tables, chain FROM restaurant WHERE name like :search || '%'")
                                             List<Restaurant> findRestaurantsByName(String search);
                                         }
                                         """));
@@ -179,6 +179,9 @@ public class ProcessorTest {
         assertThat(compilation).hadErrorCount(testCase.expectedErrorCount);
         for (var message : testCase.expectedErrorMessages) {
             assertThat(compilation).hadErrorContaining(message);
+        }
+        for (var message : testCase.expectedWarningMessages) {
+            assertThat(compilation).hadWarningContaining(message);
         }
     }
 
@@ -242,7 +245,7 @@ public class ProcessorTest {
                         .withDisplayName("A SqlBatch method compiles when it has an int array return type.")
                         .succeeds(),
                 method("""
-                        @SqlQuery(sql = "SELECT * FROM restaurant WHERE name like :search || '%'")
+                        @SqlQuery(sql = "SELECT id, name, tables, chain FROM restaurant WHERE name like :search || '%'")
                         List<Restaurant> findRestaurantsByName(String search);
                         """)
                         .withAdditionalSource("com.example.Restaurant", """
@@ -258,7 +261,7 @@ public class ProcessorTest {
                         .withExpectedErrorMessage("Unsupported return type")
                         .withExpectedErrorMessage("Invalid return type"),
                 method("""
-                        @SqlQuery(sql = "SELECT * FROM restaurant WHERE name like :search || '%'")
+                        @SqlQuery(sql = "SELECT id, name, tables, chain FROM restaurant WHERE name like :search || '%'")
                         List<Restaurant> findRestaurantsByName(String search);
                         """)
                         .withAdditionalSource("com.example.Restaurant", """
@@ -381,6 +384,42 @@ public class ProcessorTest {
                         """)
                         .withDisplayName(
                                 "[SPEC GAP] A SqlQuery method succeeds even when a record parameter has no components matching any placeholder (spec requires error).")
+                        .succeeds(),
+                // native PG enum validation — Direction 1: Java has extra constant not in PG enum
+                method("""
+                        enum RestaurantStatus { OPEN, CLOSED, UNKNOWN }
+                        @SqlUpdate(sql = "UPDATE restaurant SET status = :status WHERE name = :name")
+                        void updateStatus(String name, RestaurantStatus status);
+                        """)
+                        .withDisplayName("A SqlUpdate with a Java enum constant not in the PG native enum type fails.")
+                        .withExpectedErrorMessage("UNKNOWN")
+                        .withExpectedErrorCount(2),
+                // native PG enum validation — Direction 1: Java enum exactly matches PG enum
+                method("""
+                        enum RestaurantStatus { OPEN, CLOSED }
+                        @SqlUpdate(sql = "UPDATE restaurant SET status = :status WHERE name = :name")
+                        void updateStatus(String name, RestaurantStatus status);
+                        """)
+                        .withDisplayName(
+                                "A SqlUpdate with a Java enum exactly matching the PG native enum type compiles.")
+                        .succeeds(),
+                // native PG enum validation — Direction 2: PG enum has value with no Java constant
+                method("""
+                        enum PartialStatus { OPEN }
+                        @SqlQuery(sql = "SELECT status FROM restaurant WHERE name = :name")
+                        @org.jspecify.annotations.Nullable PartialStatus getStatus(String name);
+                        """)
+                        .withDisplayName("A SqlQuery whose Java enum is missing a PG native enum value warns.")
+                        .withExpectedWarningMessage("CLOSED")
+                        .succeeds(),
+                // native PG enum validation — Direction 2: Java enum covers all PG enum values
+                method("""
+                        enum RestaurantStatus { OPEN, CLOSED }
+                        @SqlQuery(sql = "SELECT status FROM restaurant WHERE name = :name")
+                        @org.jspecify.annotations.Nullable RestaurantStatus getStatus(String name);
+                        """)
+                        .withDisplayName(
+                                "A SqlQuery whose Java enum covers all PG native enum values compiles without a missing-constant warning.")
                         .succeeds());
     }
 }
