@@ -44,6 +44,7 @@ dependencyResolutionManagement {
 
             library("yaml", "org.yaml:snakeyaml:2.6")
 
+            library("spring-autoconfigure", "org.springframework.boot", "spring-boot-autoconfigure").versionRef("springboot")
             library("spring-starter", "org.springframework.boot", "spring-boot-starter").versionRef("springboot")
             library("spring-starter-jdbc", "org.springframework.boot", "spring-boot-starter-jdbc").versionRef("springboot")
             library("spring-test", "org.springframework.boot", "spring-boot-starter-test").versionRef("springboot")
