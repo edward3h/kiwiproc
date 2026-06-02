@@ -10,17 +10,10 @@ repositories {
     mavenCentral()
 }
 
-//configurations.create("asciidoctorExtensions")
-
-dependencies {
-//    add("asciidoctorExtensions","com.bmuschko:asciidoctorj-tabbed-code-extension:0.3")
-}
-
 tasks.named<AsciidoctorTask>("asciidoctor").configure {
     dependsOn(conversionsTable)
     inputs.files("src/docs/asciidoc")
     baseDirFollowsSourceDir()
-//    configurations("asciidoctorExtensions")
     attributes(
         mapOf(
             "build-dir" to layout.buildDirectory.get().toString(),
