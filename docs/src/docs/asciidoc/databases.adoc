@@ -1,3 +1,5 @@
+:docinfo: shared
+
 == Database Support
 
 === PostgreSQL

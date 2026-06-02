@@ -1,3 +1,5 @@
+:docinfo: shared
+
 == Gradle Plugin
 
 As noted in Quick Start, add the plugin with

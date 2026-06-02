@@ -1,3 +1,5 @@
+:docinfo: shared
+
 == Framework Support
 
 Kiwiproc uses only the Jakarta annotations `@Singleton` and `@Named`, so should work with any Dependency Injection framework that supports those.

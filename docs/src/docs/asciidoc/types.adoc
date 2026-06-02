@@ -1,3 +1,5 @@
+:docinfo: shared
+
 == Types and Validation
 
 Kiwiproc performs validations during build, based on the method signature and database metadata.

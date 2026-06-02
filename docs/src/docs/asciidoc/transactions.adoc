@@ -1,6 +1,7 @@
 :sourcedir: ../../../example
 :source-highlighter: rouge
 :icons: font
+:docinfo: shared
 
 == Transactions
 
