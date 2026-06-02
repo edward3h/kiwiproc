@@ -18,7 +18,7 @@ Add the Gradle plugin. By default, it will:
 .Groovy
 ----
 plugins {
-    id("org.ethelred.kiwiproc").version("{revnumber}")
+    id 'org.ethelred.kiwiproc' version '{revnumber}'
 }
 
 dependencies {

@@ -4,4 +4,112 @@
      .subheader, .admonitionblock td.content>.title, .audioblock>.title, .exampleblock>.title, .imageblock>.title, .listingblock>.title, .literalblock>.title, .stemblock>.title, .openblock>.title, .paragraph>.title, .quoteblock>.title, table.tableblock>.title, .verseblock>.title, .videoblock>.title, .dlist>.title, .olist>.title, .ulist>.title, .qlist>.title, .hdlist>.title{
         color: #4c8a13;
     }
+
+    .tabbed-block {
+        margin-bottom: 1.25em;
+    }
+    .tab-bar {
+        display: flex;
+        border-bottom: 2px solid #ddd;
+        margin-bottom: 0;
+    }
+    .tab-button {
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        padding: 0.4em 1em;
+        cursor: pointer;
+        font-family: "Open Sans","DejaVu Sans",sans-serif;
+        font-size: 0.875em;
+        color: rgba(0,0,0,0.6);
+    }
+    .tab-button:hover {
+        color: #4c8a13;
+    }
+    .tab-button.active {
+        color: #4c8a13;
+        border-bottom-color: #4c8a13;
+        font-weight: 600;
+    }
+    .tab-panel {
+        display: none;
+    }
+    .tab-panel.active {
+        display: block;
+    }
+    .tabbed-block .listingblock,
+    .tabbed-block .colist {
+        margin-bottom: 0;
+    }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var blocks = Array.from(document.querySelectorAll('.listingblock.primary, .listingblock.secondary'));
+    if (!blocks.length) return;
+
+    function nextColist(el) {
+        var sib = el.nextElementSibling;
+        return sib && sib.classList.contains('colist') ? sib : null;
+    }
+
+    // Group consecutive primary/secondary blocks, skipping over any colist between them
+    var groups = [];
+    var i = 0;
+    while (i < blocks.length) {
+        var group = [blocks[i]];
+        while (true) {
+            var last = group[group.length - 1];
+            var colist = nextColist(last);
+            var candidate = (colist || last).nextElementSibling;
+            var next = blocks[i + group.length];
+            if (next && candidate === next) {
+                group.push(next);
+            } else {
+                break;
+            }
+        }
+        groups.push(group);
+        i += group.length;
+    }
+
+    groups.forEach(function (group) {
+        if (group.length < 2) return;
+
+        var parent = group[0].parentNode;
+        var container = document.createElement('div');
+        container.className = 'tabbed-block';
+        var tabBar = document.createElement('div');
+        tabBar.className = 'tab-bar';
+        container.appendChild(tabBar);
+        parent.insertBefore(container, group[0]);
+
+        group.forEach(function (block) {
+            var isPrimary = block.classList.contains('primary');
+            var titleEl = block.querySelector(':scope > .title');
+            var label = titleEl ? titleEl.textContent.trim() : (isPrimary ? 'Kotlin' : 'Groovy');
+            if (titleEl) titleEl.remove();
+
+            var colist = nextColist(block);
+
+            var panel = document.createElement('div');
+            panel.className = 'tab-panel' + (isPrimary ? ' active' : '');
+            container.appendChild(panel);
+            panel.appendChild(block);
+            if (colist) panel.appendChild(colist);
+
+            var tab = document.createElement('button');
+            tab.className = 'tab-button' + (isPrimary ? ' active' : '');
+            tab.textContent = label;
+            tabBar.appendChild(tab);
+
+            tab.addEventListener('click', function () {
+                container.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+                container.querySelectorAll('.tab-button').forEach(function (t) { t.classList.remove('active'); });
+                panel.classList.add('active');
+                tab.classList.add('active');
+            });
+        });
+    });
+});
+</script>
