@@ -44,7 +44,7 @@ public class ProviderGenerator {
                 .addAnnotation(kiwiTypeConverter
                         .getDependencyInjectionType(dependencyInjectionStyle)
                         .singleton())
-                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .addModifiers(Modifier.PUBLIC)
                 .superclass(superClass)
                 .addSuperinterface(daoName)
                 .addMethod(constructorSpec);

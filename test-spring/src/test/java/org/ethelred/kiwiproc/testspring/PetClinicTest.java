@@ -8,18 +8,11 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 import org.ethelred.kiwiproc.exception.UncheckedSQLException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
@@ -27,17 +20,6 @@ import org.springframework.test.context.ActiveProfiles;
 public class PetClinicTest {
     @Autowired
     PetClinicDAO dao;
-
-    @Configuration
-    @ComponentScan
-    static class TestConfiguration {
-        @Bean
-        @Qualifier("default") public DataSource testDataSource(Environment environment) {
-            return DataSourceBuilder.create()
-                    .url(environment.getProperty("spring.datasource.url"))
-                    .build();
-        }
-    }
 
     @Test
     void happySelectTypes() throws SQLException {
