@@ -17,16 +17,21 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 17 and 21 are LTS releases; 24 tracks the latest non-LTS (updated by Renovate)
+        java-version: ['17', '21', '24']
     permissions:
       contents: read
       pull-requests: write
 
     steps:
     - uses: actions/checkout@v6
-    - name: Set up JDK 17
+    - name: Set up JDK ${{ matrix.java-version }}
       uses: actions/setup-java@v5
       with:
-        java-version: '17'
+        java-version: ${{ matrix.java-version }}
         distribution: 'temurin'
 
     # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
@@ -51,7 +56,7 @@ jobs:
       uses: actions/upload-artifact@v7
       if: success() || failure()
       with:
-        name: coverage-report
+        name: coverage-report-java${{ matrix.java-version }}
         path: build/reports/jacoco/testCodeCoverageReport/
         retention-days: 14
 
