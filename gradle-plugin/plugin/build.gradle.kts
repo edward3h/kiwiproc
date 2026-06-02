@@ -1,6 +1,7 @@
 plugins {
     `java-gradle-plugin`
     jacoco
+    checkstyle
     id("com.gradle.plugin-publish") version "2.1.1"
     id("com.diffplug.spotless").version("8.6.0")
     id("signing")
@@ -96,6 +97,10 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 tasks.named<ProcessResources>("processResources") {
     inputs.property("version", project.version)
     expand("version" to project.version)
+}
+
+checkstyle {
+    configFile = file("../../config/checkstyle/checkstyle.xml")
 }
 
 spotless {
