@@ -117,8 +117,17 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
     }
 
     private String propertyKey(DependencyInjectionStyle style, String datasourceName) {
-        if (style == DependencyInjectionStyle.SPRING && "default".equals(datasourceName)) {
-            return "spring.datasource.url";
+        if (style == DependencyInjectionStyle.SPRING) {
+            if ("default".equals(datasourceName)) {
+                return "spring.datasource.url";
+            }
+            getLogger()
+                    .warn(
+                            "kiwiproc: SPRING DI style with non-default datasource '{}' generates property key"
+                                    + " 'datasources.{}.url' which Spring Boot does not recognise natively."
+                                    + " Configure the DataSource bean manually.",
+                            datasourceName,
+                            datasourceName);
         }
         return "datasources.%s.url".formatted(datasourceName);
     }
