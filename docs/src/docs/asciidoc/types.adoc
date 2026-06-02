@@ -19,7 +19,7 @@ These are generalized types, not Java or SQL types.
 |V |void
 |I |int or a compatible type
 |P |A primitive or boxed primitive
-|O |Object type. Specifically, one of: String, BigInteger, BigDecimal, LocalDate, LocalTime, OffsetTime, LocalDateTime, OffsetDateTime, UUID
+|O |Object type. Specifically, one of: String, BigInteger, BigDecimal, LocalDate, LocalTime, OffsetTime, LocalDateTime, OffsetDateTime, UUID, or any Java `enum`
 |S | P \| O
 |?S |@Nullable (specifically org.jspecify.annotations.Nullable), or Optional<S>. A boxed primitive is also treated as nullable when it is not a type parameter of a container. Optional is only accepted as the return type of a query method.
 |SC<S> | A Collection or array, _only_ in a context where it is mapped to or from a SQL array.
@@ -85,3 +85,13 @@ Kiwiproc has a set of type conversions, for any supported types where it makes s
 include::{build-dir}/conversions.adoc[]
 
 (Any type can be converted to String.)
+
+==== Enum conversions
+
+Java `enum` types are converted to and from SQL using the constant name:
+
+* *SQL → Java*: `MyEnum.valueOf(stringValue)` — mapped from a `VARCHAR` or PostgreSQL native enum column.
+A compile-time warning is emitted because an unrecognised DB value will throw `IllegalArgumentException` at runtime.
+* *Java → SQL*: `myEnum.name()` — the string name is bound as a parameter using `setObject` with `Types.OTHER`, which PostgreSQL accepts for both `VARCHAR` and native enum columns.
+
+PostgreSQL native enum columns (`CREATE TYPE … AS ENUM (…)`) are supported transparently: the JDBC driver returns their values as `String`, so no special handling is required on the read path.
