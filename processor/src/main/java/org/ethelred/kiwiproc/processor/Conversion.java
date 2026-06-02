@@ -5,6 +5,8 @@ import org.jspecify.annotations.Nullable;
 
 public sealed interface Conversion
         permits AssignmentConversion,
+                EnumFromStringConversion,
+                EnumToStringConversion,
                 FromSqlArrayConversion,
                 InvalidConversion,
                 NullableSourceConversion,

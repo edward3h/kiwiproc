@@ -298,12 +298,23 @@ public class InstanceGenerator {
                         .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())
                         .nextControlFlow("else");
             }
-            builder.addStatement("statement.$L($L, $L)", parameterInfo.setter(), parameterInfo.index(), name);
+            if ("setObject".equals(parameterInfo.setter()) && isEnumConversion(parameterInfo.conversion())) {
+                builder.addStatement(
+                        "statement.setObject($L, $L, $L)", parameterInfo.index(), name, parameterInfo.sqlType());
+            } else {
+                builder.addStatement("statement.$L($L, $L)", parameterInfo.setter(), parameterInfo.index(), name);
+            }
             if (nullableSource) {
                 builder.endControlFlow();
             }
             parameterNames.add(accessor);
         });
+    }
+
+    private static boolean isEnumConversion(Conversion conversion) {
+        if (conversion instanceof EnumToStringConversion) return true;
+        if (conversion instanceof NullableSourceConversion nsc) return isEnumConversion(nsc.conversion());
+        return false;
     }
 
     private void buildConversion(
@@ -442,6 +453,12 @@ public class InstanceGenerator {
                         .beginControlFlow("if ($L != null)", accessor);
                 buildConversion(builder, methodInfo, nsc.conversion(), targetType, assignee, accessor, false);
                 builder.endControlFlow();
+            } else if (conversion instanceof EnumFromStringConversion efsc) {
+                var enumClass = ClassName.get(
+                        efsc.enumType().packageName(), efsc.enumType().className());
+                builder.addStatement("$L$L = $T.valueOf($L)", insertVar, assignee, enumClass, accessor);
+            } else if (conversion instanceof EnumToStringConversion) {
+                builder.addStatement("$L$L = $L.name()", insertVar, assignee, accessor);
             } else {
                 logger.error(methodInfo.get(), "Unsupported Conversion %s".formatted(conversion));
             }

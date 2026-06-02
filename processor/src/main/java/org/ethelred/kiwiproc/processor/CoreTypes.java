@@ -292,6 +292,20 @@ public class CoreTypes {
         if (source.equals(target) || source.withIsNullable(true).equals(target)) {
             return new AssignmentConversion();
         }
+        if (target instanceof EnumType enumType && STRING_TYPE.equals(source.withIsNullable(false))) {
+            Conversion result = new EnumFromStringConversion(enumType);
+            if (source.isNullable()) {
+                result = new NullableSourceConversion(result);
+            }
+            return result;
+        }
+        if (source instanceof EnumType && STRING_TYPE.equals(target.withIsNullable(false))) {
+            Conversion result = new EnumToStringConversion();
+            if (source.isNullable()) {
+                result = new NullableSourceConversion(result);
+            }
+            return result;
+        }
         if (source instanceof CollectionType ct && target instanceof SqlArrayType sat) {
             return toSqlArray(ct, sat);
         }

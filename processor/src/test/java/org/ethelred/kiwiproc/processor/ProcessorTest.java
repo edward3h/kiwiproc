@@ -349,6 +349,22 @@ public class ProcessorTest {
                                 "A SqlQuery with Map return type fails without key_column or 'key' column in SQL.")
                         .withExpectedErrorMessage("Invalid return type")
                         .withExpectedErrorCount(2),
+                // enum conversions
+                method("""
+                        enum ChainType { FAST_FOOD, FINE_DINING }
+                        @SqlUpdate(sql = "UPDATE restaurant SET chain = :chain WHERE name = :name")
+                        void updateChain(String name, ChainType chain);
+                        """)
+                        .withDisplayName("A SqlUpdate with enum parameter against VARCHAR column compiles.")
+                        .succeeds(),
+                method("""
+                        enum ChainType { FAST_FOOD, FINE_DINING }
+                        @SqlQuery(sql = "SELECT chain FROM restaurant WHERE name = :name")
+                        @org.jspecify.annotations.Nullable ChainType getChain(String name);
+                        """)
+                        .withDisplayName(
+                                "A SqlQuery returning a nullable enum type from a nullable VARCHAR column compiles.")
+                        .succeeds(),
                 // Spec gap: non-record parameter not matched to any placeholder — processor does not yet enforce this
                 method("""
                         @SqlQuery(sql = "SELECT name FROM restaurant WHERE name = :name")
