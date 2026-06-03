@@ -5,7 +5,11 @@
 
 == Quick Start
 
-=== Gradle Configuration
+=== Build Tool Configuration
+
+NOTE: Maven users should refer to <<_maven_setup,Maven Setup>> for dependency and compiler plugin configuration.
+
+==== Gradle
 
 Add the Gradle plugin. By default, it will:
 

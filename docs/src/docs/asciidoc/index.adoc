@@ -18,6 +18,8 @@ include::databases.adoc[]
 
 include::gradle_plugin.adoc[]
 
+include::maven_setup.adoc[]
+
 == API Reference
 
 * link:javadoc/shared/index.html[Annotations API (shared)]
