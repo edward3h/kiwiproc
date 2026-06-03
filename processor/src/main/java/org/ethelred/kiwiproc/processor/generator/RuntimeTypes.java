@@ -10,6 +10,7 @@ public final class RuntimeTypes {
     public static final ClassName DAO_CONTEXT = ClassName.get("org.ethelred.kiwiproc.api", "DAOContext");
     public static final ClassName UNCHECKED_SQL_EXCEPTION =
             ClassName.get("org.ethelred.kiwiproc.exception", "UncheckedSQLException");
+    public static final ClassName RESULT_SET_STREAM = ClassName.get("org.ethelred.kiwiproc.impl", "ResultSetStream");
 
     private RuntimeTypes() {}
 }
