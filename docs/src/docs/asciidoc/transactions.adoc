@@ -19,3 +19,41 @@ include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/transaction/Cou
 
 If the callback completes normally the transaction is committed.
 If the callback throws a `SQLException` (or an `UncheckedSQLException` from a nested DAO call), the transaction is rolled back and the exception is re-thrown wrapped in an `UncheckedSQLException`.
+
+[[streaming]]
+=== Streaming
+
+A `@SqlQuery` method may return `java.util.stream.Stream<T>` to stream rows lazily from the database rather than buffering them into a `List`.
+
+[source,java]
+----
+@SqlQuery("SELECT id, name FROM types ORDER BY id")
+Stream<PetType> streamPetTypes();
+----
+
+Unlike `List`-returning methods, stream-returning methods are **not** wrapped in a `call()` transaction.
+Each streaming method acquires its own JDBC connection with `autoCommit=false` (required for PostgreSQL server-side cursors).
+
+**The caller is responsible for closing the stream**, which commits the transaction and closes the connection.
+Use try-with-resources:
+
+[source,java]
+----
+try (var stream = petClinicDAOProvider.streamPetTypes()) {
+    stream.forEach(pet -> process(pet));
+}
+----
+
+Use `@SqlQuery(fetchSize = N)` to enable PostgreSQL server-side cursoring (fetching rows in batches rather than all at once):
+
+[source,java]
+----
+@SqlQuery(value = "SELECT id, name FROM types ORDER BY id", fetchSize = 100)
+Stream<PetType> streamPetTypes();
+----
+
+[WARNING]
+====
+Failing to close the stream will leak the database connection.
+Always use try-with-resources or call `stream.close()` explicitly.
+====
