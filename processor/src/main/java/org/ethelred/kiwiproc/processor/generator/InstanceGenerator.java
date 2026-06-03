@@ -261,8 +261,13 @@ public class InstanceGenerator {
 
     private CodeBlock methodBodyForStreamQuery(DAOMethodInfo methodInfo) {
         var builder = builderWithParameters(methodInfo.parameterMapping());
-        var streamType = (StreamType) methodInfo.signature().returnType();
+        if (!(methodInfo.signature().returnType() instanceof StreamType streamType)) {
+            throw new IllegalArgumentException("Expected StreamType");
+        }
         var elementType = streamType.containedType();
+
+        // "rs" is the lambda parameter name — register it so patchName() avoids it for column variables
+        parameterNames.add("rs");
 
         // Inner try so that if executeQuery() throws, the statement is closed before propagating
         builder.beginControlFlow("try");
