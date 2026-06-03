@@ -23,7 +23,9 @@ dependencies {
     jacocoAggregation(project(":runtime"))
     jacocoAggregation(project(":test-spring"))
     jacocoAggregation(project(":test-micronaut"))
-    jacocoAggregation(project(":test-micronaut5"))
+    if (JavaVersion.current().majorVersion.toInt() >= 25) {
+        jacocoAggregation(project(":test-micronaut5"))
+    }
     jacocoAggregation(project(":test-any"))
 }
 
