@@ -6,18 +6,13 @@ import static org.ethelred.kiwiproc.processor.DAOResultMapping.INVALID;
 import com.karuslabs.utilitary.Logger;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javax.lang.model.element.Element;
 import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.processor.types.*;
 import org.ethelred.kiwiproc.processor.types.ObjectType;
 
 public record TypeValidator(
-        Logger logger,
-        Element element,
-        CoreTypes coreTypes,
-        boolean debug,
-        Function<String, List<String>> nativeEnumLookup) {
+        Logger logger, Element element, CoreTypes coreTypes, boolean debug, NativeEnumLookup nativeEnumLookup) {
 
     public boolean validateParameters(Map<ColumnMetaData, MethodParameterInfo> parameterMapping, QueryMethodKind kind) {
         boolean result = true;
@@ -57,7 +52,7 @@ public record TypeValidator(
     }
 
     private boolean validateEnumParameter(EnumType enumType, ColumnMetaData columnMetaData) {
-        var pgConstants = nativeEnumLookup.apply(columnMetaData.dbType());
+        var pgConstants = nativeEnumLookup.getConstants(columnMetaData.dbType());
         if (pgConstants.isEmpty()) {
             return true;
         }
@@ -75,7 +70,7 @@ public record TypeValidator(
     }
 
     private void validateEnumReturn(EnumType enumType, ColumnMetaData columnMetaData) {
-        var pgConstants = nativeEnumLookup.apply(columnMetaData.dbType());
+        var pgConstants = nativeEnumLookup.getConstants(columnMetaData.dbType());
         if (pgConstants.isEmpty()) {
             return;
         }
