@@ -7,13 +7,10 @@ import static org.ethelred.kiwiproc.processor.generator.RuntimeTypes.*;
 
 import com.karuslabs.utilitary.Logger;
 import com.palantir.javapoet.*;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import org.ethelred.kiwiproc.processor.*;
 import org.ethelred.kiwiproc.processor.types.*;
@@ -24,14 +21,13 @@ public class InstanceGenerator {
     private final Logger logger;
     private final KiwiTypeConverter kiwiTypeConverter;
     private final CoreTypes coreTypes;
-    private final Set<String> parameterNames = new HashSet<>();
-    private final Map<String, String> patchedNames = new HashMap<>();
-    private int patchedNameCount = 0;
+    private final ConversionCodeGenerator conversionGenerator;
 
     public InstanceGenerator(Logger logger, KiwiTypeConverter kiwiTypeConverter, CoreTypes coreTypes) {
         this.logger = logger;
         this.kiwiTypeConverter = kiwiTypeConverter;
         this.coreTypes = coreTypes;
+        this.conversionGenerator = new ConversionCodeGenerator(logger, kiwiTypeConverter);
     }
 
     public JavaFile generate(DAOClassInfo classInfo) {
@@ -59,9 +55,7 @@ public class InstanceGenerator {
     }
 
     private MethodSpec buildMethod(DAOMethodInfo methodInfo) {
-        parameterNames.clear();
-        patchedNames.clear();
-        patchedNameCount = 0;
+        var ctx = new MethodContext();
         var methodSpecBuilder = MethodSpec.overriding(methodInfo.methodElement());
         boolean isStreamReturn = methodInfo.signature().returnType() instanceof StreamType;
         methodSpecBuilder.addStatement("var connection = context.getConnection()");
@@ -81,9 +75,11 @@ public class InstanceGenerator {
         methodSpecBuilder.addCode(
                 switch (methodInfo.kind()) {
                     case QUERY ->
-                        isStreamReturn ? methodBodyForStreamQuery(methodInfo) : methodBodyForQuery(methodInfo);
-                    case UPDATE -> methodBodyForUpdate(methodInfo);
-                    case BATCH -> methodBodyForBatch(methodInfo);
+                        isStreamReturn
+                                ? methodBodyForStreamQuery(methodInfo, ctx)
+                                : methodBodyForQuery(methodInfo, ctx);
+                    case UPDATE -> methodBodyForUpdate(methodInfo, ctx);
+                    case BATCH -> methodBodyForBatch(methodInfo, ctx);
                     case DEFAULT -> throw new IllegalArgumentException();
                 });
         methodSpecBuilder
@@ -94,20 +90,21 @@ public class InstanceGenerator {
         return methodSpecBuilder.build();
     }
 
-    private CodeBlock methodBodyForUpdate(DAOMethodInfo methodInfo) {
-        var builder = builderWithParameters(methodInfo.parameterMapping());
+    private CodeBlock methodBodyForUpdate(DAOMethodInfo methodInfo, MethodContext ctx) {
+        var builder = builderWithParameters(methodInfo.parameterMapping(), ctx);
         builder.addStatement("var rawResult = statement.executeUpdate()");
         KiwiType returnType = methodInfo.signature().returnType();
         if (!(returnType instanceof VoidType)) {
             var conversion = lookupConversion(
                     methodInfo::methodElement, new TypeMapping(CoreTypes.UPDATE_RETURN_TYPE, returnType));
-            buildConversion(builder, methodInfo, conversion, returnType, "result", "rawResult", true);
+            conversionGenerator.buildConversion(
+                    builder, ctx, methodInfo::methodElement, conversion, returnType, "result", "rawResult", true);
             builder.addStatement("return result");
         }
         return builder.build();
     }
 
-    private CodeBlock methodBodyForBatch(DAOMethodInfo methodInfo) {
+    private CodeBlock methodBodyForBatch(DAOMethodInfo methodInfo, MethodContext ctx) {
         /*
            boolean anyValues = false;
            var someIterator = some.iterator();
@@ -137,7 +134,9 @@ public class InstanceGenerator {
                 .collect(Collectors.toMap(
                         DAOBatchIterator::source,
                         i -> new IteratorVariableNames(
-                                i, patchName(i.baseName() + "Iterator"), patchName(i.baseName() + "IteratorValue"))));
+                                i,
+                                ctx.patchName(i.baseName() + "Iterator"),
+                                ctx.patchName(i.baseName() + "IteratorValue"))));
         for (var iteratorAndNames : iteratorsAndNames.values()) {
             builder.addNamed(
                             "var $iteratorVariable:L = "
@@ -162,7 +161,7 @@ public class InstanceGenerator {
                     "var $L = $L.next()", iteratorAndNames.iteratorValueName, iteratorAndNames.iteratorName);
         }
         var parameterMapping = methodInfo.parameterMapping();
-        addParameters(builder, parameterMapping, methodParameterInfo -> {
+        addParameters(builder, parameterMapping, ctx, methodParameterInfo -> {
             var key = methodParameterInfo;
             if (key.recordParent() != null) {
                 key = key.recordParent();
@@ -180,52 +179,29 @@ public class InstanceGenerator {
         if (!(returnType instanceof VoidType)) {
             var conversion = lookupConversion(
                     methodInfo::methodElement, new TypeMapping(CoreTypes.BATCH_RETURN_TYPE, returnType));
-            buildConversion(builder, methodInfo, conversion, returnType, "result", "rawResult", true);
+            conversionGenerator.buildConversion(
+                    builder, ctx, methodInfo::methodElement, conversion, returnType, "result", "rawResult", true);
             builder.addStatement("return result");
         }
         return builder.build();
     }
 
-    private CodeBlock methodBodyForQuery(DAOMethodInfo methodInfo) {
-        var builder = builderWithParameters(methodInfo.parameterMapping());
-        var containerBuilder = containerBuilderFor(methodInfo);
+    private CodeBlock methodBodyForQuery(DAOMethodInfo methodInfo, MethodContext ctx) {
+        var builder = builderWithParameters(methodInfo.parameterMapping(), ctx);
+        var containerBuilder = containerBuilderFor(methodInfo, ctx);
         builder.addStatement("var rs = statement.executeQuery()");
         builder.addStatement(containerBuilder.declaration());
         builder.beginControlFlow("$L (rs.next())", methodInfo.expectedRows() == RowCount.MANY ? "while" : "if");
         var columns = methodInfo.columns();
         if (!columns.isEmpty()) {
-            for (DAOResultColumn column : columns) {
-                String rawName = patchName(columnName(column) + "Raw");
-                String accessorSuffix = column.sqlTypeMapping().accessorSuffix();
-                TypeName typeName =
-                        kiwiTypeConverter.fromKiwiType(column.sqlTypeMapping().kiwiType());
-                if ("Object".equals(accessorSuffix)) { // hacky
-                    builder.addStatement("$1T $2L = rs.getObject($3S, $1T.class)", typeName, rawName, column.name());
-                } else {
-                    builder.addStatement("$T $L = rs.get$L($S)", typeName, rawName, accessorSuffix, column.name());
-                }
-                if (column.sqlTypeMapping().isNullable()) {
-                    builder.beginControlFlow("if (rs.wasNull())")
-                            .addStatement("$L = null", rawName)
-                            .endControlFlow();
-                }
-                var varName = patchName(columnName(column));
-                buildConversion(
-                        builder,
-                        methodInfo,
-                        column.conversion(),
-                        column.asTypeMapping().target(),
-                        varName,
-                        rawName,
-                        true);
-            }
+            buildColumnReadingStatements(builder, ctx, columns, methodInfo);
             for (ResultPart resultPart : ResultPart.values()) {
                 var componentClass = containerBuilder.componentTypeFor(resultPart);
                 if (componentClass != null) {
-                    var resultVar = patchName(prefixName(resultPart, "Value"));
+                    var resultVar = ctx.patchName(prefixName(resultPart, "Value"));
                     var params = columns.stream()
                             .filter(column -> resultPart.equals(column.resultPart()))
-                            .map(p -> CodeBlock.of("$L", patchedNames.get(columnName(p))))
+                            .map(p -> CodeBlock.of("$L", ctx.patchedNameFor(columnName(p))))
                             .collect(CodeBlock.joining(",\n"));
                     params = CodeBlock.builder().indent().add(params).unindent().build();
                     builder.add("""
@@ -259,15 +235,15 @@ public class InstanceGenerator {
         return builder.build();
     }
 
-    private CodeBlock methodBodyForStreamQuery(DAOMethodInfo methodInfo) {
-        var builder = builderWithParameters(methodInfo.parameterMapping());
+    private CodeBlock methodBodyForStreamQuery(DAOMethodInfo methodInfo, MethodContext ctx) {
+        var builder = builderWithParameters(methodInfo.parameterMapping(), ctx);
         if (!(methodInfo.signature().returnType() instanceof StreamType streamType)) {
             throw new IllegalArgumentException("Expected StreamType");
         }
         var elementType = streamType.containedType();
 
         // "rs" is the lambda parameter name — register it so patchName() avoids it for column variables
-        parameterNames.add("rs");
+        ctx.registerParameterName("rs");
 
         // Inner try so that if executeQuery() throws, the statement is closed before propagating
         builder.beginControlFlow("try");
@@ -283,38 +259,14 @@ public class InstanceGenerator {
         }
 
         // Column reading — uses "rs" (the lambda parameter)
-        for (DAOResultColumn column : columns) {
-            String rawName = patchName(columnName(column) + "Raw");
-            String accessorSuffix = column.sqlTypeMapping().accessorSuffix();
-            TypeName typeName =
-                    kiwiTypeConverter.fromKiwiType(column.sqlTypeMapping().kiwiType());
-            if ("Object".equals(accessorSuffix)) {
-                builder.addStatement("$1T $2L = rs.getObject($3S, $1T.class)", typeName, rawName, column.name());
-            } else {
-                builder.addStatement("$T $L = rs.get$L($S)", typeName, rawName, accessorSuffix, column.name());
-            }
-            if (column.sqlTypeMapping().isNullable()) {
-                builder.beginControlFlow("if (rs.wasNull())")
-                        .addStatement("$L = null", rawName)
-                        .endControlFlow();
-            }
-            var varName = patchName(columnName(column));
-            buildConversion(
-                    builder,
-                    methodInfo,
-                    column.conversion(),
-                    column.asTypeMapping().target(),
-                    varName,
-                    rawName,
-                    true);
-        }
+        buildColumnReadingStatements(builder, ctx, columns, methodInfo);
 
         // Construct record if element type is not simple; otherwise return raw column value
         if (!elementType.isSimple()) {
-            var resultVar = patchName(prefixName(ResultPart.SIMPLE, "Value"));
+            var resultVar = ctx.patchName(prefixName(ResultPart.SIMPLE, "Value"));
             var params = columns.stream()
                     .filter(column -> ResultPart.SIMPLE.equals(column.resultPart()))
-                    .map(p -> CodeBlock.of("$L", patchedNames.get(columnName(p))))
+                    .map(p -> CodeBlock.of("$L", ctx.patchedNameFor(columnName(p))))
                     .collect(CodeBlock.joining(",\n"));
             params = CodeBlock.builder().indent().add(params).unindent().build();
             builder.add("""
@@ -328,7 +280,7 @@ public class InstanceGenerator {
                     .filter(c -> c.resultPart() == ResultPart.SIMPLE)
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("No SIMPLE column for stream query"));
-            String patchedValueVariable = patchedNames.get(columnName(firstSimple));
+            String patchedValueVariable = ctx.patchedNameFor(columnName(firstSimple));
             builder.addStatement("return $L", patchedValueVariable);
         }
 
@@ -348,6 +300,36 @@ public class InstanceGenerator {
         return builder.build();
     }
 
+    private void buildColumnReadingStatements(
+            CodeBlock.Builder builder, MethodContext ctx, List<DAOResultColumn> columns, DAOMethodInfo methodInfo) {
+        for (DAOResultColumn column : columns) {
+            String rawName = ctx.patchName(columnName(column) + "Raw");
+            String accessorSuffix = column.sqlTypeMapping().accessorSuffix();
+            TypeName typeName =
+                    kiwiTypeConverter.fromKiwiType(column.sqlTypeMapping().kiwiType());
+            if ("Object".equals(accessorSuffix)) {
+                builder.addStatement("$1T $2L = rs.getObject($3S, $1T.class)", typeName, rawName, column.name());
+            } else {
+                builder.addStatement("$T $L = rs.get$L($S)", typeName, rawName, accessorSuffix, column.name());
+            }
+            if (column.sqlTypeMapping().isNullable()) {
+                builder.beginControlFlow("if (rs.wasNull())")
+                        .addStatement("$L = null", rawName)
+                        .endControlFlow();
+            }
+            var varName = ctx.patchName(columnName(column));
+            conversionGenerator.buildConversion(
+                    builder,
+                    ctx,
+                    methodInfo::methodElement,
+                    column.conversion(),
+                    column.asTypeMapping().target(),
+                    varName,
+                    rawName,
+                    true);
+        }
+    }
+
     private String columnName(DAOResultColumn column) {
         return prefixName(column.resultPart(), column.name().name());
     }
@@ -364,9 +346,9 @@ public class InstanceGenerator {
         return prefix + cName;
     }
 
-    private CodeBlock.Builder builderWithParameters(List<DAOParameterInfo> parameterMapping) {
+    private CodeBlock.Builder builderWithParameters(List<DAOParameterInfo> parameterMapping, MethodContext ctx) {
         var builder = CodeBlock.builder();
-        addParameters(builder, parameterMapping, methodParameterInfo -> {
+        addParameters(builder, parameterMapping, ctx, methodParameterInfo -> {
             if (methodParameterInfo.recordParent() != null) {
                 return methodParameterInfo.recordParent().name().name();
             }
@@ -378,12 +360,14 @@ public class InstanceGenerator {
     private void addParameters(
             CodeBlock.Builder builder,
             List<DAOParameterInfo> parameterMapping,
+            MethodContext ctx,
             Function<MethodParameterInfo, String> sourceLookup) {
         parameterMapping.forEach(parameterInfo -> {
             var name = "param" + parameterInfo.index();
             String accessor = sourceLookup.apply(parameterInfo.source()) + parameterInfo.javaAccessorSuffix();
-            buildConversion(
+            conversionGenerator.buildConversion(
                     builder,
+                    ctx,
                     parameterInfo,
                     parameterInfo.conversion(),
                     parameterInfo.mapper().target(),
@@ -396,7 +380,8 @@ public class InstanceGenerator {
                         .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())
                         .nextControlFlow("else");
             }
-            if ("setObject".equals(parameterInfo.setter()) && isEnumConversion(parameterInfo.conversion())) {
+            if ("setObject".equals(parameterInfo.setter())
+                    && conversionGenerator.isEnumConversion(parameterInfo.conversion())) {
                 builder.addStatement(
                         "statement.setObject($L, $L, $L)", parameterInfo.index(), name, parameterInfo.sqlType());
             } else {
@@ -405,189 +390,19 @@ public class InstanceGenerator {
             if (nullableSource) {
                 builder.endControlFlow();
             }
-            parameterNames.add(accessor);
+            ctx.registerParameterName(accessor);
         });
     }
 
-    private static boolean isEnumConversion(Conversion conversion) {
-        if (conversion instanceof EnumToStringConversion) {
-            return true;
-        }
-        if (conversion instanceof NullableSourceConversion nsc) {
-            return isEnumConversion(nsc.conversion());
-        }
-        return false;
-    }
-
-    private void buildConversion(
-            CodeBlock.Builder builder,
-            Supplier<Element> methodInfo,
-            Conversion conversion,
-            KiwiType targetType,
-            String assignee,
-            String accessor,
-            boolean withVar) {
-        try {
-            var insertVar =
-                    withVar ? CodeBlock.of("$T ", kiwiTypeConverter.fromKiwiType(targetType, true)) : CodeBlock.of("");
-            if (conversion instanceof AssignmentConversion) {
-                /* e.g.
-                var param1 = id;
-                 */
-                builder.addStatement("$L$L = $L", insertVar, assignee, accessor);
-            } else if (conversion instanceof StringFormatConversion sfc) {
-                /* e.g.
-                var param1 = (int) id;
-                 */
-                builder.add("$L$L =", insertVar, assignee)
-                        .addStatement(sfc.conversionFormat(), sfc.withAccessor(accessor));
-            } else if (conversion instanceof ToSqlArrayConversion sac) {
-                /* e.g.
-                Object[] elementObjects = listParam.stream()
-                    .map(x -> (int) x)
-                    .toArray();
-                var param1 = connection.createArrayOf("int4", elementObjects);
-                 */
-                Conversion elementConversion = sac.elementConversion();
-                String elementObjects = patchName("elementObjects");
-                String lambdaValue = patchName("value");
-                builder.add("Object[] $L = ", elementObjects)
-                        .addNamed(sac.ct().type().toStreamTemplate(), Map.of("containerVariable", accessor))
-                        .indent()
-                        .add("\n.map($L -> {\n", lambdaValue)
-                        .indent();
-                buildConversion(
-                        builder, methodInfo, elementConversion, sac.sat().containedType(), "tmp", lambdaValue, true);
-                builder.addStatement("return tmp")
-                        .unindent()
-                        .add("})\n.toArray();\n")
-                        .unindent();
-                builder.addStatement(
-                        "$L$L = connection.createArrayOf($S, $L)",
-                        insertVar,
-                        assignee,
-                        sac.sat().componentDbType(),
-                        elementObjects);
-            } else if (conversion instanceof FromSqlArrayConversion sac) {
-                /* e.g.
-                ResultSet arrayRS = rawValue.getResultSet();
-                List<String> arrayList = new ArrayList<>();
-                while (arrayRs.next()) {
-                    var rawItemValue = arrayRs.getString(2);
-                    var itemValue = rawItemValue;
-                    arrayList.add(itemValue);
-                 }
-                 var value = List.copyOf(arrayList);
-                 */
-                var arrayRS = patchName("arrayRS");
-                var arrayList = patchName("arrayList");
-                var rawItemValue = patchName("rawItemValue");
-                var itemValue = patchName("itemValue");
-                TypeName componentClass =
-                        kiwiTypeConverter.fromKiwiType(sac.ct().containedType());
-                builder.addStatement("$T $L = $L.getResultSet()", ResultSet.class, arrayRS, accessor)
-                        .addStatement("List<$T> $L = new $T<>()", componentClass, arrayList, ArrayList.class)
-                        .beginControlFlow("while ($L.next())", arrayRS)
-                        // Array.getResultSet() returns 2 columns: 1 is the index, 2 is the value
-                        .addStatement(
-                                "var $L = $L.get$L(2)",
-                                rawItemValue,
-                                arrayRS,
-                                sac.sat().componentType().accessorSuffix());
-                buildConversion(
-                        builder,
-                        methodInfo,
-                        sac.elementConversion(),
-                        sac.ct().containedType(),
-                        itemValue,
-                        rawItemValue,
-                        true);
-                builder.addStatement("$L.add($L)", arrayList, itemValue)
-                        .endControlFlow()
-                        .add("$L$L = ", insertVar, assignee)
-                        .addNamed(
-                                sac.ct().type().fromListTemplate(),
-                                Map.of("componentClass", componentClass, "listVariable", arrayList))
-                        .addStatement("");
-            } else if (conversion instanceof CollectionConversion cc) {
-                /*
-                var sourceIterator = Arrays.asList(source).iterator();
-                List<Integer> arrayList = new ArrayList<>();
-                while (sourceIterator.hasNext()) {
-                    var rawItemValue = sourceIterator.next();
-                    var itemValue = rawItemValue;
-                    arrayList.add(itemValue);
-                }
-                var value = List.copyOf(arrayList);
-                 */
-
-                var sourceIterator = patchName("sourceIterator");
-                var arrayList = patchName("arrayList");
-                var rawItemValue = patchName("rawItemValue");
-                var itemValue = patchName("itemValue");
-                TypeName componentClass =
-                        kiwiTypeConverter.fromKiwiType(cc.sourceType().containedType(), true);
-                builder.addNamed(
-                                "var $iteratorName:L = "
-                                        + cc.sourceType().type().toIteratorTemplate(),
-                                Map.of("iteratorName", sourceIterator, "containerVariable", accessor))
-                        .addStatement("")
-                        .addStatement("List<$T> $L = new $T<>()", componentClass, arrayList, ArrayList.class)
-                        .beginControlFlow("while ($L.hasNext())", sourceIterator)
-                        .addStatement("var $L = $L.next()", rawItemValue, sourceIterator);
-                buildConversion(
-                        builder,
-                        methodInfo,
-                        cc.containedTypeConversion(),
-                        cc.targetType().containedType(),
-                        itemValue,
-                        rawItemValue,
-                        true);
-                builder.addStatement("$L.add($L)", arrayList, itemValue)
-                        .endControlFlow()
-                        .add("$L$L = ", insertVar, assignee)
-                        .addNamed(
-                                cc.targetType().type().fromListTemplate(),
-                                Map.of("componentClass", componentClass, "listVariable", arrayList))
-                        .addStatement("");
-            } else if (conversion instanceof NullableSourceConversion nsc) {
-                builder.addStatement("$T $L = null", kiwiTypeConverter.fromKiwiType(targetType), assignee)
-                        .beginControlFlow("if ($L != null)", accessor);
-                buildConversion(builder, methodInfo, nsc.conversion(), targetType, assignee, accessor, false);
-                builder.endControlFlow();
-            } else if (conversion instanceof EnumFromStringConversion efsc) {
-                var enumClass = ClassName.get(
-                        efsc.enumType().packageName(), efsc.enumType().className());
-                builder.addStatement("$L$L = $T.valueOf($L)", insertVar, assignee, enumClass, accessor);
-            } else if (conversion instanceof EnumToStringConversion) {
-                builder.addStatement("$L$L = $L.name()", insertVar, assignee, accessor);
-            } else {
-                logger.error(methodInfo.get(), "Unsupported Conversion %s".formatted(conversion));
-            }
-        } catch (RuntimeException e) {
-            throw new RuntimeException("Error in conversion " + conversion, e);
-        }
-    }
-
-    private String patchName(String name) {
-        return patchedNames.computeIfAbsent(name, k -> {
-            var newName = k;
-            while (parameterNames.contains(newName)) {
-                newName = k + (++patchedNameCount);
-            }
-            return newName;
-        });
-    }
-
-    private ContainerBuilder containerBuilderFor(DAOMethodInfo methodInfo) {
+    private ContainerBuilder containerBuilderFor(DAOMethodInfo methodInfo, MethodContext ctx) {
         var returnType = methodInfo.signature().returnType();
         if (returnType instanceof MapType mapType) {
-            return new MapContainerBuilder(mapType, methodInfo);
+            return new MapContainerBuilder(mapType, methodInfo, ctx);
         }
         if (returnType instanceof CollectionType collectionType) {
-            return new CollectionContainerBuilder(collectionType, methodInfo);
+            return new CollectionContainerBuilder(collectionType, methodInfo, ctx);
         }
-        return new SingleRowContainerBuilder(returnType, methodInfo);
+        return new SingleRowContainerBuilder(returnType, methodInfo, ctx);
     }
 
     interface ContainerBuilder {
@@ -616,10 +431,12 @@ public class InstanceGenerator {
     private class BaseContainerBuilder<T extends KiwiType> {
         protected final DAOMethodInfo methodInfo;
         protected final T returnType;
+        protected final MethodContext ctx;
 
-        private BaseContainerBuilder(T returnType, DAOMethodInfo methodInfo) {
+        private BaseContainerBuilder(T returnType, DAOMethodInfo methodInfo, MethodContext ctx) {
             this.methodInfo = methodInfo;
             this.returnType = returnType;
+            this.ctx = ctx;
         }
 
         protected DAOResultColumn firstColumnOfPart(ResultPart part) {
@@ -632,8 +449,8 @@ public class InstanceGenerator {
 
     private class SingleRowContainerBuilder extends BaseContainerBuilder<KiwiType> implements ContainerBuilder {
 
-        public SingleRowContainerBuilder(KiwiType returnType, DAOMethodInfo methodInfo) {
-            super(returnType, methodInfo);
+        public SingleRowContainerBuilder(KiwiType returnType, DAOMethodInfo methodInfo, MethodContext ctx) {
+            super(returnType, methodInfo, ctx);
         }
 
         @Override
@@ -657,7 +474,7 @@ public class InstanceGenerator {
             var valueVariable = returnType.valueComponentType().isSimple()
                     ? columnName(firstColumnOfPart(ResultPart.SIMPLE))
                     : prefixName(ResultPart.SIMPLE, "Value");
-            var patchedValueVariable = patchedNames.get(valueVariable);
+            var patchedValueVariable = ctx.patchedNameFor(valueVariable);
             if (returnType instanceof OptionalType optionalType) {
                 if (!returnType.valueComponentType().isNullable()) {
                     return builder.addStatement("return $T.of($L)", optionalType.optionalClass(), patchedValueVariable)
@@ -690,9 +507,9 @@ public class InstanceGenerator {
     private class CollectionContainerBuilder extends BaseContainerBuilder<CollectionType> implements ContainerBuilder {
         private final String containerVariable;
 
-        public CollectionContainerBuilder(CollectionType collectionType, DAOMethodInfo methodInfo) {
-            super(collectionType, methodInfo);
-            containerVariable = patchName("l");
+        public CollectionContainerBuilder(CollectionType collectionType, DAOMethodInfo methodInfo, MethodContext ctx) {
+            super(collectionType, methodInfo, ctx);
+            containerVariable = ctx.patchName("l");
         }
 
         @Override
@@ -716,7 +533,7 @@ public class InstanceGenerator {
             var valueVariable = returnType.valueComponentType().isSimple()
                     ? columnName(firstColumnOfPart(ResultPart.SIMPLE))
                     : prefixName(ResultPart.SIMPLE, "Value");
-            String patchedValueVariable = patchedNames.get(valueVariable);
+            String patchedValueVariable = ctx.patchedNameFor(valueVariable);
             return CodeBlock.builder()
                     .beginControlFlow("if ($L != null)", patchedValueVariable)
                     .addStatement("$L.add($L)", containerVariable, patchedValueVariable)
@@ -744,13 +561,13 @@ public class InstanceGenerator {
         private final String containerVariable;
         private final boolean valueIsCollection;
 
-        public MapContainerBuilder(MapType mapType, DAOMethodInfo methodInfo) {
-            super(mapType, methodInfo);
+        public MapContainerBuilder(MapType mapType, DAOMethodInfo methodInfo, MethodContext ctx) {
+            super(mapType, methodInfo, ctx);
             /* Cases:
             Map<KeyType, Simple>
             Map<KeyType, Collection<Simple>>
              */
-            containerVariable = patchName("m");
+            containerVariable = ctx.patchName("m");
             valueIsCollection = mapType.valueType() instanceof CollectionType
                     // if the value is a SQL array, it must be the only Value column
                     && methodInfo.columns().stream()
@@ -790,11 +607,11 @@ public class InstanceGenerator {
         public CodeBlock add() {
             var keyVariable =
                     returnType.keyType().isSimple() ? columnName(firstColumnOfPart(KEY)) : prefixName(KEY, "Value");
-            var patchedKeyVariable = patchedNames.get(keyVariable);
+            var patchedKeyVariable = ctx.patchedNameFor(keyVariable);
             var valueVariable = returnType.valueComponentType().isSimple()
                     ? columnName(firstColumnOfPart(VALUE))
                     : prefixName(VALUE, "Value");
-            var patchedValueVariable = patchedNames.get(valueVariable);
+            var patchedValueVariable = ctx.patchedNameFor(valueVariable);
             var builder = CodeBlock.builder();
             if (returnType.keyType().isNullable()) {
                 builder.beginControlFlow("if ($L != null)", patchedKeyVariable);
