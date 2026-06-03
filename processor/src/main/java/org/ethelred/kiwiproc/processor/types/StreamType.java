@@ -31,6 +31,11 @@ public record StreamType(KiwiType containedType) implements KiwiType {
     }
 
     @Override
+    public KiwiType withIsNullable(boolean b) {
+        return this;
+    }
+
+    @Override
     public String toString() {
         return "Stream<" + containedType + ">";
     }

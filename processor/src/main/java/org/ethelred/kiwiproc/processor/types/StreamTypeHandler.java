@@ -4,7 +4,7 @@ package org.ethelred.kiwiproc.processor.types;
 import java.util.stream.Stream;
 import javax.lang.model.type.DeclaredType;
 
-public class StreamTypeHandler extends DeclaredTypeHandler {
+class StreamTypeHandler extends DeclaredTypeHandler {
 
     StreamTypeHandler(KiwiTypeVisitor visitor, TypeUtils utils) {
         super(visitor, utils);
