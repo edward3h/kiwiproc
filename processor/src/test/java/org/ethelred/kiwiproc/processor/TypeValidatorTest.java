@@ -158,7 +158,9 @@ public class TypeValidatorTest {
                         true,
                         null,
                         col(false, JDBCType.VARCHAR),
-                        col(false, JDBCType.ARRAY, new ArrayComponent(JDBCType.VARCHAR, "ignored"))));
+                        col(false, JDBCType.ARRAY, new ArrayComponent(JDBCType.VARCHAR, "ignored"))),
+                testCase(new StreamType(ofClass(Integer.class, false)), true, null, col(false, JDBCType.INTEGER)),
+                testCase(new StreamType(ofClass(String.class, false)), true, null, col(false, JDBCType.VARCHAR)));
     }
 
     private static KiwiType recordType(String className, String componentName, KiwiType componentType) {

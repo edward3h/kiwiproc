@@ -9,6 +9,7 @@ import javax.lang.model.element.Modifier;
 import javax.sql.DataSource;
 import org.ethelred.kiwiproc.processor.DAOClassInfo;
 import org.ethelred.kiwiproc.processor.DAOMethodInfo;
+import org.ethelred.kiwiproc.processor.types.StreamType;
 import org.ethelred.kiwiproc.processor.types.VoidType;
 import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle;
 
@@ -67,7 +68,9 @@ public class ProviderGenerator {
         var builder = MethodSpec.overriding(methodInfo.methodElement());
         var signature = methodInfo.signature();
         var params = String.join(", ", signature.paramNames());
-        if (signature.returnType() instanceof VoidType) {
+        if (signature.returnType() instanceof StreamType) {
+            builder.addStatement("return streamCall(dao -> dao.$L($L))", signature.methodName(), params);
+        } else if (signature.returnType() instanceof VoidType) {
             builder.addStatement("run(dao -> dao.$L($L))", signature.methodName(), params);
         } else {
             builder.addStatement("return call(dao -> dao.$L($L))", signature.methodName(), params);

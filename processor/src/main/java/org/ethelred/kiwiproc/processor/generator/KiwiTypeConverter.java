@@ -9,6 +9,7 @@ import java.util.Map;
 import org.ethelred.kiwiproc.processor.types.CollectionType;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.ethelred.kiwiproc.processor.types.PrimitiveKiwiType;
+import org.ethelred.kiwiproc.processor.types.StreamType;
 import org.ethelred.kiwiproc.processor.types.ValidCollection;
 import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle;
 
@@ -25,6 +26,9 @@ public class KiwiTypeConverter {
             return ParameterizedTypeName.get(
                     ClassName.get(collectionType.type().javaType()),
                     fromKiwiType(collectionType.containedType(), asParameter));
+        } else if (kiwiType instanceof StreamType streamType) {
+            return ParameterizedTypeName.get(
+                    ClassName.get("java.util.stream", "Stream"), fromKiwiType(streamType.containedType(), asParameter));
         } else if (kiwiType instanceof PrimitiveKiwiType primitiveKiwiType) {
             var effectiveType = asParameter ? primitiveKiwiType.withIsNullable(true) : primitiveKiwiType;
             return TypeName.get(effectiveType.type());

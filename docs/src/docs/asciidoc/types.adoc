@@ -28,6 +28,7 @@ These are generalized types, not Java or SQL types.
 |R(RCS) | A Java record.
 |CV | S \| SC \| R
 |C<CV> | A Collection, array or Iterable.
+|St<CV> | A `Stream`. See xref:transactions.adoc#streaming[Streaming] for lifecycle details.
 |MK | R \| S
 |MV | CV \| C
 |M<MK, MV> | A Map.

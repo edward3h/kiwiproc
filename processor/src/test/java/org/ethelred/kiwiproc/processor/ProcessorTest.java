@@ -169,6 +169,53 @@ public class ProcessorTest {
         });
     }
 
+    @Test
+    void streamQueryCompiles() throws Exception {
+        var compilation = configuredCompiler()
+                .compile(
+                        JavaFileObjects.forSourceString(
+                                "com.example.StreamDAO",
+                                // language=java
+                                """
+                                package com.example;
+
+                                import java.util.stream.Stream;
+                                import org.ethelred.kiwiproc.annotation.DAO;
+                                import org.ethelred.kiwiproc.annotation.SqlQuery;
+
+                                @DAO
+                                public interface StreamDAO {
+                                    @SqlQuery("SELECT id, name FROM restaurant ORDER BY id")
+                                    Stream<com.example.Restaurant> streamRestaurants();
+                                }
+                                """),
+                        JavaFileObjects.forSourceString("com.example.Restaurant", """
+                                package com.example;
+                                public record Restaurant(int id, String name) {}
+                                """));
+        assertThat(compilation).succeeded();
+    }
+
+    @Test
+    void streamOfUnsupportedTypeFailsCompilation() throws Exception {
+        var compilation =
+                configuredCompiler().compile(JavaFileObjects.forSourceString("com.example.BadStreamDAO", """
+                        package com.example;
+
+                        import java.util.stream.Stream;
+                        import java.util.List;
+                        import org.ethelred.kiwiproc.annotation.DAO;
+                        import org.ethelred.kiwiproc.annotation.SqlQuery;
+
+                        @DAO
+                        public interface BadStreamDAO {
+                            @SqlQuery("SELECT id, name FROM restaurant")
+                            Stream<List<String>> streamRestaurants();
+                        }
+                        """));
+        assertThat(compilation).hadErrorContaining("Stream element type must be");
+    }
+
     @ParameterizedTest
     @MethodSource
     void testMethods(ProcessorMethodTestCase testCase) throws IOException {

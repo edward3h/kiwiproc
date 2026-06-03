@@ -15,6 +15,7 @@ public sealed interface KiwiType
                 PrimitiveKiwiType,
                 RecordType,
                 SqlArrayType,
+                StreamType,
                 UnsupportedType,
                 VoidType {
     static KiwiType unsupported() {

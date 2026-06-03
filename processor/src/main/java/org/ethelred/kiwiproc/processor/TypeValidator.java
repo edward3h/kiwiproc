@@ -143,6 +143,10 @@ public record TypeValidator(
             var contained = ct.containedType();
             return ((contained instanceof RecordType) || (contained.isSimple())) && validateGeneral(contained);
         }
+        if (type instanceof StreamType st) {
+            var contained = st.containedType();
+            return ((contained instanceof RecordType) || (contained.isSimple())) && validateGeneral(contained);
+        }
         if (type instanceof SqlArrayType sqlArrayType) {
             var contained = sqlArrayType.containedType();
             return contained.isSimple() && validateGeneral(contained);
@@ -202,6 +206,10 @@ public record TypeValidator(
             return new DAOResultMapping(conversion);
         }
         // below clauses apply to kind QUERY
+        if (returnType instanceof StreamType streamType) {
+            debug("Return type Stream<%s>".formatted(streamType.containedType()));
+            return validateReturn(context.withAsParameter(true), streamType.containedType(), mappedColumn);
+        }
         if (returnType instanceof CollectionType collectionType) {
             if (collectionType.isSimple() && context.resultPart() != ResultPart.KEY) {
                 var maybeColumn = context.getSingleMatchingColumn();
