@@ -924,9 +924,91 @@ git commit -m "test: add processor compile tests for Stream<T> return type"
 
 ---
 
-## Chunk 6: Final verification and PR
+## Chunk 6: Documentation
 
-### Task 12: Full build and PR
+### Task 13: Update the AsciiDoc documentation
+
+**Files:**
+- Modify: `docs/src/docs/asciidoc/types.adoc`
+- Modify: `docs/src/docs/asciidoc/transactions.adoc`
+
+- [ ] **Step 1: Update `types.adoc` — add `Stream` to the type notation table**
+
+In `types.adoc`, the table row for `C<CV>` currently reads:
+```
+|C<CV> | A Collection, array or Iterable.
+```
+
+Change it to:
+```
+|C<CV> | A Collection, array or Iterable.
+|St<CV> | A `Stream`. See xref:transactions.adoc#streaming[Streaming] for lifecycle details.
+```
+
+And add `St<CV>` to the notation list in the same table — insert it as a new row after `C<CV>`.
+
+- [ ] **Step 2: Update `transactions.adoc` — add a Streaming section**
+
+Append the following section to `transactions.adoc` after the existing transaction description:
+
+```asciidoc
+[[streaming]]
+=== Streaming
+
+A `@SqlQuery` method may return `java.util.stream.Stream<T>` to stream rows lazily from the database rather than buffering them into a `List`.
+
+[source,java]
+----
+@SqlQuery("SELECT id, name FROM types ORDER BY id")
+Stream<PetType> streamPetTypes();
+----
+
+Unlike `List`-returning methods, stream-returning methods are **not** wrapped in a `call()` transaction.
+Each streaming method acquires its own JDBC connection with `autoCommit=false` (required for PostgreSQL server-side cursors).
+
+**The caller is responsible for closing the stream**, which commits the transaction and closes the connection.
+Use try-with-resources:
+
+[source,java]
+----
+try (var stream = petClinicDAOProvider.streamPetTypes()) {
+    stream.forEach(pet -> process(pet));
+}
+----
+
+Use `@SqlQuery(fetchSize = N)` to enable PostgreSQL server-side cursoring (fetching rows in batches rather than all at once):
+
+[source,java]
+----
+@SqlQuery(value = "SELECT id, name FROM types ORDER BY id", fetchSize = 100)
+Stream<PetType> streamPetTypes();
+----
+
+[WARNING]
+====
+Failing to close the stream will leak the database connection.
+Always use try-with-resources or call `stream.close()` explicitly.
+====
+```
+
+- [ ] **Step 3: Build the docs to verify they render correctly**
+
+Run: `./gradlew :docs:build`
+Expected: BUILD SUCCESSFUL
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add docs/src/docs/asciidoc/types.adoc \
+        docs/src/docs/asciidoc/transactions.adoc
+git commit -m "docs: document Stream<T> return type and streaming lifecycle"
+```
+
+---
+
+## Chunk 7: Final verification and PR
+
+### Task 14: Full build and PR
 
 - [ ] **Step 1: Run the complete build**
 
