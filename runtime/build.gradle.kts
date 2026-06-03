@@ -6,4 +6,5 @@ plugins {
 dependencies {
     api(project(":shared"))
     api(libs.mapstruct.compile)
+    testImplementation(libs.h2)
 }
