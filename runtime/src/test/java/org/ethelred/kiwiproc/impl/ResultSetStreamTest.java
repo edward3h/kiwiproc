@@ -11,19 +11,20 @@ public class ResultSetStreamTest {
 
     @Test
     void streamsRowsFromResultSet() throws Exception {
-        var conn = DriverManager.getConnection("jdbc:h2:mem:test;MODE=PostgreSQL");
-        conn.createStatement().execute("CREATE TABLE IF NOT EXISTS nums (n INT)");
-        conn.createStatement().execute("INSERT INTO nums VALUES (1),(2),(3)");
-        var stmt = conn.prepareStatement("SELECT n FROM nums ORDER BY n");
-        var rs = stmt.executeQuery();
+        try (var conn = DriverManager.getConnection("jdbc:h2:mem:ResultSetStreamTest;MODE=PostgreSQL")) {
+            conn.createStatement().execute("CREATE TABLE IF NOT EXISTS nums (n INT)");
+            conn.createStatement().execute("DELETE FROM nums");
+            conn.createStatement().execute("INSERT INTO nums VALUES (1),(2),(3)");
+            var stmt = conn.prepareStatement("SELECT n FROM nums ORDER BY n");
+            var rs = stmt.executeQuery();
 
-        List<Integer> result;
-        try (var stream = ResultSetStream.of(stmt, rs, r -> r.getInt("n"))) {
-            result = stream.toList();
+            List<Integer> result;
+            try (var stream = ResultSetStream.of(stmt, rs, r -> r.getInt("n"))) {
+                result = stream.toList();
+            }
+
+            assertThat(result).containsExactly(1, 2, 3).inOrder();
+            assertThat(stmt.isClosed()).isTrue();
         }
-
-        assertThat(result).containsExactly(1, 2, 3).inOrder();
-        assertThat(stmt.isClosed()).isTrue();
-        conn.close();
     }
 }

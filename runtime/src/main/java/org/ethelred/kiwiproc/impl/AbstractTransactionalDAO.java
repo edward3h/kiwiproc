@@ -61,6 +61,17 @@ public abstract class AbstractTransactionalDAO<T> implements TransactionalDAO<T>
         }
     }
 
+    /**
+     * Returns a lazily-evaluated {@link Stream} of query results using a dedicated JDBC connection.
+     *
+     * <p>Unlike {@link #call}, the connection is not committed when this method returns — it stays
+     * open while the stream is consumed. <strong>The caller must close the stream</strong> (e.g. via
+     * try-with-resources), which commits the transaction and closes the connection.
+     *
+     * @param callback produces a {@code Stream<R>} from the DAO instance
+     * @param <R>      the element type of the stream
+     * @return a lazy stream; the caller is responsible for closing it
+     */
     public <R> Stream<R> streamCall(DAOCallable<T, Stream<R>> callback) {
         Connection connection;
         try {
