@@ -18,6 +18,7 @@ public class KiwiTypeVisitor extends SimpleTypeVisitor14<KiwiType, Void> {
                 new ObjectTypeHandler(this, utils),
                 collectionTypeHandler,
                 new MapTypeHandler(this, utils),
+                new StreamTypeHandler(this, utils),
                 new RecordTypeHandler(this, utils),
                 new OptionalTypeHandler(this, utils));
     }
