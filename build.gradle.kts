@@ -23,6 +23,7 @@ dependencies {
     jacocoAggregation(project(":runtime"))
     jacocoAggregation(project(":test-spring"))
     jacocoAggregation(project(":test-micronaut"))
+    jacocoAggregation(project(":test-micronaut5"))
     jacocoAggregation(project(":test-any"))
 }
 
