@@ -20,8 +20,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 17 and 21 are LTS releases; 24 tracks the latest non-LTS (updated by Renovate)
-        java-version: ['17', '21', '24']
+        # 17 and 21 are LTS releases; 25 is the current non-LTS release and required for Micronaut 5
+        java-version: ['17', '21', '25']
     permissions:
       contents: read
       pull-requests: write
