@@ -22,6 +22,16 @@ public class PetClinicTest {
     PetClinicDAO dao;
 
     @Test
+    void canStreamPetTypes() {
+        List<PetType> result;
+        try (var stream = dao.streamPetTypes()) {
+            result = stream.toList();
+        }
+        assertThat(result).isNotEmpty();
+        assertThat(result.stream().map(PetType::name).toList()).containsAtLeast("cat", "dog");
+    }
+
+    @Test
     void happySelectTypes() throws SQLException {
         var types = dao.findPetTypes();
         assertThat(types).isNotNull();

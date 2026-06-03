@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
 import org.ethelred.kiwiproc.annotation.SqlUpdate;
@@ -18,6 +19,9 @@ public interface PetClinicDAO extends TransactionalDAO<PetClinicDAO> {
     @SqlQuery("""
            SELECT id, name FROM types""")
     List<PetType> findPetTypes();
+
+    @SqlQuery("SELECT id, name FROM types ORDER BY id")
+    Stream<PetType> streamPetTypes();
 
     @SqlQuery("""
             SELECT name FROM pets""")
