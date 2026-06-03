@@ -6,4 +6,5 @@ build
 .idea
 debug_publish.log
 supertool
+.worktrees
 
