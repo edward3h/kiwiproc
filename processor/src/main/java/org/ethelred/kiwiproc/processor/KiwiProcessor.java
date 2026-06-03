@@ -145,7 +145,8 @@ public class KiwiProcessor extends AnnotationProcessor {
             parameterMapping.forEach(
                     (col, mpi) -> logger.note(methodElement, "col " + col.index() + " parameter " + mpi.name()));
         }
-        var typeValidator = new TypeValidator(logger, methodElement, coreTypes, config.debug());
+        NativeEnumLookup nativeEnumLookup = databaseWrapper::queryEnumConstants;
+        var typeValidator = new TypeValidator(logger, methodElement, coreTypes, config.debug(), nativeEnumLookup);
         if (!typeValidator.validateParameters(parameterMapping, kind)) {
             return null;
         }

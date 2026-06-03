@@ -11,7 +11,8 @@ import org.ethelred.kiwiproc.meta.ColumnMetaData;
 import org.ethelred.kiwiproc.processor.types.*;
 import org.ethelred.kiwiproc.processor.types.ObjectType;
 
-public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes, boolean debug) {
+public record TypeValidator(
+        Logger logger, Element element, CoreTypes coreTypes, boolean debug, NativeEnumLookup nativeEnumLookup) {
 
     public boolean validateParameters(Map<ColumnMetaData, MethodParameterInfo> parameterMapping, QueryMethodKind kind) {
         boolean result = true;
@@ -35,11 +36,57 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
             logger.error(element, "SqlBatch method must have at least one iterable parameter");
         }
 
+        for (var entry : parameterMapping.entrySet()) {
+            var paramType = entry.getValue().type();
+            if (kind == QueryMethodKind.BATCH && paramType instanceof CollectionType ct) {
+                paramType = ct.containedType();
+            }
+            if (paramType instanceof EnumType enumType) {
+                if (!withElement(entry.getValue().variableElement()).validateEnumParameter(enumType, entry.getKey())) {
+                    result = false;
+                }
+            }
+        }
+
         return result;
     }
 
+    private boolean validateEnumParameter(EnumType enumType, ColumnMetaData columnMetaData) {
+        var pgConstants = nativeEnumLookup.getConstants(columnMetaData.dbType());
+        if (pgConstants.isEmpty()) {
+            return true;
+        }
+        var extraJavaConstants = enumType.constants().stream()
+                .filter(c -> !pgConstants.contains(c))
+                .toList();
+        if (!extraJavaConstants.isEmpty()) {
+            logger.error(
+                    element,
+                    "Java enum %s has constant(s) %s not present in PostgreSQL enum type '%s'"
+                            .formatted(enumType.className(), extraJavaConstants, columnMetaData.dbType()));
+            return false;
+        }
+        return true;
+    }
+
+    private void validateEnumReturn(EnumType enumType, ColumnMetaData columnMetaData) {
+        var pgConstants = nativeEnumLookup.getConstants(columnMetaData.dbType());
+        if (pgConstants.isEmpty()) {
+            return;
+        }
+        var extraPgConstants = pgConstants.stream()
+                .filter(c -> !enumType.constants().contains(c))
+                .toList();
+        if (!extraPgConstants.isEmpty()) {
+            logger.warn(
+                    element,
+                    "PostgreSQL enum '%s' has value(s) %s with no corresponding %s constant; reading such a value will throw IllegalArgumentException"
+                            .formatted(columnMetaData.dbType(), extraPgConstants, enumType.className()));
+        }
+    }
+
     private TypeValidator withElement(Element element) {
-        return new TypeValidator(logger, element, coreTypes, debug);
+        return new TypeValidator(logger, element, coreTypes, debug, nativeEnumLookup);
     }
 
     private boolean validateSingleParameter(KiwiType parameterType, KiwiType columnType) {
@@ -206,6 +253,9 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
                 mappedColumn.accept(t);
                 KiwiType target = context.asParameter() ? returnType.withIsNullable(false) : returnType;
                 Conversion conversion = validateCompatible(columnType, target);
+                if (target instanceof EnumType enumType) {
+                    validateEnumReturn(enumType, t);
+                }
                 return new DAOResultMapping(
                         new DAOResultColumn(t.name(), sqlTypeMapping, target, context.resultPart(), conversion));
             }
@@ -227,6 +277,9 @@ public record TypeValidator(Logger logger, Element element, CoreTypes coreTypes,
                             if (!conversion.isValid()) {
                                 reportError("Missing or incompatible column type %s for component %s type %s"
                                         .formatted(columnType, component.name(), component.type()));
+                            }
+                            if (component.type() instanceof EnumType enumType) {
+                                validateEnumReturn(enumType, columnMetaData);
                             }
                             return new DAOResultColumn(
                                     columnMetaData.name(),

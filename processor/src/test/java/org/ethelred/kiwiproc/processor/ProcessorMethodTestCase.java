@@ -16,6 +16,7 @@ class ProcessorMethodTestCase {
     Map<String, String> additionalSources = new HashMap<>();
     int expectedErrorCount = -1;
     Set<String> expectedErrorMessages = new HashSet<>();
+    Set<String> expectedWarningMessages = new HashSet<>();
 
     @Nullable String displayName;
 
@@ -42,6 +43,11 @@ class ProcessorMethodTestCase {
 
     ProcessorMethodTestCase withExpectedErrorMessage(String message) {
         expectedErrorMessages.add(message);
+        return this;
+    }
+
+    ProcessorMethodTestCase withExpectedWarningMessage(String message) {
+        expectedWarningMessages.add(message);
         return this;
     }
 

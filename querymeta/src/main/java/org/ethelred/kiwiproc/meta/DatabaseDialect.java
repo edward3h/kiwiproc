@@ -16,6 +16,10 @@ public interface DatabaseDialect {
 
     @Nullable ArrayComponent componentType(Connection connection, int columnType, String columnTypeName);
 
+    default List<String> queryEnumConstants(Connection connection, String typeName) throws SQLException {
+        return List.of();
+    }
+
     default String normalizeColumnName(String name) {
         return name;
     }

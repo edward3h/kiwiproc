@@ -30,7 +30,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class TypeValidatorTest {
-    TypeValidator validator = new TypeValidator(mockLogger(), mockMethodElement(), new CoreTypes(), false);
+    TypeValidator validator =
+            new TypeValidator(mockLogger(), mockMethodElement(), new CoreTypes(), false, typeName -> List.of());
     Set<String> messages = new HashSet<>();
     static int colCount = 1;
 

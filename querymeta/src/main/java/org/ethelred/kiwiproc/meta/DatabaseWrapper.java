@@ -3,6 +3,7 @@ package org.ethelred.kiwiproc.meta;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
@@ -40,6 +41,14 @@ public class DatabaseWrapper {
 
     /* package visible for testing */ Connection getConnection() throws SQLException {
         return dataSource.getConnection();
+    }
+
+    public List<String> queryEnumConstants(String typeName) {
+        try (var connection = getConnection()) {
+            return dialect.queryEnumConstants(connection, typeName);
+        } catch (SQLException e) {
+            return List.of();
+        }
     }
 
     @SuppressWarnings("SqlSourceToSinkFlow")
