@@ -27,8 +27,9 @@ public class PetClinicTest {
         try (var stream = dao.streamPetTypes()) {
             result = stream.toList();
         }
-        assertThat(result).isNotEmpty();
-        assertThat(result.stream().map(PetType::name).toList()).containsAtLeast("cat", "dog");
+        assertThat(result.stream().map(PetType::name).toList())
+                .containsAtLeast("cat", "dog")
+                .inOrder();
     }
 
     @Test
