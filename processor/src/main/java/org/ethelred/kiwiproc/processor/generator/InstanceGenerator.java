@@ -63,16 +63,25 @@ public class InstanceGenerator {
         patchedNames.clear();
         patchedNameCount = 0;
         var methodSpecBuilder = MethodSpec.overriding(methodInfo.methodElement());
+        boolean isStreamReturn = methodInfo.signature().returnType() instanceof StreamType;
         methodSpecBuilder.addStatement("var connection = context.getConnection()");
-        methodSpecBuilder.beginControlFlow(
-                "try (var statement = connection.prepareStatement($S))",
-                methodInfo.parsedSql().parsedSql());
+        if (isStreamReturn) {
+            methodSpecBuilder.beginControlFlow("try");
+            methodSpecBuilder.addStatement(
+                    "var statement = connection.prepareStatement($S)",
+                    methodInfo.parsedSql().parsedSql());
+        } else {
+            methodSpecBuilder.beginControlFlow(
+                    "try (var statement = connection.prepareStatement($S))",
+                    methodInfo.parsedSql().parsedSql());
+        }
         if (methodInfo.fetchSize() != Integer.MIN_VALUE) {
             methodSpecBuilder.addStatement("statement.setFetchSize($L)", methodInfo.fetchSize());
         }
         methodSpecBuilder.addCode(
                 switch (methodInfo.kind()) {
-                    case QUERY -> methodBodyForQuery(methodInfo);
+                    case QUERY ->
+                        isStreamReturn ? methodBodyForStreamQuery(methodInfo) : methodBodyForQuery(methodInfo);
                     case UPDATE -> methodBodyForUpdate(methodInfo);
                     case BATCH -> methodBodyForBatch(methodInfo);
                     case DEFAULT -> throw new IllegalArgumentException();
@@ -247,6 +256,90 @@ public class InstanceGenerator {
         }
         builder.endControlFlow(); // end while or if
         builder.add(containerBuilder.returnValue());
+        return builder.build();
+    }
+
+    private CodeBlock methodBodyForStreamQuery(DAOMethodInfo methodInfo) {
+        var builder = builderWithParameters(methodInfo.parameterMapping());
+        var streamType = (StreamType) methodInfo.signature().returnType();
+        var elementType = streamType.containedType();
+
+        // Inner try so that if executeQuery() throws, the statement is closed before propagating
+        builder.beginControlFlow("try");
+        builder.addStatement("var resultSet = statement.executeQuery()");
+
+        // Open lambda — outer RS is "resultSet", lambda param is "rs"
+        builder.add("return $T.of(statement, resultSet, rs -> {\n", RESULT_SET_STREAM);
+        builder.indent();
+
+        var columns = methodInfo.columns();
+        if (columns.isEmpty()) {
+            throw new IllegalStateException("Expected columns for stream query");
+        }
+
+        // Column reading — uses "rs" (the lambda parameter)
+        for (DAOResultColumn column : columns) {
+            String rawName = patchName(columnName(column) + "Raw");
+            String accessorSuffix = column.sqlTypeMapping().accessorSuffix();
+            TypeName typeName =
+                    kiwiTypeConverter.fromKiwiType(column.sqlTypeMapping().kiwiType());
+            if ("Object".equals(accessorSuffix)) {
+                builder.addStatement("$1T $2L = rs.getObject($3S, $1T.class)", typeName, rawName, column.name());
+            } else {
+                builder.addStatement("$T $L = rs.get$L($S)", typeName, rawName, accessorSuffix, column.name());
+            }
+            if (column.sqlTypeMapping().isNullable()) {
+                builder.beginControlFlow("if (rs.wasNull())")
+                        .addStatement("$L = null", rawName)
+                        .endControlFlow();
+            }
+            var varName = patchName(columnName(column));
+            buildConversion(
+                    builder,
+                    methodInfo,
+                    column.conversion(),
+                    column.asTypeMapping().target(),
+                    varName,
+                    rawName,
+                    true);
+        }
+
+        // Construct record if element type is not simple; otherwise return raw column value
+        if (!elementType.isSimple()) {
+            var resultVar = patchName(prefixName(ResultPart.SIMPLE, "Value"));
+            var params = columns.stream()
+                    .filter(column -> ResultPart.SIMPLE.equals(column.resultPart()))
+                    .map(p -> CodeBlock.of("$L", patchedNames.get(columnName(p))))
+                    .collect(CodeBlock.joining(",\n"));
+            params = CodeBlock.builder().indent().add(params).unindent().build();
+            builder.add("""
+                    var $L = new $T(
+                    $L
+                    );
+                    """, resultVar, kiwiTypeConverter.fromKiwiType(elementType), params);
+            builder.addStatement("return $L", resultVar);
+        } else {
+            var firstSimple = columns.stream()
+                    .filter(c -> c.resultPart() == ResultPart.SIMPLE)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("No SIMPLE column for stream query"));
+            String patchedValueVariable = patchedNames.get(columnName(firstSimple));
+            builder.addStatement("return $L", patchedValueVariable);
+        }
+
+        builder.unindent();
+        builder.add("});\n");
+
+        // Close inner try — if executeQuery() threw, close statement (suppressing close exception) and rethrow
+        builder.nextControlFlow("catch ($T e)", SQLException.class)
+                .beginControlFlow("try")
+                .addStatement("statement.close()")
+                .nextControlFlow("catch ($T ce)", SQLException.class)
+                .addStatement("e.addSuppressed(ce)")
+                .endControlFlow()
+                .addStatement("throw e")
+                .endControlFlow();
+
         return builder.build();
     }
 
