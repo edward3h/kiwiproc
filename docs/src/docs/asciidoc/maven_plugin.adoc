@@ -57,19 +57,16 @@ this. Therefore, a Liquibase changelog file is _required_, except when using an 
         <debug>false</debug> // <2>
         <liquibaseChangelog>${project.basedir}/src/main/resources/changelog.xml</liquibaseChangelog> // <3>
         <dataSources> // <4>
-            <dataSource>
-                <name>default</name>
-                <liquibaseChangelog>${project.basedir}/src/main/resources/changelog.xml</liquibaseChangelog>
-            </dataSource>
+            <!-- omit this entirely to use <liquibaseChangelog> above for the "default" datasource -->
         </dataSources>
     </configuration>
 </plugin>
 ----
 <1> Change to `SPRING` for use with Spring.
 <2> Enabling debug will make the annotation processor print more details during compilation.
-<3> Path to the Liquibase changelog used for the "default" datasource. Not used when `dataSources` is configured.
-<4> A list of `<dataSource>` entries — see below. If omitted (and `dataSources` is empty), a single
-    "default" datasource backed by embedded PostgreSQL is created using `liquibaseChangelog`.
+<3> Path to the Liquibase changelog used for the "default" datasource, when `dataSources` is empty or omitted.
+<4> A list of `<dataSource>` entries — see below. If non-empty, this takes precedence and `liquibaseChangelog`
+    above is ignored entirely.
 
 Each `<dataSource>` entry supports:
 
