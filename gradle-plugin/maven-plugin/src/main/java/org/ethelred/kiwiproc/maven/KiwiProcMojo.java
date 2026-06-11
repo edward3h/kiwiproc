@@ -159,7 +159,7 @@ public class KiwiProcMojo extends AbstractMojo {
                 }
                 ds = pgDs;
             }
-            liquibaseUpdate(changelog, ds);
+            liquibaseUpdate(dataSource.getName(), changelog, ds);
         }
 
         return new DataSourceConfig(
@@ -171,14 +171,17 @@ public class KiwiProcMojo extends AbstractMojo {
                 dataSource.getDriverClassName());
     }
 
-    private void liquibaseUpdate(File changelog, DataSource dataSource) {
+    private void liquibaseUpdate(String dataSourceName, File changelog, DataSource dataSource) {
         try (var connection = dataSource.getConnection()) {
             var liquibaseConnection = new JdbcConnection(connection);
             var liquibase = new Liquibase(
                     changelog.getName(), new DirectoryResourceAccessor(changelog.getParentFile()), liquibaseConnection);
             liquibase.update();
         } catch (SQLException | FileNotFoundException | LiquibaseException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(
+                    "kiwiproc: Liquibase update failed for datasource '" + dataSourceName + "' using changelog "
+                            + changelog + ": " + e.getMessage(),
+                    e);
         }
     }
 
