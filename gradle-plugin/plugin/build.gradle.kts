@@ -3,7 +3,7 @@ plugins {
     jacoco
     checkstyle
     id("com.gradle.plugin-publish") version "2.1.1"
-    id("com.diffplug.spotless").version("8.6.0")
+    id("com.diffplug.spotless")
     id("signing")
     id("com.vanniktech.maven.publish") version "0.36.0"
 }

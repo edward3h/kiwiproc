@@ -2,7 +2,7 @@ plugins {
     `java-library`
     jacoco
     checkstyle
-    id("com.diffplug.spotless").version("8.6.0")
+    id("com.diffplug.spotless")
     id("org.gradlex.maven-plugin-development") version "1.0.3"
 }
 
