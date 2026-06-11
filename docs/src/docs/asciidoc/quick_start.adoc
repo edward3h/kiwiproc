@@ -7,7 +7,7 @@
 
 === Build Tool Configuration
 
-NOTE: Maven users should refer to <<_maven_setup,Maven Setup>> for dependency and compiler plugin configuration.
+NOTE: Maven users should refer to <<_maven_plugin,Maven Plugin>> for dependency and compiler plugin configuration.
 
 ==== Gradle
 

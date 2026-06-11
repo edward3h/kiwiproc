@@ -18,7 +18,7 @@ include::databases.adoc[]
 
 include::gradle_plugin.adoc[]
 
-include::maven_setup.adoc[]
+include::maven_plugin.adoc[]
 
 == API Reference
 
