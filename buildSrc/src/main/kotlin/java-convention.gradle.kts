@@ -44,7 +44,7 @@ checkstyle {
 configurations.named("checkstyle") {
     resolutionStrategy.force(
         "commons-beanutils:commons-beanutils:1.11.0",
-        "org.codehaus.plexus:plexus-utils:3.6.1"
+        "org.codehaus.plexus:plexus-utils:4.0.3"
     )
 }
 
