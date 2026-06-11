@@ -6,6 +6,39 @@
 it manages an embedded PostgreSQL or H2 instance, applies your Liquibase changelog, generates the
 annotation processor's `config.json`, and writes a properties file for use in tests.
 
+=== Dependencies
+
+Add the following to your `pom.xml`:
+
+[source,xml,indent=0,subs="verbatim,attributes"]
+----
+<dependencies>
+    <!-- kiwiproc annotations -->
+    <dependency>
+        <groupId>org.ethelred.kiwiproc</groupId>
+        <artifactId>shared</artifactId>
+        <version>{revnumber}</version>
+    </dependency>
+    <!-- kiwiproc runtime (required at runtime) -->
+    <dependency>
+        <groupId>org.ethelred.kiwiproc</groupId>
+        <artifactId>runtime</artifactId>
+        <version>{revnumber}</version>
+    </dependency>
+    <!-- Jakarta inject API -->
+    <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>2.0.1</version>
+    </dependency>
+</dependencies>
+----
+
+For Spring, add `spring-autoconfigure` instead and set `dependencyInjectionStyle` to `SPRING` in the
+plugin configuration below — see <<_framework_support,Framework Support>>.
+
+=== Adding the Plugin
+
 Add the plugin to your `pom.xml` and bind the `generate` goal. `generate` is bound to the
 `generate-sources` phase by default, so an empty execution declaring just the goal is enough:
 
@@ -190,10 +223,7 @@ during the `generate-sources` phase, describing the datasource(s) it just prepar
 </plugin>
 ----
 
-This contrasts with the manual setup described in xref:maven_setup.adoc[Maven Setup], where you
-maintain a `kiwiproc-config.json` file by hand and point the annotation processor at it directly.
-With `kiwiproc-maven-plugin`, `config.json` is (re)generated automatically on every build, so there
-is nothing to edit by hand.
+`config.json` is (re)generated automatically on every build, so there is nothing to edit by hand.
 
 [[maven-plugin-test-properties]]
 === Test properties
