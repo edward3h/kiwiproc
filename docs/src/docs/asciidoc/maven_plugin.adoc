@@ -225,7 +225,6 @@ during the `generate-sources` phase, describing the datasource(s) it just prepar
 
 `config.json` is (re)generated automatically on every build, so there is nothing to edit by hand.
 
-[[maven-plugin-test-properties]]
 === Test properties
 
 A file named `application-test.properties` is written to
