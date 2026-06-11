@@ -94,6 +94,55 @@ class KiwiProcMojoTest {
         assertThat(ds.driverClassName()).isEqualTo("org.h2.Driver");
     }
 
+    @Test
+    void passesThroughExternalDataSourceUnchanged() throws IOException, MojoExecutionException {
+        var projectDir = Files.createTempDirectory("kiwiproc-maven-mojo-external");
+
+        var dataSource = new DataSourceParameter();
+        dataSource.setName("default");
+        dataSource.setJdbcUrl("jdbc:postgresql://db.example.com:5432/mydb");
+        dataSource.setUsername("appuser");
+
+        var mojo = new KiwiProcMojo();
+        mojo.setLog(new SystemStreamLog());
+        mojo.setProject(testProject(projectDir));
+        mojo.setDataSources(List.of(dataSource));
+        mojo.setConfigFile(projectDir.resolve("target/kiwiproc/config.json").toFile());
+        mojo.setTestResourcesOutputDirectory(
+                projectDir.resolve("target/generated-test-resources/kiwiproc").toFile());
+
+        mojo.execute();
+
+        var configJson = Files.readString(projectDir.resolve("target/kiwiproc/config.json"));
+        var config = Jsonb.builder().build().type(ProcessorConfig.class).fromJson(configJson);
+        var ds = config.dataSources().get("default");
+        assertThat(ds.url()).isEqualTo("jdbc:postgresql://db.example.com:5432/mydb");
+        assertThat(ds.username()).isEqualTo("appuser");
+    }
+
+    @Test
+    void registersGeneratedDirectoryAsTestResource() throws IOException, MojoExecutionException {
+        var projectDir = Files.createTempDirectory("kiwiproc-maven-mojo-resources");
+        var changelog = projectDir.resolve("src/main/resources/changelog.xml");
+        Files.createDirectories(changelog.getParent());
+        Files.writeString(changelog, CHANGELOG_XML);
+
+        var project = testProject(projectDir);
+        var mojo = new KiwiProcMojo();
+        mojo.setLog(new SystemStreamLog());
+        mojo.setProject(project);
+        mojo.setLiquibaseChangelog(changelog.toFile());
+        mojo.setConfigFile(projectDir.resolve("target/kiwiproc/config.json").toFile());
+        var testResourcesDir = projectDir.resolve("target/generated-test-resources/kiwiproc");
+        mojo.setTestResourcesOutputDirectory(testResourcesDir.toFile());
+
+        mojo.execute();
+
+        assertThat(project.getTestResources()).hasSize(1);
+        assertThat(project.getTestResources().get(0).getDirectory())
+                .isEqualTo(testResourcesDir.toAbsolutePath().toString());
+    }
+
     private MavenProject testProject(Path projectDir) {
         var model = new Model();
         var build = new Build();
