@@ -5,6 +5,10 @@
 Unlike the Gradle plugin, which automatically manages an embedded database and wires up the annotation processor, Maven users must configure these steps manually.
 You will need an external database available at build time so the annotation processor can introspect the schema.
 
+TIP: If you'd rather not manage an external database and `kiwiproc-config.json` by hand, see
+xref:#_maven_plugin[Maven Plugin] for a Maven plugin that mirrors the Gradle plugin's embedded-database
+support (PostgreSQL and H2).
+
 === Dependencies
 
 Add the following to your `pom.xml`:

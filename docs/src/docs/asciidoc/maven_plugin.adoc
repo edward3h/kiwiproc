@@ -1,0 +1,226 @@
+:docinfo: shared
+
+== Maven Plugin
+
+`kiwiproc-maven-plugin` mirrors the Gradle plugin's support for an embedded build-time database:
+it manages an embedded PostgreSQL or H2 instance, applies your Liquibase changelog, generates the
+annotation processor's `config.json`, and writes a properties file for use in tests.
+
+Add the plugin to your `pom.xml` and bind the `generate` goal. `generate` is bound to the
+`generate-sources` phase by default, so an empty execution declaring just the goal is enough:
+
+[source,xml,indent=0,subs="verbatim,attributes"]
+----
+<plugin>
+    <groupId>org.ethelred.kiwiproc</groupId>
+    <artifactId>kiwiproc-maven-plugin</artifactId>
+    <version>{revnumber}</version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>generate</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+----
+
+With no `<configuration>`, this will assume:
+
+* A single datasource named "default".
+* Embedded PostgreSQL.
+* A Liquibase changelog at `src/main/resources/changelog.xml`.
+* `JAKARTA` dependency injection style in generated code.
+
+=== Liquibase
+
+When using an embedded database, a schema must be defined. Liquibase is the supported way to do
+this. Therefore, a Liquibase changelog file is _required_, except when using an external database.
+
+=== All available properties
+
+[source,xml,indent=0,subs="verbatim,attributes"]
+----
+<plugin>
+    <groupId>org.ethelred.kiwiproc</groupId>
+    <artifactId>kiwiproc-maven-plugin</artifactId>
+    <version>{revnumber}</version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>generate</goal>
+            </goals>
+        </execution>
+    </executions>
+    <configuration>
+        <dependencyInjectionStyle>JAKARTA</dependencyInjectionStyle> // <1>
+        <debug>false</debug> // <2>
+        <liquibaseChangelog>${project.basedir}/src/main/resources/changelog.xml</liquibaseChangelog> // <3>
+        <dataSources> // <4>
+            <dataSource>
+                <name>default</name>
+                <liquibaseChangelog>${project.basedir}/src/main/resources/changelog.xml</liquibaseChangelog>
+            </dataSource>
+        </dataSources>
+    </configuration>
+</plugin>
+----
+<1> Change to `SPRING` for use with Spring.
+<2> Enabling debug will make the annotation processor print more details during compilation.
+<3> Path to the Liquibase changelog used for the "default" datasource. Not used when `dataSources` is configured.
+<4> A list of `<dataSource>` entries — see below. If omitted (and `dataSources` is empty), a single
+    "default" datasource backed by embedded PostgreSQL is created using `liquibaseChangelog`.
+
+Each `<dataSource>` entry supports:
+
+[cols="1,3"]
+|===
+|Property |Description
+
+|`name`
+|The datasource name. Defaults to `"default"`.
+
+|`liquibaseChangelog`
+|Path to a Liquibase changelog. Required for embedded databases; optional for external databases (if present, it is applied to the external database too).
+
+|`jdbcUrl`
+|JDBC URL of an external database. If set, the datasource is treated as external and no embedded database is started.
+
+|`database`
+|Database name, used when connecting to an external PostgreSQL datasource.
+
+|`username`
+|Username for an external datasource.
+
+|`password`
+|Password for an external datasource.
+
+|`driverClassName`
+|JDBC driver class name. Set to `org.h2.Driver` to select embedded H2 instead of PostgreSQL (for embedded datasources), or to describe the driver of an external datasource.
+|===
+
+=== Embedded H2
+
+To use embedded H2 instead of PostgreSQL, set `driverClassName` to the H2 driver class name.
+H2 is a pure-Java in-memory database — no Docker required.
+
+[source,xml,indent=0,subs="verbatim,attributes"]
+----
+<configuration>
+    <dataSources>
+        <dataSource>
+            <name>default</name>
+            <driverClassName>org.h2.Driver</driverClassName> // <1>
+            <liquibaseChangelog>${project.basedir}/src/main/resources/changelog.xml</liquibaseChangelog>
+        </dataSource>
+    </dataSources>
+</configuration>
+----
+<1> Setting `driverClassName` to the H2 driver selects embedded H2.
+
+See xref:databases.adoc#h2-limitations[H2 Limitations] for a list of features not available with H2.
+
+=== Multiple and External Datasources
+
+KiwiProc supports using more than one datasource in a project.
+
+[source,java]
+----
+@DAO(dataSourceName = "firstDatabase") // <1>
+interface FirstDatabaseDAO {
+    //...
+}
+----
+<1> Specify the datasource name in an interface.
+
+[source,xml,indent=0,subs="verbatim,attributes"]
+----
+<configuration>
+    <dataSources>
+        <dataSource> // <1>
+            <name>default</name>
+            <liquibaseChangelog>${project.basedir}/src/main/resources/changelog.xml</liquibaseChangelog>
+        </dataSource>
+        <dataSource> // <2>
+            <name>externalDatabase</name>
+            <jdbcUrl>jdbc:postgresql://db.example.com/database</jdbcUrl>
+            <!-- optional -->
+            <database>...</database>
+            <username>...</username>
+            <password>...</password> // <3>
+        </dataSource>
+        <dataSource> // <4>
+            <name>externalH2</name>
+            <jdbcUrl>jdbc:h2:tcp://db.example.com/database</jdbcUrl>
+        </dataSource>
+    </dataSources>
+</configuration>
+----
+<1> An embedded "default" datasource, as in the default configuration.
+<2> An external PostgreSQL datasource is specified by giving a JDBC URL. Liquibase changelog is _optional_ for an external datasource.
+<3> How to manage secret values for Maven builds is out of scope for this document.
+<4> An external H2 datasource uses a `jdbc:h2:` URL.
+
+NOTE: Unlike the Gradle plugin, `kiwiproc-maven-plugin` does not yet support embedded MySQL
+(setting `driverClassName` to the MySQL driver on an embedded datasource throws an error).
+This is tracked in https://github.com/edward3h/kiwiproc/issues/333[issue #333]. If you need
+MySQL at build time, configure an external datasource with `jdbcUrl` pointing at a database
+you manage yourself (for example, started separately via Testcontainers or Docker Compose).
+
+=== Compiler plugin configuration
+
+`kiwiproc-maven-plugin` automatically writes `${project.build.directory}/kiwiproc/config.json`
+during the `generate-sources` phase, describing the datasource(s) it just prepared. Configure
+`maven-compiler-plugin` to point the kiwiproc annotation processor at this generated file:
+
+[source,xml,indent=0,subs="verbatim,attributes"]
+----
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <annotationProcessorPaths>
+            <path>
+                <groupId>org.ethelred.kiwiproc</groupId>
+                <artifactId>processor</artifactId>
+                <version>{revnumber}</version>
+            </path>
+        </annotationProcessorPaths>
+        <compilerArgs>
+            <arg>-Aorg.ethelred.kiwiproc.configuration=${project.build.directory}/kiwiproc/config.json</arg>
+        </compilerArgs>
+    </configuration>
+</plugin>
+----
+
+This contrasts with the manual setup described in xref:maven_setup.adoc[Maven Setup], where you
+maintain a `kiwiproc-config.json` file by hand and point the annotation processor at it directly.
+With `kiwiproc-maven-plugin`, `config.json` is (re)generated automatically on every build, so there
+is nothing to edit by hand.
+
+[[maven-plugin-test-properties]]
+=== Test properties
+
+A file named `application-test.properties` is written to
+`${project.build.directory}/generated-test-resources/kiwiproc`, which is registered as a test
+resource directory so it is available on the test classpath.
+
+The property key depends on `dependencyInjectionStyle`, following the same rules as the Gradle
+plugin (see xref:gradle_plugin.adoc#test-properties[Test properties]):
+
+For `JAKARTA` (the default) and Micronaut:
+
+[source,properties]
+----
+datasources.default.url=jdbc\:postgresql\://localhost\:42581/rgtnmpgbihhy?user\=postgres
+----
+
+For `SPRING`, the "default" datasource uses the standard Spring Boot property:
+
+[source,properties]
+----
+spring.datasource.url=jdbc\:postgresql\://localhost\:42581/rgtnmpgbihhy?user\=postgres
+----
+
+Combined with the `kiwiproc-spring-autoconfigure` module, no manual `DataSource` bean definition
+is needed in tests. Other code can read the properties file with `java.util.Properties`.

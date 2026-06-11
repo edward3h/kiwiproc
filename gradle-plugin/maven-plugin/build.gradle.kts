@@ -8,6 +8,7 @@ plugins {
 
 apply(from = "../../version.gradle.kts")
 group = "org.ethelred.kiwiproc"
+base.archivesName.set("kiwiproc-maven-plugin")
 
 java {
     toolchain {
@@ -44,8 +45,11 @@ dependencies {
 }
 
 mavenPlugin {
-    // groupId/artifactId/description picked up from project coordinates;
-    // artifactId defaults to the Gradle project name "maven-plugin" - rename if needed.
+    // groupId/version/description picked up from project coordinates;
+    // artifactId defaults to the Gradle project name "maven-plugin", which Maven
+    // reserves for plugins of the maven team (artifactIds of the form
+    // "maven-___-plugin"), so use the project's "kiwiproc-___" naming convention instead.
+    artifactId.set("kiwiproc-maven-plugin")
 }
 
 tasks.named<Test>("test") {
