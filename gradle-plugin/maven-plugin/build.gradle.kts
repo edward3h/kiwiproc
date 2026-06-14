@@ -24,7 +24,7 @@ dependencies {
     implementation(project(":plugin"))
     implementation(libs.jspecify)
 
-    implementation("org.apache.maven:maven-plugin-api:3.9.9")
+    implementation("org.apache.maven:maven-plugin-api:3.9.16")
     implementation("org.apache.maven.plugin-tools:maven-plugin-annotations:3.13.1")
     implementation("org.apache.maven:maven-core:3.9.9")
 
