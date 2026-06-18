@@ -467,6 +467,16 @@ public class ProcessorTest {
                         """)
                         .withDisplayName(
                                 "A SqlQuery whose Java enum covers all PG native enum values compiles without a missing-constant warning.")
+                        .succeeds(),
+                // GH#379 — result column literally named "value" collided with the synthetic
+                // record-construction variable name, causing duplicate variable declarations.
+                method("""
+                        record Counter(String name, int value) {}
+                        @SqlQuery(sql = "SELECT name, tables AS value FROM restaurant")
+                        List<Counter> findCounters();
+                        """)
+                        .withDisplayName(
+                                "A SqlQuery method compiles when a result record component is named 'value' (GH#379).")
                         .succeeds());
     }
 }

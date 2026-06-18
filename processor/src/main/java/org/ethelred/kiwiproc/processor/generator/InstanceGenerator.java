@@ -198,10 +198,10 @@ public class InstanceGenerator {
             for (ResultPart resultPart : ResultPart.values()) {
                 var componentClass = containerBuilder.componentTypeFor(resultPart);
                 if (componentClass != null) {
-                    var resultVar = ctx.patchName(prefixName(resultPart, "Value"));
+                    var resultVar = ctx.patchName(resultPart, prefixName(resultPart, "Value"));
                     var params = columns.stream()
                             .filter(column -> resultPart.equals(column.resultPart()))
-                            .map(p -> CodeBlock.of("$L", ctx.patchedNameFor(columnName(p))))
+                            .map(p -> CodeBlock.of("$L", ctx.patchedNameFor(p)))
                             .collect(CodeBlock.joining(",\n"));
                     params = CodeBlock.builder().indent().add(params).unindent().build();
                     builder.add("""
@@ -263,10 +263,10 @@ public class InstanceGenerator {
 
         // Construct record if element type is not simple; otherwise return raw column value
         if (!elementType.isSimple()) {
-            var resultVar = ctx.patchName(prefixName(ResultPart.SIMPLE, "Value"));
+            var resultVar = ctx.patchName(ResultPart.SIMPLE, prefixName(ResultPart.SIMPLE, "Value"));
             var params = columns.stream()
                     .filter(column -> ResultPart.SIMPLE.equals(column.resultPart()))
-                    .map(p -> CodeBlock.of("$L", ctx.patchedNameFor(columnName(p))))
+                    .map(p -> CodeBlock.of("$L", ctx.patchedNameFor(p)))
                     .collect(CodeBlock.joining(",\n"));
             params = CodeBlock.builder().indent().add(params).unindent().build();
             builder.add("""
@@ -280,7 +280,7 @@ public class InstanceGenerator {
                     .filter(c -> c.resultPart() == ResultPart.SIMPLE)
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("No SIMPLE column for stream query"));
-            String patchedValueVariable = ctx.patchedNameFor(columnName(firstSimple));
+            String patchedValueVariable = ctx.patchedNameFor(firstSimple);
             builder.addStatement("return $L", patchedValueVariable);
         }
 
@@ -317,7 +317,7 @@ public class InstanceGenerator {
                         .addStatement("$L = null", rawName)
                         .endControlFlow();
             }
-            var varName = ctx.patchName(columnName(column));
+            var varName = ctx.patchName(column, columnName(column));
             conversionGenerator.buildConversion(
                     builder,
                     ctx,
@@ -471,10 +471,9 @@ public class InstanceGenerator {
         @Override
         public CodeBlock add() {
             var builder = CodeBlock.builder();
-            var valueVariable = returnType.valueComponentType().isSimple()
-                    ? columnName(firstColumnOfPart(ResultPart.SIMPLE))
-                    : prefixName(ResultPart.SIMPLE, "Value");
-            var patchedValueVariable = ctx.patchedNameFor(valueVariable);
+            var patchedValueVariable = returnType.valueComponentType().isSimple()
+                    ? ctx.patchedNameFor(firstColumnOfPart(ResultPart.SIMPLE))
+                    : ctx.patchedNameFor(ResultPart.SIMPLE);
             if (returnType instanceof OptionalType optionalType) {
                 if (!returnType.valueComponentType().isNullable()) {
                     return builder.addStatement("return $T.of($L)", optionalType.optionalClass(), patchedValueVariable)
@@ -530,10 +529,9 @@ public class InstanceGenerator {
 
         @Override
         public CodeBlock add() {
-            var valueVariable = returnType.valueComponentType().isSimple()
-                    ? columnName(firstColumnOfPart(ResultPart.SIMPLE))
-                    : prefixName(ResultPart.SIMPLE, "Value");
-            String patchedValueVariable = ctx.patchedNameFor(valueVariable);
+            String patchedValueVariable = returnType.valueComponentType().isSimple()
+                    ? ctx.patchedNameFor(firstColumnOfPart(ResultPart.SIMPLE))
+                    : ctx.patchedNameFor(ResultPart.SIMPLE);
             return CodeBlock.builder()
                     .beginControlFlow("if ($L != null)", patchedValueVariable)
                     .addStatement("$L.add($L)", containerVariable, patchedValueVariable)
@@ -605,13 +603,12 @@ public class InstanceGenerator {
 
         @Override
         public CodeBlock add() {
-            var keyVariable =
-                    returnType.keyType().isSimple() ? columnName(firstColumnOfPart(KEY)) : prefixName(KEY, "Value");
-            var patchedKeyVariable = ctx.patchedNameFor(keyVariable);
-            var valueVariable = returnType.valueComponentType().isSimple()
-                    ? columnName(firstColumnOfPart(VALUE))
-                    : prefixName(VALUE, "Value");
-            var patchedValueVariable = ctx.patchedNameFor(valueVariable);
+            var patchedKeyVariable = returnType.keyType().isSimple()
+                    ? ctx.patchedNameFor(firstColumnOfPart(KEY))
+                    : ctx.patchedNameFor(KEY);
+            var patchedValueVariable = returnType.valueComponentType().isSimple()
+                    ? ctx.patchedNameFor(firstColumnOfPart(VALUE))
+                    : ctx.patchedNameFor(VALUE);
             var builder = CodeBlock.builder();
             if (returnType.keyType().isNullable()) {
                 builder.beginControlFlow("if ($L != null)", patchedKeyVariable);
