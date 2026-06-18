@@ -9,24 +9,30 @@ import org.jspecify.annotations.Nullable;
 
 class MethodContext {
     private final Set<String> parameterNames = new HashSet<>();
-    private final Map<String, String> patchedNames = new HashMap<>();
+    private final Map<Object, String> patchedNames = new HashMap<>();
     private int patchedNameCount = 0;
 
     void registerParameterName(String name) {
         parameterNames.add(name);
     }
 
+    // one-off name, never re-looked-up, so always allocate fresh rather than caching by name
     String patchName(String name) {
-        return patchedNames.computeIfAbsent(name, k -> {
-            var newName = k;
+        return patchName(new Object(), name);
+    }
+
+    // key must uniquely identify the logical entity, since two entities can request the same name
+    String patchName(Object key, String name) {
+        return patchedNames.computeIfAbsent(key, k -> {
+            var newName = name;
             while (parameterNames.contains(newName) || patchedNames.containsValue(newName)) {
-                newName = k + (++patchedNameCount);
+                newName = name + (++patchedNameCount);
             }
             return newName;
         });
     }
 
-    @Nullable String patchedNameFor(String name) {
-        return patchedNames.get(name);
+    @Nullable String patchedNameFor(Object key) {
+        return patchedNames.get(key);
     }
 }
