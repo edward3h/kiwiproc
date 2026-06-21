@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":plugin"))
+    implementation(project(":processorconfig"))
     implementation(libs.jspecify)
 
     implementation("org.apache.maven:maven-plugin-api:3.9.16")

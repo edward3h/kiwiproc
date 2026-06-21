@@ -8,7 +8,7 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.mysql)
     implementation(libs.h2)
-    implementation("org.ethelred.kiwiproc:plugin:${project.version}")
+    implementation("org.ethelred.kiwiproc:processorconfig:${project.version}")
 
     annotationProcessor(libs.recordbuilder.processor)
     implementation(libs.recordbuilder.core)
