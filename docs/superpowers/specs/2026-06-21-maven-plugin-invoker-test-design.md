@@ -13,7 +13,10 @@ Postgres/H2, but bypasses real Maven wiring:
 - Plexus configuration mapping of the `<dataSources>` list-of-beans from XML into
   `List<DataSourceParameter>`.
 
-None of this is exercised by any existing test.
+None of this is exercised by any existing test. In particular, the `@Mojo`/`@Parameter`-driven
+`plugin.xml` descriptor generation (via `org.gradlex.maven-plugin-development`) is currently only
+checked for *generation*, never for *consumption* by a real Maven build — this is the gap this test
+closes end-to-end.
 
 ## Approach
 
@@ -58,6 +61,18 @@ the ambient `~/.m2/repository` as normal — it is never overridden or wiped.
 The plugin/dependency version is not hardcoded in the fixture poms. It's passed through as a Maven
 property (`kiwiproc.version`) via the invoker request, sourced from `project.version` at test
 runtime, and referenced in the fixture poms as `${kiwiproc.version}`.
+
+This relies on the `org.gradlex.maven-plugin-development` plugin's generated `plugin.xml` descriptor
+(at `META-INF/maven/plugin.xml`) actually being packaged into the jar that the bare `maven-publish`
+block publishes — i.e. that it's wired into `processResources`/`jar` and not a separate,
+unpublished task output. This is the single load-bearing assumption for the whole approach (without
+it, the invoked `mvn` build can't resolve the `generate` goal at all) and should be checked first
+during implementation.
+
+Since the invoked build resolves snapshot artifacts and the ambient `~/.m2/repository` is
+deliberately left untouched (so it accumulates Maven's normal snapshot-resolution cache across
+runs), the invoker request passes `-U` (force update) to bypass that cache and guarantee each test
+run picks up the freshly-published artifacts from `it-repo` rather than a stale cached snapshot.
 
 ### Fixtures
 
@@ -104,6 +119,12 @@ Before considering this done:
   `GENERATE_SOURCES`) and confirm the test fails, proving it actually catches a wiring regression.
 - Run the full `cd gradle-plugin && ./gradlew build` to confirm no regressions in the rest of the
   module.
+
+The `functionalTest` task runs its scenarios sequentially (no `maxParallelForks` configured, same as
+`:plugin`'s existing `functionalTest`), so the shared `it-repo` directory and any embedded-database
+ports allocated per scenario aren't a concurrency risk here. Port allocation itself is the existing
+`EmbeddedPostgresManager`/`EmbeddedH2Manager`'s responsibility, same as in `KiwiProcMojoTest` today —
+not a new risk introduced by this test.
 
 ## Out of scope
 
