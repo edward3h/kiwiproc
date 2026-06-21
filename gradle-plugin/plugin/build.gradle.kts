@@ -23,9 +23,9 @@ repositories {
 }
 
 dependencies {
+    api(project(":processorconfig"))
     implementation(libs.jspecify)
 
-    annotationProcessor(libs.avaje.json.processor)
     implementation(libs.avaje.json.asProvider())
     implementation(libs.embeddedpostgres)
     implementation(libs.liquibase.core)
@@ -121,7 +121,7 @@ spotless {
     }
 }
 
-// plugin is published as a library as well, for the shared processorconfig classes
+// plugin is published as a library as well, so it can be used as a Gradle plugin via plugins {}
 mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()
