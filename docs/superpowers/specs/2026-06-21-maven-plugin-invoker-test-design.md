@@ -35,24 +35,28 @@ still running it in CI as part of `./gradlew build` / `check`.
 
 ### Artifact resolution
 
-The invoked `mvn` build needs to resolve `kiwiproc-maven-plugin` (and its dependencies
-`org.ethelred.kiwiproc:plugin` and `org.ethelred.kiwiproc:processorconfig`) as real Maven
-coordinates. Nothing is published to Maven Central yet.
+The invoked `mvn` build needs to resolve `kiwiproc-maven-plugin` (and its sole module dependency,
+`org.ethelred.kiwiproc:processorconfig` — `:maven-plugin` does not depend on `:plugin`, that
+dependency was removed in #370) as real Maven coordinates. Nothing is published to Maven Central
+yet.
 
 Rather than overriding `-Dmaven.repo.local` for the whole invoked build (which would force
 re-resolving every dependency — Maven Core, Liquibase, JDBC drivers, embedded-postgres binaries —
-into an empty repo on every run), only the three kiwiproc artifacts are published to an isolated
-throwaway directory:
+into an empty repo on every run), only the two kiwiproc artifacts actually needed are published to
+an isolated throwaway directory:
 
-- `gradle-plugin/processorconfig`, `gradle-plugin/plugin` — already have `com.vanniktech.maven.publish`
-  configured; add an additional `publishing { repositories { maven { ... } } }` entry pointing at
+- `gradle-plugin/processorconfig` — already has `com.vanniktech.maven.publish` configured; add an
+  additional `publishing { repositories { maven { ... } } }` entry pointing at
   `gradle-plugin/build/it-repo` (a `file://` URL).
 - `gradle-plugin/maven-plugin` — has no publishing config yet (tracked separately under #370's
   "before first publish" note). Add a bare `maven-publish` plugin application (no
   `com.vanniktech.maven.publish`, no signing) purely so it can publish to the same throwaway
   directory for this test. This does not constitute "wiring up publishing" for Maven Central.
 
-The `functionalTest` task depends on the three modules' publish-to-`it-repo` tasks. Fixture
+`gradle-plugin/plugin` is not involved at all — it's not on `:maven-plugin`'s dependency graph, so
+the invoked build never needs to resolve it.
+
+The `functionalTest` task depends on the two modules' publish-to-`it-repo` tasks. Fixture
 `pom.xml`s declare `gradle-plugin/build/it-repo` as an additional `file://` `<repository>` and
 `<pluginRepository>` (snapshots enabled, releases disabled). Everything else the invoked build needs
 (Maven Core, plugin-api, Liquibase, JDBC drivers, embedded-postgres binaries) resolves from/caches in
