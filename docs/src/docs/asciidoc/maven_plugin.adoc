@@ -126,7 +126,7 @@ Each `<dataSource>` entry supports:
 |Password for an external datasource.
 
 |`driverClassName`
-|JDBC driver class name. Set to `org.h2.Driver` to select embedded H2 instead of PostgreSQL (for embedded datasources), or to describe the driver of an external datasource.
+|JDBC driver class name. Set to `org.h2.Driver` or `com.mysql.cj.jdbc.Driver` to select embedded H2 or MySQL instead of PostgreSQL (for embedded datasources), or to describe the driver of an external datasource.
 |===
 
 === Embedded H2
@@ -191,11 +191,26 @@ interface FirstDatabaseDAO {
 <3> How to manage secret values for Maven builds is out of scope for this document.
 <4> An external H2 datasource uses a `jdbc:h2:` URL.
 
-NOTE: Unlike the Gradle plugin, `kiwiproc-maven-plugin` does not yet support embedded MySQL
-(setting `driverClassName` to the MySQL driver on an embedded datasource throws an error).
-This is tracked in https://github.com/edward3h/kiwiproc/issues/333[issue #333]. If you need
-MySQL at build time, configure an external datasource with `jdbcUrl` pointing at a database
-you manage yourself (for example, started separately via Testcontainers or Docker Compose).
+=== Embedded MySQL
+
+To use embedded MySQL instead of PostgreSQL, set `driverClassName` to the MySQL driver class name.
+This requires Docker to be available on the build machine (Testcontainers is used internally).
+
+[source,xml,indent=0,subs="verbatim,attributes"]
+----
+<configuration>
+    <dataSources>
+        <dataSource>
+            <name>default</name>
+            <driverClassName>com.mysql.cj.jdbc.Driver</driverClassName> // <1>
+            <liquibaseChangelog>${project.basedir}/src/main/resources/changelog.xml</liquibaseChangelog>
+        </dataSource>
+    </dataSources>
+</configuration>
+----
+<1> Setting `driverClassName` to the MySQL driver selects embedded MySQL via Testcontainers/Docker.
+
+See xref:databases.adoc#mysql-limitations[MySQL Limitations] for a list of features not available with MySQL.
 
 === Compiler plugin configuration
 
