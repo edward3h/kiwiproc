@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    `maven-publish`
     jacoco
     checkstyle
     id("com.diffplug.spotless")
@@ -67,6 +68,7 @@ dependencies {
 }
 
 val functionalTest by tasks.registering(Test::class) {
+    dependsOn(":processorconfig:publishAllPublicationsToItLocalRepository", "publishAllPublicationsToItLocalRepository")
     testClassesDirs = functionalTestSourceSet.output.classesDirs
     classpath = functionalTestSourceSet.runtimeClasspath
     useJUnitPlatform()
@@ -76,6 +78,21 @@ val functionalTest by tasks.registering(Test::class) {
 
 tasks.named<Task>("check") {
     dependsOn(functionalTest)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+            artifactId = "kiwiproc-maven-plugin"
+        }
+    }
+    repositories {
+        maven {
+            name = "itLocal"
+            url = uri(itRepoDir)
+        }
+    }
 }
 
 tasks.named<Test>("test") {

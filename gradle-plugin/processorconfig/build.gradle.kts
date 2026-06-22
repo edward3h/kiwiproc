@@ -76,6 +76,15 @@ mavenPublishing {
     }
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "itLocal"
+            url = uri(rootProject.layout.buildDirectory.dir("it-repo"))
+        }
+    }
+}
+
 signing {
     val signingKey = findProperty("signingKey").toString()
     val signingPassword = findProperty("signingPassword").toString()
