@@ -76,6 +76,26 @@ class KiwiProcMojoInvokerTest {
     }
 
     @Test
+    void embeddedMySQLGeneratesConfigAtGenerateSourcesPhase(@TempDir Path tempDir)
+            throws IOException, MavenInvocationException {
+        var projectDir = copyFixture(tempDir, "embedded-mysql");
+
+        var outcome = runGenerateSources(projectDir);
+        assertWithMessage("mvn generate-sources log:\n" + String.join("\n", outcome.log()))
+                .that(outcome.exitCode())
+                .isEqualTo(0);
+
+        var config = readProcessorConfig(projectDir);
+        assertThat(config.dataSources()).hasSize(1);
+        var ds = config.dataSources().get("default");
+        assertThat(ds.url()).startsWith("jdbc:mysql://");
+        assertThat(ds.driverClassName()).isEqualTo("com.mysql.cj.jdbc.Driver");
+
+        var props = readTestProperties(projectDir);
+        assertThat(props.getProperty("datasources.default.url")).isEqualTo(ds.url());
+    }
+
+    @Test
     void multipleDataSourcesMapPlexusListOfBeansCorrectly(@TempDir Path tempDir)
             throws IOException, MavenInvocationException {
         var projectDir = copyFixture(tempDir, "multiple-datasources");
