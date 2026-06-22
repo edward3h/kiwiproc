@@ -4,6 +4,7 @@ package org.ethelred.kiwiproc.maven;
 import static com.google.common.truth.Truth.assertThat;
 
 import io.avaje.jsonb.Jsonb;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -147,6 +148,59 @@ class KiwiProcMojoTest {
         var ds = config.dataSources().get("default");
         assertThat(ds.url()).isEqualTo("jdbc:postgresql://db.example.com:5432/mydb");
         assertThat(ds.username()).isEqualTo("appuser");
+    }
+
+    @Test
+    void appliesLiquibaseToExternalMySQLDataSource() throws IOException, MojoExecutionException {
+        // Use the embedded MySQL container as a stand-in "external" server: KiwiProcMojo's
+        // externalDataSourceConfig() should build a working MysqlDataSource for Liquibase here,
+        // not the PGSimpleDataSource it incorrectly builds today for any non-H2 driver.
+        var setupChangelog = writeEmptyChangelog(); // starts the container, returns a schema-less kiwi_N database
+        var connectionInfo = EmbeddedMySQLManager.getInstance().getPreparedDatabase(setupChangelog);
+
+        var projectDir = Files.createTempDirectory("kiwiproc-maven-mojo-external-mysql");
+        var changelog = projectDir.resolve("src/main/resources/changelog.xml");
+        Files.createDirectories(changelog.getParent());
+        Files.writeString(changelog, CHANGELOG_XML);
+
+        var dataSource = new DataSourceParameter();
+        dataSource.setName("default");
+        dataSource.setJdbcUrl(connectionInfo.url());
+        dataSource.setUsername(connectionInfo.username());
+        dataSource.setPassword(connectionInfo.password());
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        dataSource.setLiquibaseChangelog(changelog.toFile());
+
+        var mojo = new KiwiProcMojo();
+        mojo.setLog(new SystemStreamLog());
+        mojo.setProject(testProject(projectDir));
+        mojo.setDataSources(List.of(dataSource));
+        mojo.setConfigFile(projectDir.resolve("target/kiwiproc/config.json").toFile());
+        mojo.setTestResourcesOutputDirectory(
+                projectDir.resolve("target/generated-test-resources/kiwiproc").toFile());
+
+        mojo.execute(); // must not throw — proves externalDataSourceConfig() used a working MySQL DataSource
+
+        var configJson = Files.readString(projectDir.resolve("target/kiwiproc/config.json"));
+        var config = Jsonb.builder().build().type(ProcessorConfig.class).fromJson(configJson);
+        var ds = config.dataSources().get("default");
+        assertThat(ds.url()).isEqualTo(connectionInfo.url());
+        assertThat(ds.username()).isEqualTo(connectionInfo.username());
+    }
+
+    private File writeEmptyChangelog() throws IOException {
+        var dir = Files.createTempDirectory("kiwiproc-maven-mojo-external-mysql-setup");
+        var changelog = dir.resolve("changelog.xml");
+        Files.writeString(changelog, """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <databaseChangeLog
+                        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+                </databaseChangeLog>
+                """);
+        return changelog.toFile();
     }
 
     @Test
