@@ -92,7 +92,12 @@ have Docker, and `:test-mysql` already requires it unconditionally in the same C
   the existing "Embedded H2" section (lines 132-151) and the Gradle plugin's MySQL section
   (`gradle_plugin.adoc:100-132`) — example `<dataSource>` config with
   `driverClassName=com.mysql.cj.jdbc.Driver`, and a callout that this requires Docker
-  (Testcontainers).
+  (Testcontainers). Add `xref:databases.adoc#mysql-limitations[MySQL Limitations]`, mirroring the
+  H2 section's `h2-limitations` xref (line 151) and the Gradle plugin's MySQL section
+  (`gradle_plugin.adoc:132`) — the shared `databases.adoc` content is already build-tool-agnostic,
+  so no new limitations content needs writing, just the link. The removed `NOTE` references issue
+  #333 (the broader umbrella issue, not #371 itself); no replacement reference is needed since the
+  limitation it described no longer exists.
 - Update the `driverClassName` property table row (currently only mentions H2) to also mention the
   MySQL driver class.
 
