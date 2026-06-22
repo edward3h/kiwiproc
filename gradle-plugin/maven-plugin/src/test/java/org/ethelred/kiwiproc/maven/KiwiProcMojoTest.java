@@ -95,6 +95,35 @@ class KiwiProcMojoTest {
     }
 
     @Test
+    void generatesConfigForEmbeddedMySQL() throws IOException, MojoExecutionException {
+        var projectDir = Files.createTempDirectory("kiwiproc-maven-mojo-mysql");
+        var changelog = projectDir.resolve("src/main/resources/changelog.xml");
+        Files.createDirectories(changelog.getParent());
+        Files.writeString(changelog, CHANGELOG_XML);
+
+        var dataSource = new DataSourceParameter();
+        dataSource.setName("default");
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        dataSource.setLiquibaseChangelog(changelog.toFile());
+
+        var mojo = new KiwiProcMojo();
+        mojo.setLog(new SystemStreamLog());
+        mojo.setProject(testProject(projectDir));
+        mojo.setDataSources(List.of(dataSource));
+        mojo.setConfigFile(projectDir.resolve("target/kiwiproc/config.json").toFile());
+        mojo.setTestResourcesOutputDirectory(
+                projectDir.resolve("target/generated-test-resources/kiwiproc").toFile());
+
+        mojo.execute();
+
+        var configJson = Files.readString(projectDir.resolve("target/kiwiproc/config.json"));
+        var config = Jsonb.builder().build().type(ProcessorConfig.class).fromJson(configJson);
+        var ds = config.dataSources().get("default");
+        assertThat(ds.url()).startsWith("jdbc:mysql://");
+        assertThat(ds.driverClassName()).isEqualTo("com.mysql.cj.jdbc.Driver");
+    }
+
+    @Test
     void passesThroughExternalDataSourceUnchanged() throws IOException, MojoExecutionException {
         var projectDir = Files.createTempDirectory("kiwiproc-maven-mojo-external");
 
