@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    `maven-publish`
     jacoco
     checkstyle
     id("com.diffplug.spotless")
@@ -50,6 +51,48 @@ mavenPlugin {
     // reserves for plugins of the maven team (artifactIds of the form
     // "maven-___-plugin"), so use the project's "kiwiproc-___" naming convention instead.
     artifactId.set("kiwiproc-maven-plugin")
+}
+
+// Add a source set for the maven-invoker-based functional test suite (mirrors :plugin's pattern)
+val itRepoDir = rootProject.layout.buildDirectory.dir("it-repo")
+
+val functionalTestSourceSet = sourceSets.create("functionalTest")
+
+configurations["functionalTestImplementation"].extendsFrom(configurations["testImplementation"])
+configurations["functionalTestRuntimeOnly"].extendsFrom(configurations["testRuntimeOnly"])
+
+dependencies {
+    "functionalTestImplementation"(project(":processorconfig"))
+    "functionalTestImplementation"(libs.avaje.json.asProvider())
+    "functionalTestImplementation"(libs.maven.invoker)
+}
+
+val functionalTest by tasks.registering(Test::class) {
+    dependsOn(":processorconfig:publishAllPublicationsToItLocalRepository", "publishAllPublicationsToItLocalRepository")
+    testClassesDirs = functionalTestSourceSet.output.classesDirs
+    classpath = functionalTestSourceSet.runtimeClasspath
+    useJUnitPlatform()
+    systemProperty("kiwiproc.version", project.version)
+    systemProperty("kiwiproc.it.repo.url", itRepoDir.get().asFile.toURI().toString())
+}
+
+tasks.named<Task>("check") {
+    dependsOn(functionalTest)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+            artifactId = "kiwiproc-maven-plugin"
+        }
+    }
+    repositories {
+        maven {
+            name = "itLocal"
+            url = uri(itRepoDir)
+        }
+    }
 }
 
 tasks.named<Test>("test") {

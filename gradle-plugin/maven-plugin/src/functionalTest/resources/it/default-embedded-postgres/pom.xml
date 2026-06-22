@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Fixture project for KiwiProcMojoInvokerTest. kiwiproc.version and kiwiproc.it.repo.url
+  are supplied by the invoking test via -D properties; this pom is not meant to be run
+  standalone.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.ethelred.kiwiproc.it</groupId>
+    <artifactId>default-embedded-postgres</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
+
+    <repositories>
+        <repository>
+            <id>kiwiproc-it-local</id>
+            <url>${kiwiproc.it.repo.url}</url>
+            <releases><enabled>false</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>kiwiproc-it-local</id>
+            <url>${kiwiproc.it.repo.url}</url>
+            <releases><enabled>false</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.ethelred.kiwiproc</groupId>
+                <artifactId>kiwiproc-maven-plugin</artifactId>
+                <version>${kiwiproc.version}</version>
+                <executions>
+                    <execution>
+                        <id>kiwiproc-generate</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

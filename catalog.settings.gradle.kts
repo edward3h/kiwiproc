@@ -31,6 +31,7 @@ dependencyResolutionManagement {
 
             library("embeddedpostgres", "io.zonky.test:embedded-postgres:2.2.2")
             library("liquibase-core", "org.liquibase:liquibase-core:5.0.3")
+            library("maven-invoker", "org.apache.maven.shared:maven-invoker:3.3.0")
 
             library("mapstruct-processor", "org.mapstruct", "mapstruct-processor").versionRef("mapstruct")
             library("mapstruct-compile", "org.mapstruct", "mapstruct").versionRef("mapstruct")
