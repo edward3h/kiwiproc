@@ -18,6 +18,7 @@ import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class KiwiProcMojoInvokerTest {
 
@@ -56,8 +57,9 @@ class KiwiProcMojoInvokerTest {
     }
 
     @Test
-    void defaultEmbeddedPostgresGeneratesConfigAtGenerateSourcesPhase() throws IOException, MavenInvocationException {
-        var projectDir = copyFixture("default-embedded-postgres");
+    void defaultEmbeddedPostgresGeneratesConfigAtGenerateSourcesPhase(@TempDir Path tempDir)
+            throws IOException, MavenInvocationException {
+        var projectDir = copyFixture(tempDir, "default-embedded-postgres");
 
         var outcome = runGenerateSources(projectDir);
         assertWithMessage("mvn generate-sources log:\n" + String.join("\n", outcome.log()))
@@ -95,9 +97,10 @@ class KiwiProcMojoInvokerTest {
         return new InvocationOutcome(result.getExitCode(), log);
     }
 
-    private Path copyFixture(String name) throws IOException {
+    private Path copyFixture(Path tempDir, String name) throws IOException {
         var source = Path.of("src/functionalTest/resources/it", name);
-        var target = Files.createTempDirectory("kiwiproc-it-" + name);
+        var target = tempDir.resolve(name);
+        Files.createDirectories(target);
         try (var stream = Files.walk(source)) {
             for (var path : stream.toList()) {
                 var dest = target.resolve(source.relativize(path));
