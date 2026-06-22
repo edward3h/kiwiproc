@@ -101,9 +101,15 @@ public class KiwiProcMojo extends AbstractMojo {
             return externalDataSourceConfig(dataSource);
         }
         if (dataSource.isMySQL()) {
-            throw new IllegalArgumentException(
-                    "kiwiproc-maven-plugin: embedded MySQL is not yet supported (datasource '" + dataSource.getName()
-                            + "'). Use an external datasource with jdbcUrl instead.");
+            var liquibaseFile = requireLiquibaseChangelog(dataSource);
+            var connectionInfo = EmbeddedMySQLManager.getInstance().getPreparedDatabase(liquibaseFile);
+            return new DataSourceConfig(
+                    dataSource.getName(),
+                    connectionInfo.url(),
+                    null,
+                    connectionInfo.username(),
+                    connectionInfo.password(),
+                    "com.mysql.cj.jdbc.Driver");
         }
         var liquibaseFile = requireLiquibaseChangelog(dataSource);
         if (dataSource.isH2()) {
