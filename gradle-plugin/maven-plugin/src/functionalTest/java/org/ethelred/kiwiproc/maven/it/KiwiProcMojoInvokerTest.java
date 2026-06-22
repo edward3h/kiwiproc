@@ -75,6 +75,27 @@ class KiwiProcMojoInvokerTest {
         assertThat(props.getProperty("datasources.default.url")).isEqualTo(ds.url());
     }
 
+    @Test
+    void multipleDataSourcesMapPlexusListOfBeansCorrectly(@TempDir Path tempDir)
+            throws IOException, MavenInvocationException {
+        var projectDir = copyFixture(tempDir, "multiple-datasources");
+
+        var outcome = runGenerateSources(projectDir);
+        assertWithMessage("mvn generate-sources log:\n" + String.join("\n", outcome.log()))
+                .that(outcome.exitCode())
+                .isEqualTo(0);
+
+        var config = readProcessorConfig(projectDir);
+        assertThat(config.dataSources()).hasSize(2);
+
+        var defaultDs = config.dataSources().get("default");
+        assertThat(defaultDs.url()).startsWith("jdbc:h2:tcp://localhost:");
+        assertThat(defaultDs.driverClassName()).isEqualTo("org.h2.Driver");
+
+        var externalDs = config.dataSources().get("external");
+        assertThat(externalDs.url()).isEqualTo("jdbc:h2:mem:extdb");
+    }
+
     private record InvocationOutcome(int exitCode, List<String> log) {}
 
     private InvocationOutcome runGenerateSources(Path projectDir) throws MavenInvocationException {
