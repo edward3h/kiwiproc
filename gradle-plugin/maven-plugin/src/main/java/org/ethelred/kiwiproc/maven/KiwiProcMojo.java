@@ -1,6 +1,7 @@
 /* (C) Edward Harman 2026 */
 package org.ethelred.kiwiproc.maven;
 
+import com.mysql.cj.jdbc.MysqlDataSource;
 import io.avaje.jsonb.JsonType;
 import io.avaje.jsonb.Jsonb;
 import java.io.File;
@@ -151,6 +152,16 @@ public class KiwiProcMojo extends AbstractMojo {
                     h2Ds.setPassword(dataSource.getPassword());
                 }
                 ds = h2Ds;
+            } else if (dataSource.isMySQL()) {
+                var mysqlDs = new MysqlDataSource();
+                mysqlDs.setURL(url);
+                if (dataSource.getUsername() != null) {
+                    mysqlDs.setUser(dataSource.getUsername());
+                }
+                if (dataSource.getPassword() != null) {
+                    mysqlDs.setPassword(dataSource.getPassword());
+                }
+                ds = mysqlDs;
             } else {
                 var pgDs = new PGSimpleDataSource();
                 pgDs.setURL(url);
