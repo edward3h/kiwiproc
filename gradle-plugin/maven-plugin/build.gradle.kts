@@ -34,6 +34,8 @@ dependencies {
     implementation(libs.liquibase.core)
     implementation(libs.postgresql)
     implementation(libs.h2)
+    implementation(libs.mysql)
+    implementation(libs.testcontainers.mysql)
     runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:18.4.0"))
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-linux-arm64v8")
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-darwin-arm64v8")
