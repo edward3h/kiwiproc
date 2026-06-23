@@ -1,6 +1,7 @@
 /* (C) Edward Harman 2026 */
 package org.ethelred.kiwiproc.maven;
 
+import com.mysql.cj.jdbc.MysqlDataSource;
 import io.avaje.jsonb.JsonType;
 import io.avaje.jsonb.Jsonb;
 import java.io.File;
@@ -35,8 +36,8 @@ import org.postgresql.ds.PGSimpleDataSource;
  * Generates the kiwiproc annotation-processor configuration ({@code config.json}) and a test
  * properties file describing how to connect to the build-time database(s).
  *
- * <p>For each configured (or default) datasource: starts/reuses an embedded PostgreSQL or H2
- * database and applies the Liquibase changelog, or passes through an external JDBC URL
+ * <p>For each configured (or default) datasource: starts/reuses an embedded PostgreSQL, H2, or
+ * MySQL database and applies the Liquibase changelog, or passes through an external JDBC URL
  * (optionally applying Liquibase to it too).
  */
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES, threadSafe = false)
@@ -101,9 +102,15 @@ public class KiwiProcMojo extends AbstractMojo {
             return externalDataSourceConfig(dataSource);
         }
         if (dataSource.isMySQL()) {
-            throw new IllegalArgumentException(
-                    "kiwiproc-maven-plugin: embedded MySQL is not yet supported (datasource '" + dataSource.getName()
-                            + "'). Use an external datasource with jdbcUrl instead.");
+            var liquibaseFile = requireLiquibaseChangelog(dataSource);
+            var connectionInfo = EmbeddedMySQLManager.getInstance().getPreparedDatabase(liquibaseFile);
+            return new DataSourceConfig(
+                    dataSource.getName(),
+                    connectionInfo.url(),
+                    null,
+                    connectionInfo.username(),
+                    connectionInfo.password(),
+                    "com.mysql.cj.jdbc.Driver");
         }
         var liquibaseFile = requireLiquibaseChangelog(dataSource);
         if (dataSource.isH2()) {
@@ -145,6 +152,16 @@ public class KiwiProcMojo extends AbstractMojo {
                     h2Ds.setPassword(dataSource.getPassword());
                 }
                 ds = h2Ds;
+            } else if (dataSource.isMySQL()) {
+                var mysqlDs = new MysqlDataSource();
+                mysqlDs.setURL(url);
+                if (dataSource.getUsername() != null) {
+                    mysqlDs.setUser(dataSource.getUsername());
+                }
+                if (dataSource.getPassword() != null) {
+                    mysqlDs.setPassword(dataSource.getPassword());
+                }
+                ds = mysqlDs;
             } else {
                 var pgDs = new PGSimpleDataSource();
                 pgDs.setURL(url);
