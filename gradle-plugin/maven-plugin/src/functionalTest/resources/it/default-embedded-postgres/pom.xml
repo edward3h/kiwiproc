@@ -18,7 +18,7 @@
         <repository>
             <id>kiwiproc-it-local</id>
             <url>${kiwiproc.it.repo.url}</url>
-            <releases><enabled>false</enabled></releases>
+            <releases><enabled>true</enabled></releases>
             <snapshots><enabled>true</enabled></snapshots>
         </repository>
     </repositories>
@@ -26,7 +26,7 @@
         <pluginRepository>
             <id>kiwiproc-it-local</id>
             <url>${kiwiproc.it.repo.url}</url>
-            <releases><enabled>false</enabled></releases>
+            <releases><enabled>true</enabled></releases>
             <snapshots><enabled>true</enabled></snapshots>
         </pluginRepository>
     </pluginRepositories>
