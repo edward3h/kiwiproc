@@ -5,7 +5,7 @@ plugins {
     checkstyle
     id("com.diffplug.spotless")
     id("signing")
-    id("com.vanniktech.maven.publish") version "0.36.0"
+    id("com.vanniktech.maven.publish")
 }
 
 apply(from = "../../version.gradle.kts")
