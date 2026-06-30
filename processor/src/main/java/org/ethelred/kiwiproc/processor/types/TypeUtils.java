@@ -8,7 +8,6 @@ import java.util.Objects;
 import javax.lang.model.element.*;
 import javax.lang.model.type.*;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.SimpleTypeVisitor14;
 import javax.lang.model.util.Types;
 import org.jspecify.annotations.Nullable;
 
@@ -38,10 +37,6 @@ public class TypeUtils extends TypeMirrors {
             }
         }
         throw new IllegalArgumentException();
-    }
-
-    public String toString(TypeMirror type) {
-        return new ToStringVisitor().visit(type);
     }
 
     public @Nullable ValidCollection containerType(DeclaredType t) {
@@ -92,39 +87,5 @@ public class TypeUtils extends TypeMirrors {
     public String className(DeclaredType t) {
         var te = (TypeElement) t.asElement();
         return te.getSimpleName().toString();
-    }
-
-    class ToStringVisitor extends SimpleTypeVisitor14<String, Void> {
-        @Override
-        protected String defaultAction(TypeMirror e, Void unused) {
-            throw new UnsupportedOperationException(String.valueOf(e));
-        }
-
-        @Override
-        public String visitPrimitive(PrimitiveType t, Void unused) {
-            return t.getKind().name().toLowerCase();
-        }
-
-        @Override
-        public String visitArray(ArrayType t, Void unused) {
-            return visit(t.getComponentType()) + "[]";
-        }
-
-        @Override
-        public String visitDeclared(DeclaredType t, Void unused) {
-            var te = (TypeElement) t.asElement();
-            if ("java.lang".equals(packageName(te))) {
-                return te.getSimpleName().toString();
-            }
-            return String.valueOf(t); // TODO
-        }
-
-        @Override
-        public String visitNoType(NoType t, Void unused) {
-            if (t.getKind() == TypeKind.VOID) {
-                return "void";
-            }
-            throw new UnsupportedOperationException(String.valueOf(t));
-        }
     }
 }

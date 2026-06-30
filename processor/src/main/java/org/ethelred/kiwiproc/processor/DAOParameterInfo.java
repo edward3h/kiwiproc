@@ -20,9 +20,6 @@ public record DAOParameterInfo(
 
         parameterMapping.forEach(((columnMetaData, methodParameterInfo) -> {
             var sqlTypeMapping = SqlTypeMappingRegistry.get(columnMetaData);
-            if (sqlTypeMapping.specialCase()) {
-                // TODO
-            }
             var setter = "set" + sqlTypeMapping.accessorSuffix();
             //            System.err.println(methodParameterInfo);
             var mapper = new TypeMapping(methodParameterInfo.type(), sqlTypeMapping.kiwiType());
