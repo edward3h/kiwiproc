@@ -4,7 +4,7 @@ dependencyResolutionManagement {
         create("libs") {
             version("avaje-json", "3.14")
             version("junit", "6.1.0")
-            version("recordbuilder", "52")
+            version("recordbuilder", "53")
             version("mapstruct", "1.6.3")
             version("springboot", "4.1.0")
 
