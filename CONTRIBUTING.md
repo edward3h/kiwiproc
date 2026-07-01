@@ -84,6 +84,26 @@ Key conventions:
 
 ---
 
+## Versioning
+
+Kiwiproc follows [Semantic Versioning](https://semver.org/). As of 1.0, the following are considered
+the public API and covered by SemVer compatibility guarantees:
+
+- The annotations in `shared` (`@DAO`, `@SqlQuery`, `@SqlUpdate`, `@SqlBatch`, etc.) and the `TransactionalDAO` API
+- The base classes in `runtime` (`AbstractTransactionalDAO`, `AbstractDAOInstance`, `DAOContext`) that generated code extends
+- The Gradle plugin (`org.ethelred.kiwiproc`) and Maven plugin configuration DSL/properties
+- The signatures of methods generated from a `@DAO` interface, given the same source interface and database schema
+
+The following are **not** covered and may change in a minor or patch release:
+
+- Internals of the annotation processor (`processor` module classes not listed above)
+- The exact structure/contents of generated code, beyond the public method signatures it exposes
+- SQL type-coverage details not yet documented in the [Database Support](https://edward3h.github.io/kiwiproc/#_database_support) docs
+
+Breaking changes to the public API will only be made in a major version bump.
+
+---
+
 ## Releasing (maintainers only)
 
 1. Ensure all desired changes are on `main` and CI is green.
