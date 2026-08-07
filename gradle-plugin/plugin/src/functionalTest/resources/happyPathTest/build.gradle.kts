@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-val junitVersion = "6.1.0"
+val junitVersion = "6.1.3"
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
