@@ -38,7 +38,7 @@ dependencies {
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-linux-arm64v8")
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-darwin-arm64v8")
     testImplementation(gradleTestKit())
-val junitVersion = "6.1.0"
+val junitVersion = "6.1.3"
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
 

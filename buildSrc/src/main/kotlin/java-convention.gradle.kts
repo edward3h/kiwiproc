@@ -28,7 +28,7 @@ tasks.named<JacocoReport>("jacocoTestReport") {
     }
 }
 
-val junitVersion = "6.1.0"
+val junitVersion = "6.1.3"
 dependencies {
     implementation("org.jspecify:jspecify:1.0.0")
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
