@@ -90,6 +90,12 @@ added.
   `isSqlite()` check, in both the embedded-instance path and the
   external-datasource path, to select the service and build the
   `DataSourceConfig`.
+- Add `org.xerial:sqlite-jdbc` (a `libs.versions.toml` entry plus an
+  `implementation` dependency) to `gradle-plugin/plugin/build.gradle.kts`,
+  matching how that module already separately declares `libs.h2`/`libs.mysql`
+  alongside `querymeta`'s own copies (needed since `EmbeddedSQLiteService`
+  opens JDBC connections directly for Liquibase, same as
+  `EmbeddedH2Service`/`EmbeddedMySQLService`).
 
 ### 4. Maven plugin — mirror of the Gradle plugin
 
@@ -97,14 +103,23 @@ added.
   the maven-plugin module, mirroring `EmbeddedH2Manager`/`EmbeddedMySQLManager`.
 - Extend `KiwiProcMojo` and `DataSourceParameter`'s `isMySQL()`/`isH2()`-style
   checks with `isSqlite()`.
+- Add `org.xerial:sqlite-jdbc` to
+  `gradle-plugin/maven-plugin/build.gradle.kts`, same rationale as the
+  Gradle plugin above.
 
 ### 5. Test module — `test-sqlite`
 
 - New top-level integration test module mirroring `test-h2`/`test-mysql`'s
-  PetClinic-style schema and DAO, exercising the generated DAO against the
-  embedded SQLite instance end-to-end.
-- Include a `RETURNING`-based insert test, mirroring the existing
-  Postgres/H2/MySQL example:
+  `Product`/`ProductDAO`-style schema and DAO, exercising the generated DAO
+  against the embedded SQLite instance end-to-end.
+- Additionally include a `RETURNING`-based insert test. This is new territory
+  for the file-based/embedded-DB tier: the only existing `RETURNING` example
+  in the codebase is Postgres's `PetClinicDAO.addVisit` (in `test-spring`,
+  which is Postgres-only) — `databases.adoc` explicitly documents `RETURNING`
+  as *unsupported* for both H2 and MySQL today. So there's no H2/MySQL
+  precedent to mirror; this test specifically validates whether
+  `org.xerial:sqlite-jdbc`'s metadata reporting is good enough where H2's and
+  MySQL's wasn't, following the shape of the Postgres example:
 
   ```java
   @SqlQuery("""
@@ -121,7 +136,10 @@ added.
   metadata reporting for a `RETURNING` insert is correct (SQLite itself has
   supported `RETURNING` since 3.35, which recent `sqlite-jdbc` releases
   bundle). If it turns out to be unreliable, that becomes a documented
-  limitation rather than a blocker for the rest of the work.
+  limitation rather than a blocker for the rest of the work. This test may
+  need its own small schema addition (e.g. a second table) alongside the
+  `Product`-style base schema, since `Product` alone may not naturally need
+  a `RETURNING` insert.
 
 ### 6. Docs
 
