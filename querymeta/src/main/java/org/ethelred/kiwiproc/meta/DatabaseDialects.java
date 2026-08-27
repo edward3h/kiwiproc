@@ -9,6 +9,7 @@ public class DatabaseDialects {
         return switch (DatabaseKind.fromConfig(config)) {
             case MYSQL -> new MySQLDialect();
             case H2 -> new H2Dialect();
+            case SQLITE -> new SqliteDialect();
             case POSTGRES -> new PostgresDialect();
         };
     }
