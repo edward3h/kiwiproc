@@ -3,7 +3,7 @@ pluginManagement {
 }
 
 rootProject.name = "kiwiproc"
-include("shared", "querymeta", "processor", "runtime", "spring-autoconfigure", "test-spring", "test-micronaut", "docs", ":docs:example", "test-any", "test-mysql", "test-h2")
+include("shared", "querymeta", "processor", "runtime", "spring-autoconfigure", "test-spring", "test-micronaut", "docs", ":docs:example", "test-any", "test-mysql", "test-h2", "test-sqlite")
 // Micronaut 5 requires JVM 25 (Gradle itself must run on 25)
 if (JavaVersion.current().majorVersion.toInt() >= 25) {
     include("test-micronaut5")
