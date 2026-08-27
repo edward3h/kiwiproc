@@ -28,7 +28,10 @@ class DatabaseKindTest {
                 // unrecognised driver, no url-prefix match -> postgres default
                 arguments("org.postgresql.Driver", null, DatabaseKind.POSTGRES),
                 // conflicting kinds: driver-class match wins over a contradictory URL-prefix
-                arguments("org.h2.Driver", "jdbc:mysql://host/db", DatabaseKind.H2));
+                arguments("org.h2.Driver", "jdbc:mysql://host/db", DatabaseKind.H2),
+                arguments("org.sqlite.JDBC", null, DatabaseKind.SQLITE),
+                arguments("org.sqlite.JDBC", "jdbc:postgresql://x", DatabaseKind.SQLITE),
+                arguments(null, "jdbc:sqlite:/tmp/test.db", DatabaseKind.SQLITE));
     }
 
     @ParameterizedTest

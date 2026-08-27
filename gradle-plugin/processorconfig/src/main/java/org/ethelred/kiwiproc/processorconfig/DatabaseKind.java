@@ -16,7 +16,8 @@ import org.jspecify.annotations.Nullable;
 public enum DatabaseKind {
     POSTGRES(null, null),
     MYSQL("com.mysql.cj.jdbc.Driver", "jdbc:mysql:"),
-    H2("org.h2.Driver", "jdbc:h2:");
+    H2("org.h2.Driver", "jdbc:h2:"),
+    SQLITE("org.sqlite.JDBC", "jdbc:sqlite:");
 
     private final @Nullable String driverClassName;
     private final @Nullable String urlPrefix;
