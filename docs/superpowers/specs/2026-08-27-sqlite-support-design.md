@@ -32,17 +32,18 @@ database's "embedded instance for build-time introspection" is hand-rolled:
 `EmbeddedPostgresService`/`EmbeddedH2Service`/`EmbeddedMySQLService` (Gradle)
 and their Maven-plugin equivalents, selected via repeated
 `isMySQL()`/`isH2()`-style string checks in `KiwiProcConfigTask`,
-`KiwiProcPlugin`, `KiwiProcMojo`, and `DataSourceParameter` — there is no
-central enum/registry tying dialect selection to embedded-instance selection.
-Adding SQLite follows this existing (if not ideal) pattern rather than
-introducing a new abstraction, to stay consistent with how H2 and MySQL were
-added.
+`KiwiProcMojo`, and `DataSourceParameter` — the same driver-class/URL-prefix
+cascade is duplicated a fourth time in querymeta's own `DatabaseDialects`.
+There is no central enum/registry tying dialect selection to
+embedded-instance selection.
+Adding a fourth database (SQLite) as a fourth copy-pasted `isX()` method and
+`if` branch in each of these files is the point at which that duplication
+stops being tolerable, so this work includes consolidating it into a shared
+`DatabaseKind` enum (see section 0) rather than repeating the pattern once
+more.
 
 ## Non-goals
 
-- No refactor of the `isMySQL()/isH2()`-style branching into a shared
-  enum/registry. That's a legitimate future cleanup but is out of scope here;
-  this work adds `isSqlite()` following the existing pattern.
 - No SQLite-specific SQL features beyond what standard JDBC/`RETURNING`
   already expose (e.g. JSON1 extension functions, `ON CONFLICT` clauses)
   — normal SQL kiwiproc already generates code for should work if the JDBC
@@ -54,12 +55,75 @@ added.
 
 ## Design
 
+### 0. Shared refactor: `DatabaseKind` enum
+
+Introduce a single `DatabaseKind` enum (`POSTGRES`, `MYSQL`, `H2`, `SQLITE`)
+that centralizes driver-class/URL-prefix detection, replacing the
+`isMySQL()`/`isH2()`-style methods and the repeated cascading `if` chains
+across the plugin layer.
+
+- Lives in `org.ethelred.kiwiproc.processorconfig`, module
+  `gradle-plugin/processorconfig`. This module was already extracted
+  specifically to hold light, framework-agnostic classes (its only
+  dependencies are `jspecify` and `avaje-json`) shared across the plugin
+  frontends without pulling in `:plugin`'s heavy embedded-database runtime
+  deps (see GH#370) — `plugin` and `maven-plugin` depend on it directly as a
+  project dependency, and `querymeta` depends on it via the published
+  artifact coordinate (resolved through Gradle composite-build substitution,
+  not an actual Maven Central publish), so no new module or
+  dependency-graph change is needed.
+- **Why a separate enum from `DatabaseDialect`, not one merged
+  abstraction:** `DatabaseDialect` implementations do real work against a
+  live JDBC connection (unwrapping `org.postgresql.core.BaseConnection`,
+  running `pg_type`/`pg_enum` catalog queries) and so can only exist where
+  the actual JDBC drivers are on the classpath — `querymeta`. `DatabaseKind`
+  is pure identity (a driver-class/URL string match, no driver dependency),
+  which is exactly what `maven-plugin` needs without pulling in every
+  database's JDBC driver just to know "is this MySQL." `DatabaseKind` is
+  what a driver-less module classifies with; `DatabaseDialect` is what a
+  driver-bearing module does with that classification once it has it.
+- `DatabaseKind.fromDriverAndUrl(String driverClassName, String url)` (or an
+  overload taking `DataSourceConfig` directly) is the single canonical
+  dispatch point: driver-class match first, URL-prefix fallback, `POSTGRES`
+  as the trailing default — mirroring `DatabaseDialects.fromConfig`'s
+  existing (and correct) dispatch shape.
+- Consumers switch on `DatabaseKind` instead of re-deriving it from strings:
+  - `querymeta`'s `DatabaseDialects.fromConfig` calls
+    `DatabaseKind.fromDriverAndUrl(...)` and switches on the result to
+    construct the right `DatabaseDialect`.
+  - `KiwiProcConfigTask` (Gradle) switches on `DatabaseKind` in both the
+    embedded-instance path (service selection) and the external-datasource
+    path (`DataSource` construction), replacing the two `isMySQL()/isH2()`
+    cascades there.
+  - `KiwiProcMojo` + `DataSourceParameter` (Maven) — same: `isMySQL()`/
+    `isH2()` booleans are replaced with a `getDatabaseKind()` accessor that
+    callers switch on.
+- Incidental fix: the exploration for this spec found `KiwiProcMojo`'s
+  `isMySQL()` check has no URL-prefix fallback (only driver-class), while
+  the Gradle task's does (`isMySQL(...) || url.startsWith("jdbc:mysql:")`)
+  — an external MySQL datasource configured by URL alone currently behaves
+  inconsistently between the two plugin frontends. Routing both through the
+  same `DatabaseKind.fromDriverAndUrl` fixes this as a side effect.
+- Net effect for the SQLite-specific work below: adding SQLite becomes one
+  new enum constant plus one new `case SQLITE ->` arm added to each existing
+  `DatabaseKind` switch (in `DatabaseDialects.fromConfig`, and in
+  `KiwiProcConfigTask`'s and `KiwiProcMojo`'s embedded-instance and
+  external-datasource paths), instead of a fourth copy-pasted `isSqlite()`
+  method plus a fourth `if` branch repeated across `DatabaseDialects`,
+  `KiwiProcConfigTask`, `KiwiProcMojo`, and `DataSourceParameter`.
+
 ### 1. `querymeta` — `SqliteDialect`
 
-- Add `org.xerial:sqlite-jdbc` as a dependency of `querymeta/build.gradle.kts`.
+- Add `org.xerial:sqlite-jdbc` as a `library(...)` entry in
+  `catalog.settings.gradle.kts` (this repo's version-catalog definition,
+  alongside the existing `postgresql`/`mysql`/`h2` entries), then depend on
+  it as `libs.sqlite` from `querymeta/build.gradle.kts`, matching how the
+  other three drivers are already sourced there.
 - New `SqliteDialect implements DatabaseDialect` in
-  `org.ethelred.kiwiproc.meta`, registered in `DatabaseDialects.fromConfig`
-  for `driverClassName=org.sqlite.JDBC` / JDBC URL prefix `jdbc:sqlite:`.
+  `org.ethelred.kiwiproc.meta`. `DatabaseKind.SQLITE` (section 0) matches
+  `driverClassName=org.sqlite.JDBC` / JDBC URL prefix `jdbc:sqlite:`;
+  `DatabaseDialects.fromConfig`'s `DatabaseKind` switch gets a
+  `case SQLITE -> new SqliteDialect()` arm.
 - `getParameters`: SQLite's JDBC parameter metadata is unreliable, similar to
   H2/MySQL — override with the same synthetic-parameter fallback (count `?`
   placeholders in the SQL text) those dialects already use.
@@ -86,12 +150,12 @@ added.
   or keep-alive connection is needed — SQLite is file-based, so the processor
   opens its own connection to the same file path to introspect.
 - Register the service in `KiwiProcPlugin` alongside the other three.
-- Extend `KiwiProcConfigTask`'s `isMySQL()`/`isH2()`-style branching with an
-  `isSqlite()` check, in both the embedded-instance path and the
+- Add a `case SQLITE ->` arm to `KiwiProcConfigTask`'s `DatabaseKind` switch
+  (section 0), in both the embedded-instance path and the
   external-datasource path, to select the service and build the
   `DataSourceConfig`.
-- Add `org.xerial:sqlite-jdbc` (a `libs.versions.toml` entry plus an
-  `implementation` dependency) to `gradle-plugin/plugin/build.gradle.kts`,
+- Add `libs.sqlite` (the same catalog entry from section 1) as an
+  `implementation` dependency of `gradle-plugin/plugin/build.gradle.kts`,
   matching how that module already separately declares `libs.h2`/`libs.mysql`
   alongside `querymeta`'s own copies (needed since `EmbeddedSQLiteService`
   opens JDBC connections directly for Liquibase, same as
@@ -101,11 +165,11 @@ added.
 
 - New `EmbeddedSQLiteManager` (singleton, same fresh-temp-file approach) in
   the maven-plugin module, mirroring `EmbeddedH2Manager`/`EmbeddedMySQLManager`.
-- Extend `KiwiProcMojo` and `DataSourceParameter`'s `isMySQL()`/`isH2()`-style
-  checks with `isSqlite()`.
-- Add `org.xerial:sqlite-jdbc` to
-  `gradle-plugin/maven-plugin/build.gradle.kts`, same rationale as the
-  Gradle plugin above.
+- Add a `case SQLITE ->` arm to `KiwiProcMojo`'s `DatabaseKind` switch, and
+  a corresponding `SQLITE` case wherever `DataSourceParameter.getDatabaseKind()`
+  is consumed (section 0).
+- Add `libs.sqlite` to `gradle-plugin/maven-plugin/build.gradle.kts`, same
+  rationale as the Gradle plugin above.
 
 ### 5. Test module — `test-sqlite`
 
@@ -151,6 +215,10 @@ added.
 
 ## Testing
 
+- `DatabaseKind.fromDriverAndUrl` unit tests covering all four databases by
+  both driver-class and URL-prefix matching, plus the Postgres fallback —
+  this is the single point the whole detection behaviour now funnels
+  through, so it needs direct coverage.
 - `SqliteDialect` unit-level coverage in `querymeta` alongside the existing
   `PostgresDialect`/`H2Dialect`/`MySQLDialect` tests.
 - `test-sqlite` module as the end-to-end integration test (annotation
@@ -162,6 +230,13 @@ added.
 
 ## Open questions / risks
 
+- The `DatabaseKind` refactor (section 0) touches the existing Postgres/H2/
+  MySQL detection paths, not just new SQLite code, so it carries real
+  regression risk to those three databases. Mitigate by doing the refactor
+  as a distinct, separately-reviewable step/commit before adding any
+  SQLite-specific code, with the full existing test suite (including
+  `test-h2`/`test-mysql`) passing unchanged before SQLite work builds on
+  top of it.
 - Liquibase's SQLite support has known rough edges (SQLite's limited `ALTER
   TABLE`); if migrations used by `test-sqlite` hit a real limitation, the
   fix is to write migrations SQLite can execute, not to work around
