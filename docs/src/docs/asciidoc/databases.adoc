@@ -97,6 +97,6 @@ kiwiProc {
 
 1. *Parameter type checking may be weaker* — SQLite's JDBC driver does not always provide reliable parameter metadata; types fall back to `UNKNOWN` when unavailable.
 2. *SQL arrays are not supported* — array type introspection is not implemented for SQLite.
-3. *No native enum type* — SQLite has no catalog of user-defined enum types to introspect.
+3. *No native enum type* — SQLite has no catalogue of user-defined enum types to introspect.
 4. *Dynamic typing* — SQLite uses type affinity rather than strict column types; declared column types are advisory, not enforced by the database itself.
 5. *The `RETURNING` clause is supported* — unlike H2 and MySQL, SQLite's JDBC driver correctly reports result metadata for `RETURNING` inserts.
