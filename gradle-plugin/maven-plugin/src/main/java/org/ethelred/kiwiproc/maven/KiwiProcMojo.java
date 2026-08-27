@@ -38,9 +38,9 @@ import org.sqlite.SQLiteDataSource;
  * Generates the kiwiproc annotation-processor configuration ({@code config.json}) and a test
  * properties file describing how to connect to the build-time database(s).
  *
- * <p>For each configured (or default) datasource: starts/reuses an embedded PostgreSQL, H2, or
- * MySQL database and applies the Liquibase changelog, or passes through an external JDBC URL
- * (optionally applying Liquibase to it too).
+ * <p>For each configured (or default) datasource: starts/reuses an embedded PostgreSQL, H2,
+ * MySQL, or SQLite database and applies the Liquibase changelog, or passes through an external
+ * JDBC URL (optionally applying Liquibase to it too).
  */
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES, threadSafe = false)
 public class KiwiProcMojo extends AbstractMojo {
