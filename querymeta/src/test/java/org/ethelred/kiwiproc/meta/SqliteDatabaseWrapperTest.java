@@ -45,6 +45,7 @@ class SqliteDatabaseWrapperTest {
     private DatabaseWrapper getDatabaseWrapper() throws IOException {
         var dbFile = Files.createTempFile("kiwiproc-sqlite-wrapper-test-", ".db");
         Files.deleteIfExists(dbFile);
+        dbFile.toFile().deleteOnExit();
         var url = "jdbc:sqlite:" + dbFile.toAbsolutePath();
         var config = new DataSourceConfig("test", url, null, null, null, "org.sqlite.JDBC");
         return new DatabaseWrapper("test", config);
