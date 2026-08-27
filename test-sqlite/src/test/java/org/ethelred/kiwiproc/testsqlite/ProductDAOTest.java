@@ -99,4 +99,13 @@ public class ProductDAOTest {
         dao.batchInsertWithSize(List.of("P1", "P2", "P3", "P4", "P5"), List.of(1.0, 2.0, 3.0, 4.0, 5.0));
         assertThat(dao.listAll()).hasSize(5);
     }
+
+    @Test
+    void insertProductReturningId_returnsGeneratedId() {
+        var id = dao.insertProductReturningId("Returned", 3.50);
+        assertThat(id).isPresent();
+        var found = dao.findById(id.get());
+        assertThat(found).isNotNull();
+        assertThat(found.name()).isEqualTo("Returned");
+    }
 }

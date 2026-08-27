@@ -3,6 +3,7 @@ package org.ethelred.kiwiproc.testsqlite;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlBatch;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
@@ -39,4 +40,7 @@ public interface ProductDAO {
 
     @SqlUpdate("DELETE FROM product")
     void deleteAll();
+
+    @SqlQuery("INSERT INTO product (name, price) VALUES (:name, :price) RETURNING id")
+    Optional<Integer> insertProductReturningId(String name, double price);
 }
