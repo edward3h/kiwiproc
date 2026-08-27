@@ -46,6 +46,7 @@ public class ProductDAOTest {
         var found = dao.findById(last.id());
         assertThat(found).isNotNull();
         assertThat(found.name()).isEqualTo("Widget");
+        assertThat(found.price()).isWithin(0.001).of(9.99);
     }
 
     @Test
