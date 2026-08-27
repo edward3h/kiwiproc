@@ -105,6 +105,18 @@ public class KiwiProcMojo extends AbstractMojo {
         }
         var liquibaseFile = requireLiquibaseChangelog(dataSource);
         return switch (dataSource.getDatabaseKind()) {
+            case POSTGRES -> {
+                var connectionInfo = EmbeddedPostgresManager.getInstance().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        dataSource.getName(),
+                        "jdbc:postgresql://localhost:%d/%s?user=%s"
+                                .formatted(
+                                        connectionInfo.getPort(), connectionInfo.getDbName(), connectionInfo.getUser()),
+                        connectionInfo.getDbName(),
+                        connectionInfo.getUser(),
+                        null,
+                        null);
+            }
             case MYSQL -> {
                 var connectionInfo = EmbeddedMySQLManager.getInstance().getPreparedDatabase(liquibaseFile);
                 yield new DataSourceConfig(
@@ -124,18 +136,6 @@ public class KiwiProcMojo extends AbstractMojo {
                         null,
                         null,
                         DatabaseKind.H2.driverClassName());
-            }
-            case POSTGRES -> {
-                var connectionInfo = EmbeddedPostgresManager.getInstance().getPreparedDatabase(liquibaseFile);
-                yield new DataSourceConfig(
-                        dataSource.getName(),
-                        "jdbc:postgresql://localhost:%d/%s?user=%s"
-                                .formatted(
-                                        connectionInfo.getPort(), connectionInfo.getDbName(), connectionInfo.getUser()),
-                        connectionInfo.getDbName(),
-                        connectionInfo.getUser(),
-                        null,
-                        null);
             }
             case SQLITE -> {
                 var connectionInfo = EmbeddedSQLiteManager.getInstance().getPreparedDatabase(liquibaseFile);
@@ -165,28 +165,6 @@ public class KiwiProcMojo extends AbstractMojo {
             var url = dataSource.getJdbcUrl();
             DataSource ds =
                     switch (dataSource.getDatabaseKind()) {
-                        case H2 -> {
-                            var h2Ds = new JdbcDataSource();
-                            h2Ds.setURL(url);
-                            if (dataSource.getUsername() != null) {
-                                h2Ds.setUser(dataSource.getUsername());
-                            }
-                            if (dataSource.getPassword() != null) {
-                                h2Ds.setPassword(dataSource.getPassword());
-                            }
-                            yield h2Ds;
-                        }
-                        case MYSQL -> {
-                            var mysqlDs = new MysqlDataSource();
-                            mysqlDs.setURL(url);
-                            if (dataSource.getUsername() != null) {
-                                mysqlDs.setUser(dataSource.getUsername());
-                            }
-                            if (dataSource.getPassword() != null) {
-                                mysqlDs.setPassword(dataSource.getPassword());
-                            }
-                            yield mysqlDs;
-                        }
                         case POSTGRES -> {
                             var pgDs = new PGSimpleDataSource();
                             pgDs.setURL(url);
@@ -200,6 +178,28 @@ public class KiwiProcMojo extends AbstractMojo {
                                 pgDs.setPassword(dataSource.getPassword());
                             }
                             yield pgDs;
+                        }
+                        case MYSQL -> {
+                            var mysqlDs = new MysqlDataSource();
+                            mysqlDs.setURL(url);
+                            if (dataSource.getUsername() != null) {
+                                mysqlDs.setUser(dataSource.getUsername());
+                            }
+                            if (dataSource.getPassword() != null) {
+                                mysqlDs.setPassword(dataSource.getPassword());
+                            }
+                            yield mysqlDs;
+                        }
+                        case H2 -> {
+                            var h2Ds = new JdbcDataSource();
+                            h2Ds.setURL(url);
+                            if (dataSource.getUsername() != null) {
+                                h2Ds.setUser(dataSource.getUsername());
+                            }
+                            if (dataSource.getPassword() != null) {
+                                h2Ds.setPassword(dataSource.getPassword());
+                            }
+                            yield h2Ds;
                         }
                         case SQLITE -> {
                             var sqliteDs = new SQLiteDataSource();

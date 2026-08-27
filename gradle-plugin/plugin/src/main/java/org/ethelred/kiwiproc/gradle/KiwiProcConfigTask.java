@@ -149,6 +149,18 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
         var kind = DatabaseKind.fromDriverAndUrl(
                 kiwiProcDataSource.getDriverClassName().getOrNull(), null);
         return switch (kind) {
+            case POSTGRES -> {
+                var connectionInfo = getService().get().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        kiwiProcDataSource.getName(),
+                        "jdbc:postgresql://localhost:%d/%s?user=%s"
+                                .formatted(
+                                        connectionInfo.getPort(), connectionInfo.getDbName(), connectionInfo.getUser()),
+                        connectionInfo.getDbName(),
+                        connectionInfo.getUser(),
+                        null,
+                        null);
+            }
             case MYSQL -> {
                 var connectionInfo = getMySQLService().get().getPreparedDatabase(liquibaseFile);
                 yield new DataSourceConfig(
@@ -179,18 +191,6 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
                         null,
                         DatabaseKind.SQLITE.driverClassName());
             }
-            case POSTGRES -> {
-                var connectionInfo = getService().get().getPreparedDatabase(liquibaseFile);
-                yield new DataSourceConfig(
-                        kiwiProcDataSource.getName(),
-                        "jdbc:postgresql://localhost:%d/%s?user=%s"
-                                .formatted(
-                                        connectionInfo.getPort(), connectionInfo.getDbName(), connectionInfo.getUser()),
-                        connectionInfo.getDbName(),
-                        connectionInfo.getUser(),
-                        null,
-                        null);
-            }
         };
     }
 
@@ -201,6 +201,14 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
                     kiwiProcDataSource.getDriverClassName().getOrNull(), url);
             DataSource ds =
                     switch (kind) {
+                        case POSTGRES -> {
+                            var pgDs = new PGSimpleDataSource();
+                            pgDs.setURL(url);
+                            ifPresent(kiwiProcDataSource.getDatabase(), pgDs::setDatabaseName);
+                            ifPresent(kiwiProcDataSource.getUsername(), pgDs::setUser);
+                            ifPresent(kiwiProcDataSource.getPassword(), pgDs::setPassword);
+                            yield pgDs;
+                        }
                         case MYSQL -> {
                             var mysqlDs = new MysqlDataSource();
                             mysqlDs.setURL(url);
@@ -214,14 +222,6 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
                             ifPresent(kiwiProcDataSource.getUsername(), h2Ds::setUser);
                             ifPresent(kiwiProcDataSource.getPassword(), h2Ds::setPassword);
                             yield h2Ds;
-                        }
-                        case POSTGRES -> {
-                            var pgDs = new PGSimpleDataSource();
-                            pgDs.setURL(url);
-                            ifPresent(kiwiProcDataSource.getDatabase(), pgDs::setDatabaseName);
-                            ifPresent(kiwiProcDataSource.getUsername(), pgDs::setUser);
-                            ifPresent(kiwiProcDataSource.getPassword(), pgDs::setPassword);
-                            yield pgDs;
                         }
                         case SQLITE -> {
                             var sqliteDs = new SQLiteDataSource();

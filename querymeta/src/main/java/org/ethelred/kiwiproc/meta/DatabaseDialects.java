@@ -7,10 +7,10 @@ import org.ethelred.kiwiproc.processorconfig.DatabaseKind;
 public class DatabaseDialects {
     public static DatabaseDialect fromConfig(DataSourceConfig config) {
         return switch (DatabaseKind.fromConfig(config)) {
+            case POSTGRES -> new PostgresDialect();
             case MYSQL -> new MySQLDialect();
             case H2 -> new H2Dialect();
             case SQLITE -> new SqliteDialect();
-            case POSTGRES -> new PostgresDialect();
         };
     }
 }
