@@ -32,6 +32,7 @@ import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
 import org.h2.jdbcx.JdbcDataSource;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.sqlite.SQLiteDataSource;
 
 /**
  * Generates the kiwiproc annotation-processor configuration ({@code config.json}) and a test
@@ -136,6 +137,16 @@ public class KiwiProcMojo extends AbstractMojo {
                         null,
                         null);
             }
+            case SQLITE -> {
+                var connectionInfo = EmbeddedSQLiteManager.getInstance().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        dataSource.getName(),
+                        connectionInfo.url(),
+                        null,
+                        null,
+                        null,
+                        DatabaseKind.SQLITE.driverClassName());
+            }
         };
     }
 
@@ -189,6 +200,11 @@ public class KiwiProcMojo extends AbstractMojo {
                                 pgDs.setPassword(dataSource.getPassword());
                             }
                             yield pgDs;
+                        }
+                        case SQLITE -> {
+                            var sqliteDs = new SQLiteDataSource();
+                            sqliteDs.setUrl(url);
+                            yield sqliteDs;
                         }
                     };
             liquibaseUpdate(dataSource.getName(), changelog, ds);
