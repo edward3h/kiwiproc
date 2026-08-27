@@ -2,17 +2,15 @@
 package org.ethelred.kiwiproc.meta;
 
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
+import org.ethelred.kiwiproc.processorconfig.DatabaseKind;
 
 public class DatabaseDialects {
     public static DatabaseDialect fromConfig(DataSourceConfig config) {
-        var driver = config.driverClassName();
-        var url = config.url() != null ? config.url() : "";
-        if ("com.mysql.cj.jdbc.Driver".equals(driver) || url.startsWith("jdbc:mysql:")) {
-            return new MySQLDialect();
-        }
-        if ("org.h2.Driver".equals(driver) || url.startsWith("jdbc:h2:")) {
-            return new H2Dialect();
-        }
-        return new PostgresDialect();
+        return switch (DatabaseKind.fromConfig(config)) {
+            case POSTGRES -> new PostgresDialect();
+            case MYSQL -> new MySQLDialect();
+            case H2 -> new H2Dialect();
+            case SQLITE -> new SqliteDialect();
+        };
     }
 }

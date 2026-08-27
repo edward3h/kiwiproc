@@ -4,6 +4,7 @@ package org.ethelred.kiwiproc.meta;
 import java.sql.Connection;
 import java.sql.JDBCType;
 import java.sql.PreparedStatement;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,15 @@ public interface DatabaseDialect {
         var result = new ArrayList<ColumnMetaData>(pmd.getParameterCount());
         for (int index = 1; index <= pmd.getParameterCount(); index++) {
             result.add(ColumnMetaData.from(this, connection, index, pmd));
+        }
+        return result;
+    }
+
+    default List<ColumnMetaData> getResultColumns(Connection connection, ResultSetMetaData resultSetMetaData)
+            throws SQLException {
+        var result = new ArrayList<ColumnMetaData>(resultSetMetaData.getColumnCount());
+        for (var index = 1; index <= resultSetMetaData.getColumnCount(); index++) {
+            result.add(ColumnMetaData.from(this, connection, index, resultSetMetaData));
         }
         return result;
     }

@@ -33,6 +33,7 @@ dependencies {
     implementation(libs.mysql)
     implementation(libs.testcontainers.mysql)
     implementation(libs.h2)
+    implementation(libs.sqlite)
     // quick fix - should make postgres version/arch configurable
     runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:18.4.0"))
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-linux-arm64v8")

@@ -19,6 +19,7 @@ import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.DirectoryResourceAccessor;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
+import org.ethelred.kiwiproc.processorconfig.DatabaseKind;
 import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
 import org.gradle.api.DefaultTask;
@@ -30,6 +31,7 @@ import org.gradle.api.tasks.*;
 import org.h2.jdbcx.JdbcDataSource;
 import org.jspecify.annotations.Nullable;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.sqlite.SQLiteDataSource;
 
 @UntrackedTask(
         because =
@@ -43,6 +45,9 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
 
     @ServiceReference(EmbeddedH2Service.DEFAULT_NAME)
     abstract Property<EmbeddedH2Service> getH2Service();
+
+    @ServiceReference(EmbeddedSQLiteService.DEFAULT_NAME)
+    abstract Property<EmbeddedSQLiteService> getSQLiteService();
 
     @OutputFile
     public abstract RegularFileProperty getConfigFile();
@@ -136,69 +141,94 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
         return dataSource.getJdbcUrl().isPresent();
     }
 
-    private boolean isMySQL(KiwiProcDataSource dataSource) {
-        return "com.mysql.cj.jdbc.Driver".equals(dataSource.getDriverClassName().getOrNull());
-    }
-
-    private boolean isH2(KiwiProcDataSource dataSource) {
-        return "org.h2.Driver".equals(dataSource.getDriverClassName().getOrNull());
-    }
-
     private DataSourceConfig toDataSourceConfig(KiwiProcDataSource kiwiProcDataSource) {
         if (isExternal(kiwiProcDataSource)) {
             return externalDataSourceConfig(kiwiProcDataSource);
         }
         var liquibaseFile = kiwiProcDataSource.getLiquibaseChangelog().get().getAsFile();
-        if (isMySQL(kiwiProcDataSource)) {
-            var connectionInfo = getMySQLService().get().getPreparedDatabase(liquibaseFile);
-            return new DataSourceConfig(
-                    kiwiProcDataSource.getName(),
-                    connectionInfo.url(),
-                    null,
-                    connectionInfo.username(),
-                    connectionInfo.password(),
-                    "com.mysql.cj.jdbc.Driver");
-        }
-        if (isH2(kiwiProcDataSource)) {
-            var connectionInfo = getH2Service().get().getPreparedDatabase(liquibaseFile);
-            return new DataSourceConfig(
-                    kiwiProcDataSource.getName(), connectionInfo.url(), null, null, null, "org.h2.Driver");
-        }
-        var connectionInfo = getService().get().getPreparedDatabase(liquibaseFile);
-        return new DataSourceConfig(
-                kiwiProcDataSource.getName(),
-                "jdbc:postgresql://localhost:%d/%s?user=%s"
-                        .formatted(connectionInfo.getPort(), connectionInfo.getDbName(), connectionInfo.getUser()),
-                connectionInfo.getDbName(),
-                connectionInfo.getUser(),
-                null,
-                null);
+        var kind = DatabaseKind.fromDriverAndUrl(
+                kiwiProcDataSource.getDriverClassName().getOrNull(), null);
+        return switch (kind) {
+            case POSTGRES -> {
+                var connectionInfo = getService().get().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        kiwiProcDataSource.getName(),
+                        "jdbc:postgresql://localhost:%d/%s?user=%s"
+                                .formatted(
+                                        connectionInfo.getPort(), connectionInfo.getDbName(), connectionInfo.getUser()),
+                        connectionInfo.getDbName(),
+                        connectionInfo.getUser(),
+                        null,
+                        null);
+            }
+            case MYSQL -> {
+                var connectionInfo = getMySQLService().get().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        kiwiProcDataSource.getName(),
+                        connectionInfo.url(),
+                        null,
+                        connectionInfo.username(),
+                        connectionInfo.password(),
+                        DatabaseKind.MYSQL.driverClassName());
+            }
+            case H2 -> {
+                var connectionInfo = getH2Service().get().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        kiwiProcDataSource.getName(),
+                        connectionInfo.url(),
+                        null,
+                        null,
+                        null,
+                        DatabaseKind.H2.driverClassName());
+            }
+            case SQLITE -> {
+                var connectionInfo = getSQLiteService().get().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        kiwiProcDataSource.getName(),
+                        connectionInfo.url(),
+                        null,
+                        null,
+                        null,
+                        DatabaseKind.SQLITE.driverClassName());
+            }
+        };
     }
 
     private DataSourceConfig externalDataSourceConfig(KiwiProcDataSource kiwiProcDataSource) {
         if (kiwiProcDataSource.getLiquibaseChangelog().isPresent()) {
-            DataSource ds;
             var url = kiwiProcDataSource.getJdbcUrl().get();
-            if (isMySQL(kiwiProcDataSource) || url.startsWith("jdbc:mysql:")) {
-                var mysqlDs = new MysqlDataSource();
-                mysqlDs.setURL(url);
-                ifPresent(kiwiProcDataSource.getUsername(), mysqlDs::setUser);
-                ifPresent(kiwiProcDataSource.getPassword(), mysqlDs::setPassword);
-                ds = mysqlDs;
-            } else if (isH2(kiwiProcDataSource) || url.startsWith("jdbc:h2:")) {
-                var h2Ds = new JdbcDataSource();
-                h2Ds.setURL(url);
-                ifPresent(kiwiProcDataSource.getUsername(), h2Ds::setUser);
-                ifPresent(kiwiProcDataSource.getPassword(), h2Ds::setPassword);
-                ds = h2Ds;
-            } else {
-                var pgDs = new PGSimpleDataSource();
-                pgDs.setURL(url);
-                ifPresent(kiwiProcDataSource.getDatabase(), pgDs::setDatabaseName);
-                ifPresent(kiwiProcDataSource.getUsername(), pgDs::setUser);
-                ifPresent(kiwiProcDataSource.getPassword(), pgDs::setPassword);
-                ds = pgDs;
-            }
+            var kind = DatabaseKind.fromDriverAndUrl(
+                    kiwiProcDataSource.getDriverClassName().getOrNull(), url);
+            DataSource ds =
+                    switch (kind) {
+                        case POSTGRES -> {
+                            var pgDs = new PGSimpleDataSource();
+                            pgDs.setURL(url);
+                            ifPresent(kiwiProcDataSource.getDatabase(), pgDs::setDatabaseName);
+                            ifPresent(kiwiProcDataSource.getUsername(), pgDs::setUser);
+                            ifPresent(kiwiProcDataSource.getPassword(), pgDs::setPassword);
+                            yield pgDs;
+                        }
+                        case MYSQL -> {
+                            var mysqlDs = new MysqlDataSource();
+                            mysqlDs.setURL(url);
+                            ifPresent(kiwiProcDataSource.getUsername(), mysqlDs::setUser);
+                            ifPresent(kiwiProcDataSource.getPassword(), mysqlDs::setPassword);
+                            yield mysqlDs;
+                        }
+                        case H2 -> {
+                            var h2Ds = new JdbcDataSource();
+                            h2Ds.setURL(url);
+                            ifPresent(kiwiProcDataSource.getUsername(), h2Ds::setUser);
+                            ifPresent(kiwiProcDataSource.getPassword(), h2Ds::setPassword);
+                            yield h2Ds;
+                        }
+                        case SQLITE -> {
+                            var sqliteDs = new SQLiteDataSource();
+                            sqliteDs.setUrl(url);
+                            yield sqliteDs;
+                        }
+                    };
             liquibaseUpdate(
                     kiwiProcDataSource.getLiquibaseChangelog().getAsFile().get(), ds);
         }

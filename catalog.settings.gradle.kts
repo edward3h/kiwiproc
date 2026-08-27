@@ -20,6 +20,7 @@ dependencyResolutionManagement {
             library("postgresql", "org.postgresql:postgresql:42.7.11")
             library("mysql", "com.mysql:mysql-connector-j:26.7.0")
             library("h2", "com.h2database:h2:2.4.240")
+            library("sqlite", "org.xerial:sqlite-jdbc:3.53.4.0")
             library("testcontainers-mysql", "org.testcontainers:mysql:1.21.4")
             library("testcontainers-junit5", "org.testcontainers:junit-jupiter:1.21.4")
 

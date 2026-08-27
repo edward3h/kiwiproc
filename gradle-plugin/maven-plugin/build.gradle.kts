@@ -35,6 +35,7 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.h2)
     implementation(libs.mysql)
+    implementation(libs.sqlite)
     implementation(libs.testcontainers.mysql)
     runtimeOnly(platform("io.zonky.test.postgres:embedded-postgres-binaries-bom:18.4.0"))
     runtimeOnly("io.zonky.test.postgres:embedded-postgres-binaries-linux-arm64v8")

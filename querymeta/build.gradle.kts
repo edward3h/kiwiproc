@@ -8,6 +8,7 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.mysql)
     implementation(libs.h2)
+    implementation(libs.sqlite)
     implementation("org.ethelred.kiwiproc:processorconfig:${project.version}")
 
     annotationProcessor(libs.recordbuilder.processor)

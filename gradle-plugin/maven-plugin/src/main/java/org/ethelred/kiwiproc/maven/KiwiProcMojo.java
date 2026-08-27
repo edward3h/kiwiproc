@@ -27,18 +27,20 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
+import org.ethelred.kiwiproc.processorconfig.DatabaseKind;
 import org.ethelred.kiwiproc.processorconfig.DependencyInjectionStyle;
 import org.ethelred.kiwiproc.processorconfig.ProcessorConfig;
 import org.h2.jdbcx.JdbcDataSource;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.sqlite.SQLiteDataSource;
 
 /**
  * Generates the kiwiproc annotation-processor configuration ({@code config.json}) and a test
  * properties file describing how to connect to the build-time database(s).
  *
- * <p>For each configured (or default) datasource: starts/reuses an embedded PostgreSQL, H2, or
- * MySQL database and applies the Liquibase changelog, or passes through an external JDBC URL
- * (optionally applying Liquibase to it too).
+ * <p>For each configured (or default) datasource: starts/reuses an embedded PostgreSQL, H2,
+ * MySQL, or SQLite database and applies the Liquibase changelog, or passes through an external
+ * JDBC URL (optionally applying Liquibase to it too).
  */
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES, threadSafe = false)
 public class KiwiProcMojo extends AbstractMojo {
@@ -101,31 +103,51 @@ public class KiwiProcMojo extends AbstractMojo {
         if (dataSource.isExternal()) {
             return externalDataSourceConfig(dataSource);
         }
-        if (dataSource.isMySQL()) {
-            var liquibaseFile = requireLiquibaseChangelog(dataSource);
-            var connectionInfo = EmbeddedMySQLManager.getInstance().getPreparedDatabase(liquibaseFile);
-            return new DataSourceConfig(
-                    dataSource.getName(),
-                    connectionInfo.url(),
-                    null,
-                    connectionInfo.username(),
-                    connectionInfo.password(),
-                    "com.mysql.cj.jdbc.Driver");
-        }
         var liquibaseFile = requireLiquibaseChangelog(dataSource);
-        if (dataSource.isH2()) {
-            var connectionInfo = EmbeddedH2Manager.getInstance().getPreparedDatabase(liquibaseFile);
-            return new DataSourceConfig(dataSource.getName(), connectionInfo.url(), null, null, null, "org.h2.Driver");
-        }
-        var connectionInfo = EmbeddedPostgresManager.getInstance().getPreparedDatabase(liquibaseFile);
-        return new DataSourceConfig(
-                dataSource.getName(),
-                "jdbc:postgresql://localhost:%d/%s?user=%s"
-                        .formatted(connectionInfo.getPort(), connectionInfo.getDbName(), connectionInfo.getUser()),
-                connectionInfo.getDbName(),
-                connectionInfo.getUser(),
-                null,
-                null);
+        return switch (dataSource.getDatabaseKind()) {
+            case POSTGRES -> {
+                var connectionInfo = EmbeddedPostgresManager.getInstance().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        dataSource.getName(),
+                        "jdbc:postgresql://localhost:%d/%s?user=%s"
+                                .formatted(
+                                        connectionInfo.getPort(), connectionInfo.getDbName(), connectionInfo.getUser()),
+                        connectionInfo.getDbName(),
+                        connectionInfo.getUser(),
+                        null,
+                        null);
+            }
+            case MYSQL -> {
+                var connectionInfo = EmbeddedMySQLManager.getInstance().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        dataSource.getName(),
+                        connectionInfo.url(),
+                        null,
+                        connectionInfo.username(),
+                        connectionInfo.password(),
+                        DatabaseKind.MYSQL.driverClassName());
+            }
+            case H2 -> {
+                var connectionInfo = EmbeddedH2Manager.getInstance().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        dataSource.getName(),
+                        connectionInfo.url(),
+                        null,
+                        null,
+                        null,
+                        DatabaseKind.H2.driverClassName());
+            }
+            case SQLITE -> {
+                var connectionInfo = EmbeddedSQLiteManager.getInstance().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        dataSource.getName(),
+                        connectionInfo.url(),
+                        null,
+                        null,
+                        null,
+                        DatabaseKind.SQLITE.driverClassName());
+            }
+        };
     }
 
     private File requireLiquibaseChangelog(DataSourceParameter dataSource) {
@@ -140,42 +162,51 @@ public class KiwiProcMojo extends AbstractMojo {
     private DataSourceConfig externalDataSourceConfig(DataSourceParameter dataSource) {
         var changelog = dataSource.getLiquibaseChangelog();
         if (changelog != null && changelog.exists()) {
-            DataSource ds;
             var url = dataSource.getJdbcUrl();
-            if (dataSource.isH2()) {
-                var h2Ds = new JdbcDataSource();
-                h2Ds.setURL(url);
-                if (dataSource.getUsername() != null) {
-                    h2Ds.setUser(dataSource.getUsername());
-                }
-                if (dataSource.getPassword() != null) {
-                    h2Ds.setPassword(dataSource.getPassword());
-                }
-                ds = h2Ds;
-            } else if (dataSource.isMySQL()) {
-                var mysqlDs = new MysqlDataSource();
-                mysqlDs.setURL(url);
-                if (dataSource.getUsername() != null) {
-                    mysqlDs.setUser(dataSource.getUsername());
-                }
-                if (dataSource.getPassword() != null) {
-                    mysqlDs.setPassword(dataSource.getPassword());
-                }
-                ds = mysqlDs;
-            } else {
-                var pgDs = new PGSimpleDataSource();
-                pgDs.setURL(url);
-                if (dataSource.getDatabase() != null) {
-                    pgDs.setDatabaseName(dataSource.getDatabase());
-                }
-                if (dataSource.getUsername() != null) {
-                    pgDs.setUser(dataSource.getUsername());
-                }
-                if (dataSource.getPassword() != null) {
-                    pgDs.setPassword(dataSource.getPassword());
-                }
-                ds = pgDs;
-            }
+            DataSource ds =
+                    switch (dataSource.getDatabaseKind()) {
+                        case POSTGRES -> {
+                            var pgDs = new PGSimpleDataSource();
+                            pgDs.setURL(url);
+                            if (dataSource.getDatabase() != null) {
+                                pgDs.setDatabaseName(dataSource.getDatabase());
+                            }
+                            if (dataSource.getUsername() != null) {
+                                pgDs.setUser(dataSource.getUsername());
+                            }
+                            if (dataSource.getPassword() != null) {
+                                pgDs.setPassword(dataSource.getPassword());
+                            }
+                            yield pgDs;
+                        }
+                        case MYSQL -> {
+                            var mysqlDs = new MysqlDataSource();
+                            mysqlDs.setURL(url);
+                            if (dataSource.getUsername() != null) {
+                                mysqlDs.setUser(dataSource.getUsername());
+                            }
+                            if (dataSource.getPassword() != null) {
+                                mysqlDs.setPassword(dataSource.getPassword());
+                            }
+                            yield mysqlDs;
+                        }
+                        case H2 -> {
+                            var h2Ds = new JdbcDataSource();
+                            h2Ds.setURL(url);
+                            if (dataSource.getUsername() != null) {
+                                h2Ds.setUser(dataSource.getUsername());
+                            }
+                            if (dataSource.getPassword() != null) {
+                                h2Ds.setPassword(dataSource.getPassword());
+                            }
+                            yield h2Ds;
+                        }
+                        case SQLITE -> {
+                            var sqliteDs = new SQLiteDataSource();
+                            sqliteDs.setUrl(url);
+                            yield sqliteDs;
+                        }
+                    };
             liquibaseUpdate(dataSource.getName(), changelog, ds);
         }
 
