@@ -2,6 +2,7 @@
 package org.ethelred.kiwiproc.maven;
 
 import java.io.File;
+import org.ethelred.kiwiproc.processorconfig.DatabaseKind;
 import org.jspecify.annotations.Nullable;
 
 /** One {@code <dataSource>} entry inside the plugin's {@code <dataSources>} configuration. */
@@ -80,11 +81,7 @@ public class DataSourceParameter {
         return jdbcUrl != null;
     }
 
-    public boolean isMySQL() {
-        return "com.mysql.cj.jdbc.Driver".equals(driverClassName);
-    }
-
-    public boolean isH2() {
-        return "org.h2.Driver".equals(driverClassName) || (jdbcUrl != null && jdbcUrl.startsWith("jdbc:h2:"));
+    public DatabaseKind getDatabaseKind() {
+        return DatabaseKind.fromDriverAndUrl(driverClassName, jdbcUrl);
     }
 }
