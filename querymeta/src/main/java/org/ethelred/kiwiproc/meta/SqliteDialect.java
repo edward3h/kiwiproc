@@ -3,6 +3,7 @@ package org.ethelred.kiwiproc.meta;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,21 @@ public class SqliteDialect implements DatabaseDialect {
     @Override
     public @Nullable ArrayComponent componentType(Connection connection, int columnType, String columnTypeName) {
         return null;
+    }
+
+    @Override
+    public List<ColumnMetaData> getResultColumns(Connection connection, ResultSetMetaData resultSetMetaData)
+            throws SQLException {
+        try {
+            return DatabaseDialect.super.getResultColumns(connection, resultSetMetaData);
+        } catch (SQLException ignored) {
+            // SQLite returns non-null, zero-column metadata for non-SELECT statements instead of
+            // null (unlike Postgres/H2/MySQL), and getColumnCount() throws rather than returning 0
+            // in that case — treat this the same as no result columns. Mirrors the same
+            // try/catch-with-fallback pattern used in getParameters() above for the same driver's
+            // unreliable metadata reporting.
+            return List.of();
+        }
     }
 
     @Override

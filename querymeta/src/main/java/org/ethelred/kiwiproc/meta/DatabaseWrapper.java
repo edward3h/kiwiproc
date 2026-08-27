@@ -57,9 +57,9 @@ public class DatabaseWrapper {
                 var statement = connection.prepareStatement(sql)) {
             var builder = QueryMetaDataBuilder.builder();
             var rsmd = statement.getMetaData();
-            if (rsmd != null) { // null for update, batch
-                for (var index = 1; index <= rsmd.getColumnCount(); index++) {
-                    builder.addResultColumns(ColumnMetaData.from(dialect, connection, index, rsmd));
+            if (rsmd != null) { // null for update, batch on most drivers
+                for (var column : dialect.getResultColumns(connection, rsmd)) {
+                    builder.addResultColumns(column);
                 }
             }
             for (var parameter : dialect.getParameters(connection, statement, sql)) {
