@@ -31,6 +31,7 @@ import org.gradle.api.tasks.*;
 import org.h2.jdbcx.JdbcDataSource;
 import org.jspecify.annotations.Nullable;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.sqlite.SQLiteDataSource;
 
 @UntrackedTask(
         because =
@@ -44,6 +45,9 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
 
     @ServiceReference(EmbeddedH2Service.DEFAULT_NAME)
     abstract Property<EmbeddedH2Service> getH2Service();
+
+    @ServiceReference(EmbeddedSQLiteService.DEFAULT_NAME)
+    abstract Property<EmbeddedSQLiteService> getSQLiteService();
 
     @OutputFile
     public abstract RegularFileProperty getConfigFile();
@@ -165,6 +169,16 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
                         null,
                         DatabaseKind.H2.driverClassName());
             }
+            case SQLITE -> {
+                var connectionInfo = getSQLiteService().get().getPreparedDatabase(liquibaseFile);
+                yield new DataSourceConfig(
+                        kiwiProcDataSource.getName(),
+                        connectionInfo.url(),
+                        null,
+                        null,
+                        null,
+                        DatabaseKind.SQLITE.driverClassName());
+            }
             case POSTGRES -> {
                 var connectionInfo = getService().get().getPreparedDatabase(liquibaseFile);
                 yield new DataSourceConfig(
@@ -208,6 +222,11 @@ public abstract class KiwiProcConfigTask extends DefaultTask {
                             ifPresent(kiwiProcDataSource.getUsername(), pgDs::setUser);
                             ifPresent(kiwiProcDataSource.getPassword(), pgDs::setPassword);
                             yield pgDs;
+                        }
+                        case SQLITE -> {
+                            var sqliteDs = new SQLiteDataSource();
+                            sqliteDs.setUrl(url);
+                            yield sqliteDs;
                         }
                     };
             liquibaseUpdate(

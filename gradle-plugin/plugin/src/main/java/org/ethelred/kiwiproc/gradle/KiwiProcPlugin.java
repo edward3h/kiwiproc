@@ -32,6 +32,10 @@ public class KiwiProcPlugin implements Plugin<Project> {
                 .getSharedServices()
                 .registerIfAbsent(EmbeddedH2Service.DEFAULT_NAME, EmbeddedH2Service.class);
 
+        project.getGradle()
+                .getSharedServices()
+                .registerIfAbsent(EmbeddedSQLiteService.DEFAULT_NAME, EmbeddedSQLiteService.class);
+
         var version = loadVersion();
 
         var extension = project.getExtensions().create("kiwiProc", KiwiProcExtension.class);
