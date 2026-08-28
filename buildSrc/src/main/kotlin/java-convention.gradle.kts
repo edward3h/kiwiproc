@@ -30,7 +30,7 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 
 val junitVersion = "6.1.3"
 dependencies {
-    implementation("org.jspecify:jspecify:1.0.0")
+    implementation("org.jspecify:jspecify:1.0.1")
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     testImplementation("com.google.truth:truth:1.4.5")

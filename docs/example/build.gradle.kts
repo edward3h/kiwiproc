@@ -19,6 +19,6 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jspecify:jspecify:1.0.0")
+    implementation("org.jspecify:jspecify:1.0.1")
     implementation("jakarta.inject:jakarta.inject-api:2.0.1")
 }
