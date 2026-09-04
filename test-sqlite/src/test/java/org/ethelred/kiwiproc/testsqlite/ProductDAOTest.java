@@ -109,6 +109,17 @@ public class ProductDAOTest {
         assertThat(found.name()).isEqualTo("Returned");
     }
 
+    // No processor changes were needed for SQLite JSON support, but not for the reason it might
+    // look like at a glance. SQLite's type-affinity rules give a column declared "JSON" (this
+    // module's changelog) NUMERIC affinity by default -- xerial's driver actually reports
+    // jdbcType=NUMERIC, dbType="JSON" for this column. It only resolves to String, not
+    // BigDecimal, because SqlTypeMappingRegistry's dbType-first lookup matches the literal
+    // string "JSON" against the same json/jsonb dbType entries Task 1 added for Postgres (reused
+    // by H2 in Task 7) -- coincidentally, not via any SQLite-specific mapping. A column declared
+    // TEXT instead of JSON would take a different, unverified path. On the write side, SQLite
+    // (like MySQL) reports no usable parameter metadata at all (dbType "UNKNOWN"), so the
+    // :metadata parameter genuinely does fall back to the generic OTHER/AssignmentConversion
+    // path, same mechanism as MySQL -- that half of "zero changes" is the simple story.
     @Test
     void insertAndReadJsonMetadataRoundTrips() {
         dao.insertProductWithMetadata("Widget", 9.99, "{\"color\":\"red\"}");

@@ -9,10 +9,15 @@ import org.jspecify.annotations.Nullable;
 
 @DAO(dataSourceName = "enum")
 public interface JsonDAO {
-    record JsonRow(int id, String data) {}
+    record JsonRow(int id, @Nullable String data) {}
 
     @SqlUpdate("INSERT INTO test_json (id, data) VALUES (:id, :data)")
     void insert(int id, String data);
+
+    // Covers binding a null json/jsonb parameter: exercises the setNull(index, Types.OTHER)
+    // branch alongside the setObject(index, value, Types.OTHER) branch insert() above covers.
+    @SqlUpdate("INSERT INTO test_json (id, data) VALUES (:id, :data)")
+    void insertNullable(int id, @Nullable String data);
 
     @SqlQuery("SELECT id, data FROM test_json WHERE id = :id")
     @Nullable JsonRow findById(int id);

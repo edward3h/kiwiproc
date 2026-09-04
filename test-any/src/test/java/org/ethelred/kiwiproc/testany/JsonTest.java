@@ -52,4 +52,13 @@ public class JsonTest {
         var all = dao.listAll();
         assertThat(all.stream().anyMatch(r -> r.id() == 2)).isTrue();
     }
+
+    @Test
+    void insertNullableWithNullDataRoundTripsAsNull() {
+        dao.insertNullable(3, null);
+
+        var result = dao.findById(3);
+        assertThat(result).isNotNull();
+        assertThat(result.data()).isNull();
+    }
 }
