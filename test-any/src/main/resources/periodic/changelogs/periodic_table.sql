@@ -191,7 +191,7 @@ ALTER TABLE ONLY public.periodic_table
 
 --changeset edward3h:2
 
-CREATE TABLE IF NOT EXISTS test_uuid (
+CREATE TABLE IF NOT EXISTS public.test_uuid (
                                          id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     label VARCHAR(255) NOT NULL
     );
