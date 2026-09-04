@@ -112,15 +112,23 @@ public class SqlTypeMappingRegistry {
     private static @Nullable SqlTypeMapping lookup(DBType type) {
         // Always prefer dbType mapping if present, EXCEPT for parameters.
         // MySQL reports ALL parameters as JDBCType.OTHER with unreliable dbType names,
-        // so skip dbType lookup for parameters entirely.
+        // so skip dbType lookup for parameters entirely -- EXCEPT for json/jsonb, which H2
+        // (unlike MySQL's synthetic-fallback parameters, dbType "UNKNOWN") reports reliably
+        // even for parameters. Without this, an H2 JSON parameter resolved to the generic
+        // OTHER->Object.class mapping instead of String, so DAOParameterInfo's json-specific
+        // binding logic (see isJsonDbType there) had no properly-typed String value to encode.
         boolean isParameter = (type instanceof ColumnMetaData cd) && cd.isParameter();
-        if (!isParameter) {
+        if (!isParameter || isJsonDbType(type.dbType())) {
             var r = DB_TYPE_SQL_TYPE_MAPPING.get(type.dbType().toLowerCase(Locale.ROOT));
             if (r != null) {
                 return r;
             }
         }
         return JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(type.jdbcType());
+    }
+
+    private static boolean isJsonDbType(String dbType) {
+        return "json".equalsIgnoreCase(dbType) || "jsonb".equalsIgnoreCase(dbType);
     }
 
     public static SqlTypeMapping get(ColumnMetaData columnMetaData) {

@@ -381,8 +381,17 @@ public class InstanceGenerator {
                         .nextControlFlow("else");
             }
             if (parameterInfo.useTypedObjectSetter()) {
-                builder.addStatement(
-                        "statement.setObject($L, $L, $L)", parameterInfo.index(), name, parameterInfo.sqlType());
+                if (parameterInfo.encodeAsUtf8Bytes()) {
+                    builder.addStatement(
+                            "statement.setObject($L, $L.getBytes($T.UTF_8), $L)",
+                            parameterInfo.index(),
+                            name,
+                            java.nio.charset.StandardCharsets.class,
+                            parameterInfo.sqlType());
+                } else {
+                    builder.addStatement(
+                            "statement.setObject($L, $L, $L)", parameterInfo.index(), name, parameterInfo.sqlType());
+                }
             } else {
                 builder.addStatement("statement.$L($L, $L)", parameterInfo.setter(), parameterInfo.index(), name);
             }

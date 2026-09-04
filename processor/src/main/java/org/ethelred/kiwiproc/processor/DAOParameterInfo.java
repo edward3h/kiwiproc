@@ -18,7 +18,8 @@ public record DAOParameterInfo(
         int sqlType,
         TypeMapping mapper,
         Conversion conversion,
-        boolean useTypedObjectSetter)
+        boolean useTypedObjectSetter,
+        boolean encodeAsUtf8Bytes)
         implements Supplier<Element> {
     public static List<DAOParameterInfo> from(
             CoreTypes coreTypes, TypeUtils typeUtils, Map<ColumnMetaData, MethodParameterInfo> parameterMapping) {
@@ -46,10 +47,22 @@ public record DAOParameterInfo(
             // rejects a plain setString()/varchar bind against a jsonb column ("column is of type
             // jsonb but expression is of type character varying"). Types.OTHER + a String is
             // pgjdbc's documented lightweight alternative to constructing a PGobject.
+            boolean encodeAsUtf8Bytes = false;
             if (columnMetaData.jdbcType() == JDBCType.OTHER && isJsonDbType(columnMetaData.dbType())) {
                 setter = "setObject";
                 sqlType = Types.OTHER;
                 useTypedObjectSetter = true;
+                // H2 reports its JSON parameter class as byte[] ("[B") and, unlike PostgreSQL,
+                // coerces a bound java.lang.String through its string-to-JSON conversion --
+                // which re-quotes/escapes the text as a JSON *string value* instead of storing
+                // it as the JSON document it already is (verified against H2 2.5.250: setObject
+                // with a String, with or without Types.OTHER, produces a double-encoded
+                // "{\"color\":\"red\"}" while setObject with the equivalent UTF-8 byte[]
+                // round-trips correctly). Encoding to UTF-8 bytes first bypasses that coercion.
+                // PostgreSQL's jsonb parameter class name is not byte[], so this is inert there.
+                if ("[B".equals(columnMetaData.dbClassName())) {
+                    encodeAsUtf8Bytes = true;
+                }
             }
             result.add(new DAOParameterInfo(
                     columnMetaData.index(),
@@ -58,7 +71,8 @@ public record DAOParameterInfo(
                     sqlType,
                     mapper,
                     conversion,
-                    useTypedObjectSetter));
+                    useTypedObjectSetter,
+                    encodeAsUtf8Bytes));
         }));
         return result;
     }
