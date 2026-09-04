@@ -127,7 +127,12 @@ public class SqlTypeMappingRegistry {
         return JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(type.jdbcType());
     }
 
-    private static boolean isJsonDbType(String dbType) {
+    /**
+     * True if {@code dbType} names a JSON column/parameter type (Postgres {@code json}/{@code jsonb},
+     * H2 {@code json}, matched case-insensitively). Shared with {@link DAOParameterInfo}, which needs
+     * the same check when deciding how to bind a json/jsonb parameter.
+     */
+    static boolean isJsonDbType(String dbType) {
         return "json".equalsIgnoreCase(dbType) || "jsonb".equalsIgnoreCase(dbType);
     }
 

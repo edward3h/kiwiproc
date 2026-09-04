@@ -7,6 +7,7 @@ import static org.ethelred.kiwiproc.processor.generator.RuntimeTypes.*;
 
 import com.karuslabs.utilitary.Logger;
 import com.palantir.javapoet.*;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Function;
@@ -386,7 +387,7 @@ public class InstanceGenerator {
                             "statement.setObject($L, $L.getBytes($T.UTF_8), $L)",
                             parameterInfo.index(),
                             name,
-                            java.nio.charset.StandardCharsets.class,
+                            StandardCharsets.class,
                             parameterInfo.sqlType());
                 } else {
                     builder.addStatement(

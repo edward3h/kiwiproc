@@ -48,7 +48,8 @@ public record DAOParameterInfo(
             // jsonb but expression is of type character varying"). Types.OTHER + a String is
             // pgjdbc's documented lightweight alternative to constructing a PGobject.
             boolean encodeAsUtf8Bytes = false;
-            if (columnMetaData.jdbcType() == JDBCType.OTHER && isJsonDbType(columnMetaData.dbType())) {
+            if (columnMetaData.jdbcType() == JDBCType.OTHER
+                    && SqlTypeMappingRegistry.isJsonDbType(columnMetaData.dbType())) {
                 setter = "setObject";
                 sqlType = Types.OTHER;
                 useTypedObjectSetter = true;
@@ -60,6 +61,12 @@ public record DAOParameterInfo(
                 // "{\"color\":\"red\"}" while setObject with the equivalent UTF-8 byte[]
                 // round-trips correctly). Encoding to UTF-8 bytes first bypasses that coercion.
                 // PostgreSQL's jsonb parameter class name is not byte[], so this is inert there.
+                //
+                // Keyed off dbClassName rather than a database-kind check because DatabaseKind
+                // isn't available at this layer (DAOParameterInfo/SqlTypeMappingRegistry only see
+                // JDBC-derived ColumnMetaData); threading it through would be a larger refactor
+                // than this quirk warrants. Revisit if a future database needs a similar
+                // byte[]-vs-String distinction that this heuristic doesn't capture correctly.
                 if ("[B".equals(columnMetaData.dbClassName())) {
                     encodeAsUtf8Bytes = true;
                 }
@@ -75,10 +82,6 @@ public record DAOParameterInfo(
                     encodeAsUtf8Bytes));
         }));
         return result;
-    }
-
-    private static boolean isJsonDbType(String dbType) {
-        return "json".equalsIgnoreCase(dbType) || "jsonb".equalsIgnoreCase(dbType);
     }
 
     public String javaAccessorSuffix() {
