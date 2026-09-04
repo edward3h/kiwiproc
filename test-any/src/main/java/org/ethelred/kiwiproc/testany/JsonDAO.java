@@ -11,6 +11,8 @@ import org.jspecify.annotations.Nullable;
 public interface JsonDAO {
     record JsonRow(int id, String data) {}
 
+    // TODO: drop the ::jsonb cast once json/jsonb parameters bind via setObject(..., Types.OTHER)
+    // (GH#407, see docs/superpowers/plans/2026-09-04-json-column-support.md Task 5)
     @SqlUpdate("INSERT INTO test_json (id, data) VALUES (:id, :data::jsonb)")
     void insert(int id, String data);
 
