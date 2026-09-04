@@ -96,3 +96,13 @@ A compile-time warning is emitted because an unrecognised DB value will throw `I
 * *Java → SQL*: `myEnum.name()` — the string name is bound as a parameter using `setObject` with `Types.OTHER`, which PostgreSQL accepts for both `VARCHAR` and native enum columns.
 
 PostgreSQL native enum columns (`CREATE TYPE … AS ENUM (…)`) are supported transparently: the JDBC driver returns their values as `String`, so no special handling is required on the read path.
+
+==== JSON conversions
+
+`json`/`jsonb` columns and parameters (PostgreSQL, H2) and columns declared with a `JSON` type name (MySQL, SQLite — see <<databases.adoc#,Database Support>> for what that means on each database) map to `String`: the raw JSON text, read and written as-is.
+Kiwiproc does not marshal JSON to or from a Java record, `Map`, or any JSON library's type — deserialise the returned `String` (or serialise a value to a `String` before binding it) with whatever JSON library you already use.
+
+* *SQL → Java*: the column's raw text is returned via `getString`, unmodified. Some databases normalise or reformat the stored text on write (for example, PostgreSQL and MySQL both insert a space after `:` in the canonical form they store); what you read back may not be byte-identical to what you inserted, even though no Kiwiproc-level conversion happened. SQLite and H2 do not reformat the text.
+* *Java → SQL*: on PostgreSQL and H2, a `String` parameter is bound using `setObject` with `Types.OTHER` rather than `setString`, because both databases reject (PostgreSQL) or silently mishandle (H2 double-encodes it as a JSON string value) a plain `VARCHAR` bind against a `json`/`jsonb` column. On MySQL and SQLite, the parameter binds as an ordinary `String`; both databases' JDBC drivers report no usable parameter metadata at all for most parameters, JSON included, so there is no PostgreSQL/H2-style special case to trigger — a plain bind is what those databases already expect.
+
+A `null` parameter is bound the same way as any other nullable parameter (`setNull`, using the same target SQL type as the non-null case above).

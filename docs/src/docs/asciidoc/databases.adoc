@@ -6,7 +6,7 @@
 
 PostgreSQL is fully supported with all features:
 
-* All standard SQL types
+* All standard SQL types, including `json`/`jsonb` (see <<types.adoc#_json_conversions,JSON conversions>>)
 * SQL arrays
 * `RETURNING` clause in `INSERT`/`UPDATE`/`DELETE` statements
 * Full parameter type checking at compile time
@@ -14,7 +14,7 @@ PostgreSQL is fully supported with all features:
 
 === MySQL
 
-MySQL is supported with some limitations. See <<mysql-limitations>> below.
+MySQL is supported with some limitations. See <<mysql-limitations>> below. MySQL's `json` column type is supported (see <<types.adoc#_json_conversions,JSON conversions>>).
 
 Embedded MySQL uses https://testcontainers.com/[Testcontainers] at build time, which requires Docker to be available on the build machine.
 
@@ -61,7 +61,7 @@ H2 is started in PostgreSQL compatibility mode (`MODE=PostgreSQL`) to maximise S
 1. *Parameter type checking may be weaker* — H2's JDBC driver does not always provide reliable parameter metadata; types fall back to `UNKNOWN` when unavailable.
 2. *SQL arrays are not supported* — array type introspection is not implemented for H2.
 3. *The `RETURNING` clause is not supported* — use a separate `SELECT` query after an `INSERT` if you need generated values.
-4. *PostgreSQL-specific types are not available* — types such as `jsonb`, `timetz`, and `timestamptz` are not supported in H2.
+4. *Most PostgreSQL-specific types are not available* — types such as `timetz` and `timestamptz` are not supported in H2. H2's own `json` column type is supported (see <<types.adoc#_json_conversions,JSON conversions>>), but PostgreSQL's `jsonb` is not, since H2 has no equivalent type.
 
 [#mysql-limitations]
 ==== MySQL Limitations
@@ -76,6 +76,8 @@ H2 is started in PostgreSQL compatibility mode (`MODE=PostgreSQL`) to maximise S
 SQLite is supported as a lightweight, file-based alternative for build-time schema validation.
 No Docker or server process is required — each build creates a fresh temporary SQLite database
 file, which is deleted afterwards.
+
+SQLite has no native JSON type, but a column declared `JSON` is supported (see <<types.adoc#_json_conversions,JSON conversions>>) — SQLite's dynamic typing accepts any declared type name.
 
 To select embedded SQLite, set `driverClassName` to `org.sqlite.JDBC` in the datasource configuration:
 
