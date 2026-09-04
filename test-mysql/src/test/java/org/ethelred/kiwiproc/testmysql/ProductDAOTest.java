@@ -80,4 +80,13 @@ public class ProductDAOTest {
         assertThat(counts).hasLength(3);
         assertThat(dao.listAll()).hasSize(3);
     }
+
+    @Test
+    void insertAndReadJsonMetadataRoundTrips() {
+        dao.insertProductWithMetadata("Widget", 9.99, "{\"color\":\"red\"}");
+        var all = dao.listAll();
+        var id = all.get(all.size() - 1).id();
+        var metadata = dao.findMetadataById(id);
+        assertThat(metadata).isEqualTo("{\"color\": \"red\"}"); // confirm exact normalization from actual output
+    }
 }
