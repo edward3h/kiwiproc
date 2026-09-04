@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.sql.JDBCType;
 import java.time.*;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -78,6 +79,16 @@ public class SqlTypeMappingRegistry {
                     .dbType("uuid")
                     .accessorSuffix("Object")
                     .build(),
+            jdbcType(JDBCType.OTHER)
+                    .baseType(String.class)
+                    .dbType("json")
+                    .accessorSuffix("String")
+                    .build(),
+            jdbcType(JDBCType.OTHER)
+                    .baseType(String.class)
+                    .dbType("jsonb")
+                    .accessorSuffix("String")
+                    .build(),
             jdbcType(JDBCType.OTHER).baseType(Object.class).build()
 
             // TODO fill out types as necessary
@@ -94,21 +105,35 @@ public class SqlTypeMappingRegistry {
 
     private static final Map<JDBCType, SqlTypeMapping> JDBC_TYPE_SQL_TYPE_MAPPING_MAP =
             types.stream().collect(Collectors.toMap(SqlTypeMapping::jdbcType, t -> t, (a, b) -> b));
-    private static final Map<String, SqlTypeMapping> DB_TYPE_SQL_TYPE_MAPPING =
-            types.stream().filter(t -> t.dbType() != null).collect(Collectors.toMap(SqlTypeMapping::dbType, t -> t));
+    private static final Map<String, SqlTypeMapping> DB_TYPE_SQL_TYPE_MAPPING = types.stream()
+            .filter(t -> t.dbType() != null)
+            .collect(Collectors.toMap(t -> t.dbType().toLowerCase(Locale.ROOT), t -> t));
 
     private static @Nullable SqlTypeMapping lookup(DBType type) {
         // Always prefer dbType mapping if present, EXCEPT for parameters.
         // MySQL reports ALL parameters as JDBCType.OTHER with unreliable dbType names,
-        // so skip dbType lookup for parameters entirely.
+        // so skip dbType lookup for parameters entirely -- EXCEPT for json/jsonb, which H2
+        // (unlike MySQL's synthetic-fallback parameters, dbType "UNKNOWN") reports reliably
+        // even for parameters. Without this, an H2 JSON parameter resolved to the generic
+        // OTHER->Object.class mapping instead of String, so DAOParameterInfo's json-specific
+        // binding logic (see isJsonDbType there) had no properly-typed String value to encode.
         boolean isParameter = (type instanceof ColumnMetaData cd) && cd.isParameter();
-        if (!isParameter) {
-            var r = DB_TYPE_SQL_TYPE_MAPPING.get(type.dbType());
+        if (!isParameter || isJsonDbType(type.dbType())) {
+            var r = DB_TYPE_SQL_TYPE_MAPPING.get(type.dbType().toLowerCase(Locale.ROOT));
             if (r != null) {
                 return r;
             }
         }
         return JDBC_TYPE_SQL_TYPE_MAPPING_MAP.get(type.jdbcType());
+    }
+
+    /**
+     * True if {@code dbType} names a JSON column/parameter type (Postgres {@code json}/{@code jsonb},
+     * H2 {@code json}, matched case-insensitively). Shared with {@link DAOParameterInfo}, which needs
+     * the same check when deciding how to bind a json/jsonb parameter.
+     */
+    static boolean isJsonDbType(String dbType) {
+        return "json".equalsIgnoreCase(dbType) || "jsonb".equalsIgnoreCase(dbType);
     }
 
     public static SqlTypeMapping get(ColumnMetaData columnMetaData) {

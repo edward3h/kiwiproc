@@ -96,3 +96,13 @@ A compile-time warning is emitted because an unrecognised DB value will throw `I
 * *Java → SQL*: `myEnum.name()` — the string name is bound as a parameter using `setObject` with `Types.OTHER`, which PostgreSQL accepts for both `VARCHAR` and native enum columns.
 
 PostgreSQL native enum columns (`CREATE TYPE … AS ENUM (…)`) are supported transparently: the JDBC driver returns their values as `String`, so no special handling is required on the read path.
+
+==== JSON conversions
+
+`json`/`jsonb` columns and parameters (PostgreSQL, H2) and columns declared with a `JSON` type name (MySQL, SQLite — see <<databases.adoc#,Database Support>> for what that means on each database) map to `String`: the raw JSON text, read and written as-is.
+Kiwiproc does not marshal JSON to or from a Java record, `Map`, or any JSON library's type — deserialise the returned `String` (or serialise a value to a `String` before binding it) with whatever JSON library you already use.
+
+* *SQL → Java*: the column's raw text is returned via `getString`, unmodified. Some databases normalise or reformat the stored text on write (for example, PostgreSQL and MySQL both insert a space after `:` in the canonical form they store); what you read back may not be byte-identical to what you inserted, even though no Kiwiproc-level conversion happened. SQLite and H2 do not reformat the text.
+* *Java → SQL*: every parameter binds via `setObject`, never `setString` — but the argument differs by database. On PostgreSQL, the `String` is bound with an explicit `Types.OTHER` argument, because PostgreSQL otherwise rejects a plain `VARCHAR`-typed bind against a `json`/`jsonb` column. On H2, `Types.OTHER` alone is not enough: H2 also coerces a bound `String` through its string-to-JSON conversion, which re-quotes it as a JSON string value rather than storing it as the document already represented — so the `String` is first encoded to UTF-8 bytes and that `byte[]` is bound (with `Types.OTHER`) instead. On MySQL and SQLite, the parameter binds with no explicit SQL type argument at all: both databases' JDBC drivers report no usable parameter metadata for most parameters, JSON included, so binding falls back to the same generic, untyped `setObject` path used for any other parameter of unknown SQL type — no JSON-specific handling is needed or triggered.
+
+A `null` parameter is bound the same way as any other nullable parameter (`setNull`, using the same target SQL type as the non-null case above).

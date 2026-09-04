@@ -166,14 +166,4 @@ class ConversionCodeGenerator {
                         Map.of("componentClass", componentClass, "listVariable", arrayList))
                 .addStatement("");
     }
-
-    boolean isEnumConversion(Conversion conversion) {
-        if (conversion instanceof EnumToStringConversion) {
-            return true;
-        }
-        if (conversion instanceof NullableSourceConversion nsc) {
-            return isEnumConversion(nsc.conversion());
-        }
-        return false;
-    }
 }
