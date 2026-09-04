@@ -108,4 +108,13 @@ public class ProductDAOTest {
         assertThat(found).isNotNull();
         assertThat(found.name()).isEqualTo("Returned");
     }
+
+    @Test
+    void insertAndReadJsonMetadataRoundTrips() {
+        dao.insertProductWithMetadata("Widget", 9.99, "{\"color\":\"red\"}");
+        var all = dao.listAll();
+        var id = all.get(all.size() - 1).id();
+        var metadata = dao.findMetadataById(id);
+        assertThat(metadata).isEqualTo("{\"color\":\"red\"}");
+    }
 }

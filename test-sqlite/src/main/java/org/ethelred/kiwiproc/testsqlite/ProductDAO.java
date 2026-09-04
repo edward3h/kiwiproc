@@ -43,4 +43,10 @@ public interface ProductDAO {
 
     @SqlQuery("INSERT INTO product (name, price) VALUES (:name, :price) RETURNING id")
     Optional<Integer> insertProductReturningId(String name, double price);
+
+    @SqlUpdate("INSERT INTO product (name, price, metadata) VALUES (:name, :price, :metadata)")
+    void insertProductWithMetadata(String name, double price, String metadata);
+
+    @SqlQuery("SELECT metadata FROM product WHERE id = :id")
+    @Nullable String findMetadataById(int id);
 }
