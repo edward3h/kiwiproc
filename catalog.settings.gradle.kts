@@ -17,7 +17,7 @@ dependencyResolutionManagement {
             library("jetbrains-annotations", "org.jetbrains:annotations:26.1.0")
 
             library("utilitary", "com.karuslabs:utilitary:3.0.0")
-            library("postgresql", "org.postgresql:postgresql:42.7.12")
+            library("postgresql", "org.postgresql:postgresql:42.7.13")
             library("mysql", "com.mysql:mysql-connector-j:26.7.0")
             library("h2", "com.h2database:h2:2.4.240")
             library("sqlite", "org.xerial:sqlite-jdbc:3.53.4.0")
