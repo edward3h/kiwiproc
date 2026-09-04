@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.sql.JDBCType;
 import java.time.*;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -78,6 +79,16 @@ public class SqlTypeMappingRegistry {
                     .dbType("uuid")
                     .accessorSuffix("Object")
                     .build(),
+            jdbcType(JDBCType.OTHER)
+                    .baseType(String.class)
+                    .dbType("json")
+                    .accessorSuffix("String")
+                    .build(),
+            jdbcType(JDBCType.OTHER)
+                    .baseType(String.class)
+                    .dbType("jsonb")
+                    .accessorSuffix("String")
+                    .build(),
             jdbcType(JDBCType.OTHER).baseType(Object.class).build()
 
             // TODO fill out types as necessary
@@ -94,8 +105,9 @@ public class SqlTypeMappingRegistry {
 
     private static final Map<JDBCType, SqlTypeMapping> JDBC_TYPE_SQL_TYPE_MAPPING_MAP =
             types.stream().collect(Collectors.toMap(SqlTypeMapping::jdbcType, t -> t, (a, b) -> b));
-    private static final Map<String, SqlTypeMapping> DB_TYPE_SQL_TYPE_MAPPING =
-            types.stream().filter(t -> t.dbType() != null).collect(Collectors.toMap(SqlTypeMapping::dbType, t -> t));
+    private static final Map<String, SqlTypeMapping> DB_TYPE_SQL_TYPE_MAPPING = types.stream()
+            .filter(t -> t.dbType() != null)
+            .collect(Collectors.toMap(t -> t.dbType().toLowerCase(Locale.ROOT), t -> t));
 
     private static @Nullable SqlTypeMapping lookup(DBType type) {
         // Always prefer dbType mapping if present, EXCEPT for parameters.
@@ -103,7 +115,7 @@ public class SqlTypeMappingRegistry {
         // so skip dbType lookup for parameters entirely.
         boolean isParameter = (type instanceof ColumnMetaData cd) && cd.isParameter();
         if (!isParameter) {
-            var r = DB_TYPE_SQL_TYPE_MAPPING.get(type.dbType());
+            var r = DB_TYPE_SQL_TYPE_MAPPING.get(type.dbType().toLowerCase(Locale.ROOT));
             if (r != null) {
                 return r;
             }
