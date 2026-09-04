@@ -380,8 +380,7 @@ public class InstanceGenerator {
                         .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())
                         .nextControlFlow("else");
             }
-            if ("setObject".equals(parameterInfo.setter())
-                    && conversionGenerator.isEnumConversion(parameterInfo.conversion())) {
+            if (parameterInfo.useTypedObjectSetter()) {
                 builder.addStatement(
                         "statement.setObject($L, $L, $L)", parameterInfo.index(), name, parameterInfo.sqlType());
             } else {
