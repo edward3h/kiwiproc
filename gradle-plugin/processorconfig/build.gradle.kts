@@ -29,8 +29,8 @@ dependencies {
 
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.params)
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
-    testImplementation("com.google.truth:truth:1.4.5")
+    testRuntimeOnly(libs.junit.engine)
+    testImplementation(libs.truth)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
