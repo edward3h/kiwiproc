@@ -98,4 +98,13 @@ public class ProductDAOTest {
         dao.batchInsertWithSize(List.of("P1", "P2", "P3", "P4", "P5"), List.of(1.0, 2.0, 3.0, 4.0, 5.0));
         assertThat(dao.listAll()).hasSize(5);
     }
+
+    @Test
+    void insertAndReadJsonMetadataRoundTrips() {
+        dao.insertProductWithMetadata("Widget", 9.99, "{\"color\":\"red\"}");
+        var all = dao.listAll();
+        var id = all.get(all.size() - 1).id();
+        var metadata = dao.findMetadataById(id);
+        assertThat(metadata).isEqualTo("{\"color\":\"red\"}");
+    }
 }

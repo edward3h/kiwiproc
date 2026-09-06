@@ -29,4 +29,10 @@ public interface ProductDAO {
 
     @SqlUpdate("DELETE FROM product")
     void deleteAll();
+
+    @SqlUpdate("INSERT INTO product (name, price, metadata) VALUES (:name, :price, :metadata)")
+    void insertProductWithMetadata(String name, double price, String metadata);
+
+    @SqlQuery("SELECT metadata FROM product WHERE id = :id")
+    @Nullable String findMetadataById(int id);
 }

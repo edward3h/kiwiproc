@@ -7,6 +7,7 @@ import static org.ethelred.kiwiproc.processor.generator.RuntimeTypes.*;
 
 import com.karuslabs.utilitary.Logger;
 import com.palantir.javapoet.*;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Function;
@@ -380,10 +381,18 @@ public class InstanceGenerator {
                         .addStatement("statement.setNull($L, $L)", parameterInfo.index(), parameterInfo.sqlType())
                         .nextControlFlow("else");
             }
-            if ("setObject".equals(parameterInfo.setter())
-                    && conversionGenerator.isEnumConversion(parameterInfo.conversion())) {
-                builder.addStatement(
-                        "statement.setObject($L, $L, $L)", parameterInfo.index(), name, parameterInfo.sqlType());
+            if (parameterInfo.useTypedObjectSetter()) {
+                if (parameterInfo.encodeAsUtf8Bytes()) {
+                    builder.addStatement(
+                            "statement.setObject($L, $L.getBytes($T.UTF_8), $L)",
+                            parameterInfo.index(),
+                            name,
+                            StandardCharsets.class,
+                            parameterInfo.sqlType());
+                } else {
+                    builder.addStatement(
+                            "statement.setObject($L, $L, $L)", parameterInfo.index(), name, parameterInfo.sqlType());
+                }
             } else {
                 builder.addStatement("statement.$L($L, $L)", parameterInfo.setter(), parameterInfo.index(), name);
             }

@@ -80,4 +80,21 @@ public class ProductDAOTest {
         assertThat(counts).hasLength(3);
         assertThat(dao.listAll()).hasSize(3);
     }
+
+    // MySQL reports JSON columns as LONGVARCHAR (dbType "JSON"), which maps to String like any
+    // other text column. MySQL's parameter metadata is unavailable for virtually all parameters
+    // (see MySQLDialect.getParameters()'s fallback to DatabaseDialect.syntheticParameter()), so
+    // the :metadata parameter binds via the generic, untyped setObject() path used for any
+    // parameter of unknown SQL type -- which MySQL accepts against a JSON column without
+    // complaint. No JSON-specific parameter binding (as used on PostgreSQL/H2) is involved here.
+    @Test
+    void insertAndReadJsonMetadataRoundTrips() {
+        dao.insertProductWithMetadata("Widget", 9.99, "{\"color\":\"red\"}");
+        var all = dao.listAll();
+        var id = all.get(all.size() - 1).id();
+        var metadata = dao.findMetadataById(id);
+        // MySQL's JSON type canonicalizes stored text (adds a space after ':'); this may need
+        // revisiting on a MySQL major-version bump.
+        assertThat(metadata).isEqualTo("{\"color\": \"red\"}");
+    }
 }

@@ -108,4 +108,21 @@ public class ProductDAOTest {
         assertThat(found).isNotNull();
         assertThat(found.name()).isEqualTo("Returned");
     }
+
+    // SQLite's type-affinity rules give a column declared "JSON" (this module's changelog)
+    // NUMERIC affinity by default -- xerial's driver reports jdbcType=NUMERIC, dbType="JSON" for
+    // this column. It resolves to String, not BigDecimal, because the registry's dbType-first
+    // lookup matches the literal string "JSON" against the same json/jsonb dbType entries used
+    // for PostgreSQL/H2 -- coincidentally, not via any SQLite-specific mapping. A column declared
+    // TEXT instead of JSON would take a different, unverified path. On the write side, SQLite
+    // (like MySQL) reports no usable parameter metadata at all (dbType "UNKNOWN"), so the
+    // :metadata parameter binds via the generic, untyped setObject() path, same as MySQL.
+    @Test
+    void insertAndReadJsonMetadataRoundTrips() {
+        dao.insertProductWithMetadata("Widget", 9.99, "{\"color\":\"red\"}");
+        var all = dao.listAll();
+        var id = all.get(all.size() - 1).id();
+        var metadata = dao.findMetadataById(id);
+        assertThat(metadata).isEqualTo("{\"color\":\"red\"}");
+    }
 }
