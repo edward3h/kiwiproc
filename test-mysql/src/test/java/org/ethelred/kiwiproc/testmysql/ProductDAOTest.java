@@ -81,15 +81,12 @@ public class ProductDAOTest {
         assertThat(dao.listAll()).hasSize(3);
     }
 
-    // No processor changes were needed for MySQL JSON support. On the read side, MySQL reports
-    // JSON columns as LONGVARCHAR (dbType "JSON"), already covered by the pre-existing
-    // LONGVARCHAR -> String mapping. On the write side, MySQL's parameter metadata is unavailable
-    // for virtually all parameters (see MySQLDialect.getParameters()'s fallback to
-    // DatabaseDialect.syntheticParameter()), so every parameter already falls back to the generic
-    // OTHER/AssignmentConversion path and an untyped setObject() bind -- which MySQL accepts
-    // against a JSON column without complaint. This is a different (and more incidental)
-    // mechanism than the Types.OTHER binding Task 5 added specifically for Postgres; the
-    // isJsonDbType check in DAOParameterInfo never actually fires here.
+    // MySQL reports JSON columns as LONGVARCHAR (dbType "JSON"), which maps to String like any
+    // other text column. MySQL's parameter metadata is unavailable for virtually all parameters
+    // (see MySQLDialect.getParameters()'s fallback to DatabaseDialect.syntheticParameter()), so
+    // the :metadata parameter binds via the generic, untyped setObject() path used for any
+    // parameter of unknown SQL type -- which MySQL accepts against a JSON column without
+    // complaint. No JSON-specific parameter binding (as used on PostgreSQL/H2) is involved here.
     @Test
     void insertAndReadJsonMetadataRoundTrips() {
         dao.insertProductWithMetadata("Widget", 9.99, "{\"color\":\"red\"}");
