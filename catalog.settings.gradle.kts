@@ -4,6 +4,7 @@ dependencyResolutionManagement {
         create("libs") {
             version("avaje-json", "3.15")
             version("junit", "6.1.3")
+            version("truth", "1.4.5")
             version("recordbuilder", "53")
             version("mapstruct", "1.6.3")
             version("springboot", "4.1.1")
@@ -26,6 +27,10 @@ dependencyResolutionManagement {
 
             library("junit-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit")
             library("junit-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit")
+            library("junit-engine", "org.junit.jupiter", "junit-jupiter-engine").versionRef("junit")
+            library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit")
+
+            library("truth", "com.google.truth", "truth").versionRef("truth")
 
             library("recordbuilder-processor", "io.soabase.record-builder", "record-builder-processor").versionRef("recordbuilder")
             library("recordbuilder-core", "io.soabase.record-builder", "record-builder-core").versionRef("recordbuilder")
