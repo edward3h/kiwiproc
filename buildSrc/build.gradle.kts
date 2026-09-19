@@ -16,6 +16,6 @@ java {
 
 dependencies {
     implementation("com.github.jakemarsden:git-hooks-gradle-plugin:0.0.2")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:8.10.1")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:8.10.2")
     implementation(libs.vanniktech.maven.publish)
 }
