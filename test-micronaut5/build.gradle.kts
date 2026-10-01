@@ -15,7 +15,7 @@ kiwiProc {
 }
 
 micronaut {
-    version = "5.0.2"
+    version = "5.2.1"
 }
 
 dependencies {
