@@ -55,7 +55,7 @@ gradlePlugin {
         implementationClass = "org.ethelred.kiwiproc.gradle.KiwiProcPlugin"
         displayName = "KiwiProc Gradle Plugin"
         description = "Configure and run embedded databases for KiwiProc generation"
-        tags.addAll("Java", "database", "annotation processor")
+        tags.addAll("Java", "database", "annotation-processor")
     }
 }
 
