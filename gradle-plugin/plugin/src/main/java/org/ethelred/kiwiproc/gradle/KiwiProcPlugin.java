@@ -86,20 +86,16 @@ public class KiwiProcPlugin implements Plugin<Project> {
 
         // Only the compile tasks of source sets are given the option and the dependency. Other JavaCompile tasks
         // registered by the build (e.g. static analysis with a different processor path) are left alone.
-        project.getExtensions()
-                .getByType(SourceSetContainer.class)
-                .all(sourceSet -> project.getTasks()
-                        .named(sourceSet.getCompileJavaTaskName(), JavaCompile.class, task -> {
-                            task.dependsOn(processorConfigTask);
-                            task.getOptions()
-                                    .getCompilerArgumentProviders()
-                                    .add(() -> List.of(processorConfigTask
-                                            .map(pct -> "-Aorg.ethelred.kiwiproc.configuration=%s"
-                                                    .formatted(pct.getConfigFile()
-                                                            .get()
-                                                            .getAsFile()))
-                                            .get()));
-                        }));
+        project.getExtensions().getByType(SourceSetContainer.class).all(sourceSet -> project.getTasks()
+                .named(sourceSet.getCompileJavaTaskName(), JavaCompile.class, task -> {
+                    task.dependsOn(processorConfigTask);
+                    task.getOptions()
+                            .getCompilerArgumentProviders()
+                            .add(() -> List.of(processorConfigTask
+                                    .map(pct -> "-Aorg.ethelred.kiwiproc.configuration=%s"
+                                            .formatted(pct.getConfigFile().get().getAsFile()))
+                                    .get()));
+                }));
 
         project.getTasks().named("processTestResources", ProcessResources.class, task -> {
             task.dependsOn(processorConfigTask);
