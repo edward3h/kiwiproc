@@ -26,4 +26,12 @@ public interface PeriodicTableDAO {
             where "AtomicNumber" < :number
             """)
     int atomicNumberQuery(int number); // nonsense query, as a test for "exactly one" semantics
+
+    @SqlQuery("""
+            select "AtomicNumber"
+            from periodic_table
+            where "AtomicNumber" < :number
+            order by "AtomicNumber"
+            """)
+    List<Integer> atomicNumbersBelow(int number); // primitive-mapped column in a List result
 }
