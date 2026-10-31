@@ -43,6 +43,8 @@ Before you begin, ensure you have the following installed:
 
 > **Note:** Running `./gradlew build` for the first time registers a **git pre-commit hook** that automatically runs `./gradlew build` before every commit. This means commits are blocked if tests or formatting checks fail — fix them first, then retry.
 
+> **Note:** The `test-any` module's `periodic-table` data source always uses embedded PostgreSQL. It used to be overridable with a `kiwiproc.periodic-table.url` Gradle property pointing at a hosted database, but that database no longer exists and the override has been removed. If you still have `kiwiproc.periodic-table.url` set in `~/.gradle/gradle.properties`, remove it; it is now ignored.
+
 ---
 
 ## Code Style
