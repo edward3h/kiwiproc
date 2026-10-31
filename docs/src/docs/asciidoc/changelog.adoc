@@ -1,0 +1,29 @@
+== Changelog
+
+=== 1.1
+
+==== New features
+
+* *SQLite support.* SQLite is now a supported database, alongside PostgreSQL, MySQL and H2.
+See <<_database_support,Database Support>>.
+* *JSON columns.* `json` and `jsonb` columns and parameters map to `String` on PostgreSQL and H2, as do columns declared with a `JSON` type name on MySQL and SQLite.
+PostgreSQL parameters no longer need a `::jsonb` cast in the SQL.
+See <<_json_conversions,JSON conversions>>.
+* *Auto-commit for single-statement calls.* `@DAO(autoCommit = true)` runs `@SqlQuery` and `@SqlUpdate` methods called directly on the generated provider on a connection in auto-commit mode, without the `BEGIN`/`COMMIT` round trips that an implicit transaction adds.
+`@SqlQuery` and `@SqlUpdate` also accept `autoCommit = AutoCommitMode.ENABLED`, `DISABLED` or `INHERIT` (the default) to override the DAO setting for a single method, for example `DISABLED` for `SELECT ... FOR UPDATE`.
+The default is unchanged: nothing runs in auto-commit mode unless you opt in.
+See <<auto-commit,Single-statement calls and auto-commit>>.
+
+==== Fixes
+
+* A `List` result from a column that maps to a primitive type, such as `List<Long>` from a `bigint` column, generated `List<long>`, which did not compile.
+The element type is now boxed.
+* Generated DAO implementations and providers now keep type-use nullness annotations, such as jspecify `@Nullable`, from the interface's method return types and parameters.
+Only annotations on the return and parameter types themselves are copied; annotations nested in type arguments, such as `List<@Nullable String>`, are not.
+* The Gradle plugin now adds the `-Aorg.ethelred.kiwiproc.configuration` compiler option and the dependency on `processorConfig` only to the compile task of each source set (`compileJava`, `compileTestJava`, and so on), not to every `JavaCompile` task.
+Other `JavaCompile` tasks, such as static analysis with its own annotation processors, no longer print an unrecognised-option warning or start the embedded database.
+If you have a custom `JavaCompile` task that runs the Kiwiproc processor, add the option and the task dependency to it yourself.
+
+==== Other changes
+
+* Dependency updates.
