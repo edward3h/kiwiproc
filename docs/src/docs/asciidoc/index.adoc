@@ -27,3 +27,6 @@ include::maven_plugin.adoc[]
 
 [appendix]
 include::types.adoc[]
+
+[appendix]
+include::changelog.adoc[]
