@@ -10,6 +10,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.language.jvm.tasks.ProcessResources;
 
@@ -83,15 +84,18 @@ public class KiwiProcPlugin implements Plugin<Project> {
             task.setExtension(extension);
         });
 
-        project.getTasks().withType(JavaCompile.class).configureEach(task -> {
-            task.dependsOn(processorConfigTask);
-            task.getOptions()
-                    .getCompilerArgumentProviders()
-                    .add(() -> List.of(processorConfigTask
-                            .map(pct -> "-Aorg.ethelred.kiwiproc.configuration=%s"
-                                    .formatted(pct.getConfigFile().get().getAsFile()))
-                            .get()));
-        });
+        // Only the compile tasks of source sets are given the option and the dependency. Other JavaCompile tasks
+        // registered by the build (e.g. static analysis with a different processor path) are left alone.
+        project.getExtensions().getByType(SourceSetContainer.class).all(sourceSet -> project.getTasks()
+                .named(sourceSet.getCompileJavaTaskName(), JavaCompile.class, task -> {
+                    task.dependsOn(processorConfigTask);
+                    task.getOptions()
+                            .getCompilerArgumentProviders()
+                            .add(() -> List.of(processorConfigTask
+                                    .map(pct -> "-Aorg.ethelred.kiwiproc.configuration=%s"
+                                            .formatted(pct.getConfigFile().get().getAsFile()))
+                                    .get()));
+                }));
 
         project.getTasks().named("processTestResources", ProcessResources.class, task -> {
             task.dependsOn(processorConfigTask);
