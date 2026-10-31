@@ -34,4 +34,12 @@ public interface PeriodicTableDAO {
             where "Symbol" = :symbol
             """, autoCommit = AutoCommitMode.ENABLED)
     int atomicNumberAutoCommit(String symbol);
+
+    @SqlQuery("""
+            select "AtomicNumber"
+            from periodic_table
+            where "AtomicNumber" < :number
+            order by "AtomicNumber"
+            """)
+    List<Integer> atomicNumbersBelow(int number); // primitive-mapped column in a List result
 }

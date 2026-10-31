@@ -21,15 +21,8 @@ kiwiProc {
         register("enum") {
             liquibaseChangelog = file("$projectDir/src/main/resources/enum/changelog.xml")
         }
-        if (project.hasProperty("kiwiproc.periodic-table.url")) {
-            register("periodic-table") {
-                jdbcUrl = project.property("kiwiproc.periodic-table.url").toString()
-                liquibaseChangelog = file("$projectDir/src/main/resources/periodic/changelog.xml")
-            }
-        } else {
-            register("periodic-table") {
-                liquibaseChangelog = file("$projectDir/src/main/resources/periodic/changelog.xml")
-            }
+        register("periodic-table") {
+            liquibaseChangelog = file("$projectDir/src/main/resources/periodic/changelog.xml")
         }
     }
 }

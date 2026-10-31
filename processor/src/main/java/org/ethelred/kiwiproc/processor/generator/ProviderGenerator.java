@@ -66,7 +66,7 @@ public class ProviderGenerator {
     }
 
     private MethodSpec buildMethod(DAOMethodInfo methodInfo, boolean autoCommit) {
-        var builder = MethodSpec.overriding(methodInfo.methodElement());
+        var builder = OverridingMethods.overriding(methodInfo.methodElement());
         var signature = methodInfo.signature();
         var params = String.join(", ", signature.paramNames());
         var effectiveAutoCommit = methodInfo.autoCommit() != null ? methodInfo.autoCommit() : autoCommit;

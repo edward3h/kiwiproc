@@ -170,6 +170,47 @@ public class ProcessorTest {
     }
 
     @Test
+    void generatedMethodsKeepNullableTypeAnnotations() throws IOException {
+        var compilation = configuredCompiler()
+                .compile(
+                        JavaFileObjects.forSourceString(
+                                "com.example.Restaurant",
+                                // language=java
+                                """
+                                package com.example;
+                                import org.jspecify.annotations.Nullable;
+                                public record Restaurant(int id, String name, Integer tables, @Nullable String chain){}
+                                """),
+                        JavaFileObjects.forSourceString(
+                                "com.example.MyDAO",
+                                // language=java
+                                """
+                                package com.example;
+
+                                import org.ethelred.kiwiproc.annotation.DAO;
+                                import org.ethelred.kiwiproc.annotation.SqlQuery;
+                                import org.jspecify.annotations.Nullable;
+
+                                @DAO
+                                public interface MyDAO {
+                                    @SqlQuery(sql = "SELECT id, name, tables, chain FROM restaurant WHERE name = :search")
+                                    @Nullable Restaurant findOne(@Nullable String search);
+                                }
+                                """));
+        for (var className : new String[] {"$MyDAO$Impl", "$MyDAO$Provider"}) {
+            var source = compilation
+                    .generatedSourceFile("com.example." + className)
+                    .orElseThrow()
+                    .getCharContent(true)
+                    .toString();
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    source.matches("(?s).*@Nullable\\s+Restaurant\\s+findOne\\(@Nullable\\s+String\\s+search\\).*")
+                            || source.matches("(?s).*@Nullable Restaurant findOne\\(.*@Nullable String search.*"),
+                    () -> className + " lost @Nullable:\n" + source);
+        }
+    }
+
+    @Test
     void streamQueryCompiles() throws Exception {
         var compilation = configuredCompiler()
                 .compile(
