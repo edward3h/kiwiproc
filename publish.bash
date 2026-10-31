@@ -16,18 +16,18 @@ VERSION=$(grep -oP '(?<=")[^"]+(?=")' version.gradle.kts)
 
 # publish plugin library to maven
 pushd gradle-plugin/
-gw $GW_OPTS clean
-gw $GW_OPTS build
-gw $GW_OPTS publishAllPublicationsToMavenCentralRepository
+./gradlew $GW_OPTS clean
+./gradlew $GW_OPTS build
+./gradlew $GW_OPTS publishAllPublicationsToMavenCentralRepository
 popd
 # publish main libraries to maven
-gw $GW_OPTS clean
-gw $GW_OPTS build
+./gradlew $GW_OPTS clean
+./gradlew $GW_OPTS build
 
-gw $GW_OPTS publishAllPublicationsToMavenCentralRepository
+./gradlew $GW_OPTS publishAllPublicationsToMavenCentralRepository
 # publish gradle plugin
 pushd gradle-plugin/
-gw $GW_OPTS publishPlugins
+./gradlew $GW_OPTS publishPlugins
 popd
 # tag the release commit and push commits + tag together
 git tag -a "v$VERSION" -m "Release v$VERSION"
