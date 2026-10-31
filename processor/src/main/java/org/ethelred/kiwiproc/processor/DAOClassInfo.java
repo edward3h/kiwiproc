@@ -11,6 +11,10 @@ public record DAOClassInfo(
         return annotation().dataSourceName();
     }
 
+    public boolean autoCommit() {
+        return annotation().autoCommit();
+    }
+
     public String className(String suffix) {
         return "$" + daoName + "$" + suffix;
     }

@@ -62,6 +62,35 @@ public abstract class AbstractTransactionalDAO<T> implements TransactionalDAO<T>
     }
 
     /**
+     * Runs a single-statement callback on a connection in auto-commit mode: no explicit transaction is started.
+     * Used by generated code for DAOs declared with {@code @DAO(autoCommit = true)}.
+     */
+    protected <R> R callAutoCommit(DAOCallable<T, R> callback) {
+        try (var connection = dataSource.getConnection()) {
+            if (!connection.getAutoCommit()) {
+                connection.setAutoCommit(true);
+            }
+            return callback.call(withContext(() -> connection));
+        } catch (SQLException e) {
+            throw new UncheckedSQLException(e);
+        }
+    }
+
+    /**
+     * Void variant of {@link #callAutoCommit(DAOCallable)}.
+     */
+    protected void runAutoCommit(DAORunnable<T> callback) {
+        try (var connection = dataSource.getConnection()) {
+            if (!connection.getAutoCommit()) {
+                connection.setAutoCommit(true);
+            }
+            callback.run(withContext(() -> connection));
+        } catch (SQLException e) {
+            throw new UncheckedSQLException(e);
+        }
+    }
+
+    /**
      * Returns a lazily-evaluated {@link Stream} of query results using a dedicated JDBC connection.
      *
      * <p>Unlike {@link #call}, the connection is not committed when this method returns — it stays

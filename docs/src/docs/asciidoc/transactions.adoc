@@ -20,6 +20,27 @@ include::{sourcedir}/src/main/java/org/ethelred/kiwiproc/example/transaction/Cou
 If the callback completes normally the transaction is committed.
 If the callback throws a `SQLException` (or an `UncheckedSQLException` from a nested DAO call), the transaction is rolled back and the exception is re-thrown wrapped in an `UncheckedSQLException`.
 
+[[auto-commit]]
+=== Single-statement calls and auto-commit
+
+By default, calling a DAO method directly on the generated provider (outside `call`/`run`) runs that one method in its own transaction: `setAutoCommit(false)`, the statement, `commit()`, `setAutoCommit(true)`.
+For a lone statement this is unnecessary, because a single statement is already atomic under auto-commit.
+
+Set `autoCommit = true` on `@DAO` to run `@SqlQuery` and `@SqlUpdate` methods called directly on the provider on a connection in auto-commit mode, with no `BEGIN`/`COMMIT` round trips:
+
+[source,java]
+----
+@DAO(autoCommit = true)
+public interface TagDao {
+    @SqlQuery("SELECT name FROM tags")
+    List<String> allNames();
+}
+----
+
+This does not affect explicit `call`/`run` blocks, `@SqlBatch` methods, or methods returning `Stream`; these stay transactional.
+It does change statements that rely on the enclosing transaction: for example, the row locks taken by `SELECT ... FOR UPDATE` are released as soon as the statement completes.
+The default is `false`.
+
 [[streaming]]
 === Streaming
 
