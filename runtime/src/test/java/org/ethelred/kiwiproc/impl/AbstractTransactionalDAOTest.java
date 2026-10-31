@@ -116,4 +116,35 @@ public class AbstractTransactionalDAOTest {
                     throw new RuntimeException("boom");
                 }));
     }
+
+    @Test
+    void callAutoCommitUsesAutoCommitConnection() throws Exception {
+        var dataSource = dataSourceFor("AbstractTransactionalDAOTest_autocommit");
+        var dao = new TestDAO(dataSource);
+
+        var autoCommit = dao.callAutoCommit(ctx -> ctx.getConnection().getAutoCommit());
+        assertThat(autoCommit).isTrue();
+
+        dao.runAutoCommit(ctx -> {
+            assertThat(ctx.getConnection().getAutoCommit()).isTrue();
+            ctx.getConnection().createStatement().executeUpdate("INSERT INTO nums VALUES (1)");
+        });
+        try (var conn = dataSource.getConnection();
+                var rs = conn.createStatement().executeQuery("SELECT count(*) FROM nums")) {
+            rs.next();
+            assertThat(rs.getInt(1)).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void callAutoCommitWrapsSqlException() throws Exception {
+        var dao = new TestDAO(dataSourceFor("AbstractTransactionalDAOTest_autocommit_error"));
+
+        assertThrows(
+                UncheckedSQLException.class,
+                () -> dao.callAutoCommit(ctx -> {
+                    ctx.getConnection().createStatement().executeUpdate("INSERT INTO missing VALUES (1)");
+                    return null;
+                }));
+    }
 }

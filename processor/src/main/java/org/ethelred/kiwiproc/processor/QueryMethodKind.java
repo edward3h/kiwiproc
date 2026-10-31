@@ -35,8 +35,18 @@ public enum QueryMethodKind {
         public int getFetchSize(ExecutableElement element) {
             return SqlQueryPrism.getInstanceOn(element).fetchSize();
         }
+
+        @Override
+        public @Nullable Boolean getAutoCommit(ExecutableElement element) {
+            return autoCommitOverride(SqlQueryPrism.getInstanceOn(element).autoCommit());
+        }
     },
     UPDATE(SqlUpdatePrism::isPresent) {
+        @Override
+        public @Nullable Boolean getAutoCommit(ExecutableElement element) {
+            return autoCommitOverride(SqlUpdatePrism.getInstanceOn(element).autoCommit());
+        }
+
         @Override
         public String getSql(ExecutableElement element) {
             var prism = SqlUpdatePrism.getInstanceOn(element);
@@ -72,6 +82,14 @@ public enum QueryMethodKind {
         }
     };
 
+    private static @Nullable Boolean autoCommitOverride(String mode) {
+        return switch (mode) {
+            case "ENABLED" -> Boolean.TRUE;
+            case "DISABLED" -> Boolean.FALSE;
+            default -> null;
+        };
+    }
+
     private static @Nullable String blankAsNull(String s) {
         return s.isBlank() ? null : s;
     }
@@ -104,5 +122,14 @@ public enum QueryMethodKind {
 
     public int getFetchSize(ExecutableElement element) {
         return Integer.MIN_VALUE;
+    }
+
+    /**
+     * The method-level auto-commit override.
+     *
+     * @return true or false if the method sets it explicitly, null to inherit from the DAO
+     */
+    public @Nullable Boolean getAutoCommit(ExecutableElement element) {
+        return null;
     }
 }

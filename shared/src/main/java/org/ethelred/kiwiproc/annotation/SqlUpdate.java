@@ -39,4 +39,12 @@ public @interface SqlUpdate {
      */
     @Language("SQL")
     String sql() default "";
+
+    /**
+     * Overrides {@link DAO#autoCommit()} for this method when called directly on the generated provider.
+     * Has no effect inside an explicit {@code call}/{@code run} block.
+     *
+     * @return the auto-commit mode for this method
+     */
+    AutoCommitMode autoCommit() default AutoCommitMode.INHERIT;
 }

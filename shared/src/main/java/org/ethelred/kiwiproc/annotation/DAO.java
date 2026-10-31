@@ -33,4 +33,19 @@ public @interface DAO {
      * @return the data source name
      */
     String dataSourceName() default "default";
+
+    /**
+     * Whether single-statement methods ({@link SqlQuery @SqlQuery} and {@link SqlUpdate @SqlUpdate}) called directly
+     * on the generated provider run on a connection in auto-commit mode, rather than inside their own transaction.
+     *
+     * <p>A lone statement is already atomic under auto-commit, so this avoids the {@code BEGIN}/{@code COMMIT}
+     * round trips and the {@code setAutoCommit} calls. It does not affect explicit {@code call}/{@code run}
+     * blocks, {@link SqlBatch @SqlBatch} methods, or methods returning {@code Stream}, which stay transactional.
+     *
+     * <p>Statements that depend on an enclosing transaction (for example {@code SELECT ... FOR UPDATE}) will not
+     * hold their locks after the statement completes. Defaults to {@code false}.
+     *
+     * @return true to use auto-commit for single-statement methods
+     */
+    boolean autoCommit() default false;
 }
