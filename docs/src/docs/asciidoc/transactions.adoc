@@ -41,6 +41,21 @@ This does not affect explicit `call`/`run` blocks, `@SqlBatch` methods, or metho
 It does change statements that rely on the enclosing transaction: for example, the row locks taken by `SELECT ... FOR UPDATE` are released as soon as the statement completes.
 The default is `false`.
 
+The setting can be overridden per method with the `autoCommit` attribute of `@SqlQuery` and `@SqlUpdate`, which takes an `AutoCommitMode`: `INHERIT` (the default, use the `@DAO` setting), `ENABLED` or `DISABLED`.
+Use `DISABLED` for a statement that needs a transaction on an otherwise auto-commit DAO:
+
+[source,java]
+----
+@DAO(autoCommit = true)
+public interface TagDao {
+    @SqlQuery("SELECT name FROM tags")
+    List<String> allNames(); // auto-commit
+
+    @SqlQuery(sql = "SELECT id FROM tags WHERE name = :name FOR UPDATE", autoCommit = AutoCommitMode.DISABLED)
+    long lockByName(String name); // own transaction
+}
+----
+
 [[streaming]]
 === Streaming
 

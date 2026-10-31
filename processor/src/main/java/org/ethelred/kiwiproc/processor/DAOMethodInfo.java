@@ -9,6 +9,7 @@ import javax.lang.model.element.ExecutableElement;
 import org.ethelred.kiwiproc.meta.ParsedQuery;
 import org.ethelred.kiwiproc.processor.types.KiwiType;
 import org.ethelred.kiwiproc.processor.types.MapType;
+import org.jspecify.annotations.Nullable;
 
 @KiwiRecordBuilder
 public record DAOMethodInfo(
@@ -19,7 +20,8 @@ public record DAOMethodInfo(
         List<DAOParameterInfo> parameterMapping,
         List<DAOResultColumn> columns,
         List<DAOBatchIterator> batchIterators,
-        int fetchSize)
+        int fetchSize,
+        @Nullable Boolean autoCommit)
         implements Supplier<Element> {
 
     public KiwiType valueComponentType() {

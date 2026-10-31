@@ -67,4 +67,12 @@ public @interface SqlQuery {
      * @return the fetch size, or {@link Integer#MIN_VALUE} to use the driver default
      */
     int fetchSize() default Integer.MIN_VALUE;
+
+    /**
+     * Overrides {@link DAO#autoCommit()} for this method when called directly on the generated provider.
+     * Has no effect inside an explicit {@code call}/{@code run} block.
+     *
+     * @return the auto-commit mode for this method
+     */
+    AutoCommitMode autoCommit() default AutoCommitMode.INHERIT;
 }

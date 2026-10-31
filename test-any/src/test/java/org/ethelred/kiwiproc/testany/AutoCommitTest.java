@@ -61,4 +61,22 @@ public class AutoCommitTest {
         assertThat(dao.atomicNumberQuery(2)).isEqualTo(1);
         assertThat(calls).contains(false);
     }
+
+    @Test
+    void methodCanDisableAutoCommitOnAutoCommitDao() throws Exception {
+        var calls = new ArrayList<Boolean>();
+        var dao = new $AutoCommitDAO$Provider(recording(realDataSource(), calls));
+
+        assertThat(dao.atomicNumberForUpdate("He")).isEqualTo(2);
+        assertThat(calls).contains(false);
+    }
+
+    @Test
+    void methodCanEnableAutoCommitOnDefaultDao() throws Exception {
+        var calls = new ArrayList<Boolean>();
+        var dao = new $PeriodicTableDAO$Provider(recording(realDataSource(), calls));
+
+        assertThat(dao.atomicNumberAutoCommit("He")).isEqualTo(2);
+        assertThat(calls).doesNotContain(false);
+    }
 }

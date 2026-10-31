@@ -2,6 +2,7 @@
 package org.ethelred.kiwiproc.testany;
 
 import java.util.List;
+import org.ethelred.kiwiproc.annotation.AutoCommitMode;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
 import org.jspecify.annotations.Nullable;
@@ -26,4 +27,11 @@ public interface PeriodicTableDAO {
             where "AtomicNumber" < :number
             """)
     int atomicNumberQuery(int number); // nonsense query, as a test for "exactly one" semantics
+
+    @SqlQuery(value = """
+            select "AtomicNumber"
+            from periodic_table
+            where "Symbol" = :symbol
+            """, autoCommit = AutoCommitMode.ENABLED)
+    int atomicNumberAutoCommit(String symbol);
 }

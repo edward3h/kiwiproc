@@ -69,7 +69,8 @@ public class ProviderGenerator {
         var builder = MethodSpec.overriding(methodInfo.methodElement());
         var signature = methodInfo.signature();
         var params = String.join(", ", signature.paramNames());
-        var useAutoCommit = autoCommit
+        var effectiveAutoCommit = methodInfo.autoCommit() != null ? methodInfo.autoCommit() : autoCommit;
+        var useAutoCommit = effectiveAutoCommit
                 && (methodInfo.kind() == QueryMethodKind.QUERY || methodInfo.kind() == QueryMethodKind.UPDATE);
         var callMethod = useAutoCommit ? "callAutoCommit" : "call";
         var runMethod = useAutoCommit ? "runAutoCommit" : "run";
