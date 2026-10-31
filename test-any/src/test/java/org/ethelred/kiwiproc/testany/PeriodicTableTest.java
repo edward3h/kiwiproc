@@ -53,4 +53,9 @@ public class PeriodicTableTest {
         });
         assertThat(ex).hasMessageThat().contains("Expected exactly one row in result, but more were selected.");
     }
+
+    @Test
+    void listOfBoxedPrimitiveFromNonNullColumn() {
+        assertThat(dao.atomicNumbersBelow(4)).containsExactly(1, 2, 3).inOrder();
+    }
 }

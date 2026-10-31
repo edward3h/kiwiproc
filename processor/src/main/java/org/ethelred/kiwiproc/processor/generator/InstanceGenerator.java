@@ -522,7 +522,7 @@ public class InstanceGenerator {
 
         @Override
         public CodeBlock declaration() {
-            var componentClass = kiwiTypeConverter.fromKiwiType(returnType.valueComponentType());
+            var componentClass = kiwiTypeConverter.fromKiwiType(returnType.valueComponentType(), true);
             return CodeBlock.of(
                     "$T<$T> $L = new $T<>()", List.class, componentClass, containerVariable, ArrayList.class);
         }
