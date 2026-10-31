@@ -57,7 +57,7 @@ public class InstanceGenerator {
 
     private MethodSpec buildMethod(DAOMethodInfo methodInfo) {
         var ctx = new MethodContext();
-        var methodSpecBuilder = MethodSpec.overriding(methodInfo.methodElement());
+        var methodSpecBuilder = OverridingMethods.overriding(methodInfo.methodElement());
         boolean isStreamReturn = methodInfo.signature().returnType() instanceof StreamType;
         methodSpecBuilder.addStatement("var connection = context.getConnection()");
         if (isStreamReturn) {
