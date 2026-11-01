@@ -1,9 +1,10 @@
 plugins {
     `java-library`
-    `maven-publish`
     jacoco
     checkstyle
     id("com.diffplug.spotless")
+    id("signing")
+    id("com.vanniktech.maven.publish")
     id("org.gradlex.maven-plugin-development") version "1.0.3"
 }
 
@@ -83,18 +84,49 @@ tasks.named<Task>("check") {
     dependsOn(functionalTest)
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-            artifactId = "kiwiproc-maven-plugin"
+mavenPublishing {
+    // "maven-plugin" is the Gradle project name; publish under the kiwiproc-___ naming convention
+    coordinates(artifactId = "kiwiproc-maven-plugin")
+    publishToMavenCentral(automaticRelease = true)
+    signAllPublications()
+    pom {
+        name = "kiwiproc-maven-plugin"
+        description = "Maven plugin to run embedded databases and configure KiwiProc annotation processing"
+        url = "https://github.com/edward3h/kiwiproc"
+        licenses {
+            license {
+                name = "Apache-2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0"
+            }
+        }
+        scm {
+            connection = "https://github.com/edward3h/kiwiproc.git"
+            url = "https://github.com/edward3h/kiwiproc"
+        }
+        developers {
+            developer {
+                name = "Edward Harman"
+                email = "jaq@ethelred.org"
+            }
         }
     }
+}
+
+publishing {
     repositories {
         maven {
             name = "itLocal"
             url = uri(itRepoDir)
         }
+    }
+}
+
+signing {
+    val signingKey = findProperty("signingKey") as String?
+    val signingPassword = findProperty("signingPassword") as String?
+    isRequired = !signingKey.isNullOrBlank()
+    if (isRequired) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
     }
 }
 
