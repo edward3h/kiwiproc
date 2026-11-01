@@ -1,5 +1,12 @@
 == Changelog
 
+=== 1.2 (unreleased)
+
+==== Fixes
+
+* An array column such as `bigint[]` mapped to a record component of type `List<Long>`, `long[]` or `Long[]` generated code that did not compile (`List<long>`, an undefined variable, or `long[]` assigned to `Long[]`).
+The element type is now boxed for the intermediate list, `long[]` and `Long[]` are kept distinct, and primitive arrays are built with a new `ArraySupport` helper.
+
 === 1.1
 
 ==== New features

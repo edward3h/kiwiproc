@@ -15,7 +15,11 @@ public class CollectionTypeHandler extends DeclaredTypeHandler {
             containedType = collectionType.asSimple();
         }
         if (containedType instanceof RecordType || containedType.isSimple()) {
-            return new CollectionType(validCollection, containedType.withIsNullable(false));
+            // For arrays of primitives, keep the declared element type: long[] and Long[] are different Java types.
+            var keepElementType =
+                    validCollection == ValidCollection.ARRAY && containedType instanceof PrimitiveKiwiType;
+            return new CollectionType(
+                    validCollection, keepElementType ? containedType : containedType.withIsNullable(false));
         }
         return KiwiType.unsupported();
     }

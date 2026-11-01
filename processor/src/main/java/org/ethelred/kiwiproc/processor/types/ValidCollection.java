@@ -8,7 +8,7 @@ import java.util.Set;
 
 public enum ValidCollection {
     ARRAY(Array.class, """
-            l.toArray(new $componentClass:T[$listVariable:L.size()])
+            $listVariable:L.toArray(new $componentClass:T[$listVariable:L.size()])
             """, """
                     java.util.stream.Stream.of($containerVariable:L)
                     """, """

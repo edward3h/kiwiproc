@@ -3,6 +3,7 @@ package org.ethelred.kiwiproc.impl;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 public class ArraySupport {
     private ArraySupport() {}
@@ -137,5 +138,69 @@ public class ArraySupport {
 
     public static <T> Iterator<T> iterator(T... items) {
         return Arrays.asList(items).iterator();
+    }
+
+    public static int[] toIntArray(List<Integer> items) {
+        var result = new int[items.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = items.get(i);
+        }
+        return result;
+    }
+
+    public static long[] toLongArray(List<Long> items) {
+        var result = new long[items.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = items.get(i);
+        }
+        return result;
+    }
+
+    public static double[] toDoubleArray(List<Double> items) {
+        var result = new double[items.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = items.get(i);
+        }
+        return result;
+    }
+
+    public static float[] toFloatArray(List<Float> items) {
+        var result = new float[items.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = items.get(i);
+        }
+        return result;
+    }
+
+    public static short[] toShortArray(List<Short> items) {
+        var result = new short[items.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = items.get(i);
+        }
+        return result;
+    }
+
+    public static byte[] toByteArray(List<Byte> items) {
+        var result = new byte[items.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = items.get(i);
+        }
+        return result;
+    }
+
+    public static char[] toCharArray(List<Character> items) {
+        var result = new char[items.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = items.get(i);
+        }
+        return result;
+    }
+
+    public static boolean[] toBooleanArray(List<Boolean> items) {
+        var result = new boolean[items.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = items.get(i);
+        }
+        return result;
     }
 }
