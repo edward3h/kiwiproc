@@ -8,6 +8,8 @@
 The element type is now boxed for the intermediate list, `long[]` and `Long[]` are kept distinct, and primitive arrays are built with a new `ArraySupport` helper.
 * A query returning a single array column, such as `select array[1, 2, 3]::bigint[]`, can now return `long[]`, `Long[]`, `int[]`, `String[]` or `List<Long>` directly.
 Previously `long[]`, `Long[]`, `int[]` and `List<Long>` were rejected with "Invalid return type", and `String[]` generated code that did not compile.
+* A SQL `NULL` array column no longer causes a bare `NullPointerException` in the generated code.
+A collection or array annotated with `@Nullable` (such as `long @Nullable []`) now receives `null`; otherwise the exception says that the array was `NULL` but the Java type is not `@Nullable`.
 
 === 1.1
 

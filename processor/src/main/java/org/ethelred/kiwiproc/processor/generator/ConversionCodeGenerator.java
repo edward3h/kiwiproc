@@ -102,7 +102,12 @@ class ConversionCodeGenerator {
         var rawItemValue = ctx.patchName("rawItemValue");
         var itemValue = ctx.patchName("itemValue");
         TypeName componentClass = kiwiTypeConverter.fromKiwiType(sac.ct().containedType(), true);
-        builder.addStatement("$T $L = $L.getResultSet()", ResultSet.class, arrayRS, accessor)
+        // a SQL NULL array is read as a null java.sql.Array
+        if (!insertVar.isEmpty()) {
+            builder.addStatement("$L$L = null", insertVar, assignee);
+        }
+        builder.beginControlFlow("if ($L != null)", accessor)
+                .addStatement("$T $L = $L.getResultSet()", ResultSet.class, arrayRS, accessor)
                 .addStatement("List<$T> $L = new $T<>()", componentClass, arrayList, ArrayList.class)
                 .beginControlFlow("while ($L.next())", arrayRS)
                 // Array.getResultSet() returns 2 columns: 1 is the index, 2 is the value
@@ -122,9 +127,19 @@ class ConversionCodeGenerator {
                 true);
         builder.addStatement("$L.add($L)", arrayList, itemValue)
                 .endControlFlow()
-                .add("$L$L = ", insertVar, assignee)
+                .add("$L = ", assignee)
                 .add(fromList(sac.ct(), arrayList))
                 .addStatement("");
+        if (sac.ct().isNullable()) {
+            builder.endControlFlow();
+        } else {
+            builder.nextControlFlow("else")
+                    .addStatement(
+                            "throw new $T($S)",
+                            NullPointerException.class,
+                            "SQL array was NULL, but the Java type is not @Nullable")
+                    .endControlFlow();
+        }
     }
 
     private void buildCollectionConversion(

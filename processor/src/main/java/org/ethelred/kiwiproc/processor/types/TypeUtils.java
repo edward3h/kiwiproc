@@ -61,7 +61,7 @@ public class TypeUtils extends TypeMirrors {
         }
     }
 
-    public boolean isNullable(DeclaredType t) {
+    public boolean isNullable(TypeMirror t) {
         var annotations = t.getAnnotationMirrors();
         for (var annotationMirror : annotations) {
             if (isSameType(annotationMirror.getAnnotationType(), type(Nullable.class))) {

@@ -4,6 +4,7 @@ package org.ethelred.kiwiproc.testany;
 import java.util.List;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.annotation.SqlQuery;
+import org.jspecify.annotations.Nullable;
 
 @DAO(dataSourceName = "periodic-table")
 public interface ArrayDAO {
@@ -41,4 +42,21 @@ public interface ArrayDAO {
 
     @SqlQuery("select array['b', 'a']::text[]")
     String[] topLevelStringArray();
+
+    record NullableArrays(long @Nullable [] ids, @Nullable List<String> names) {}
+
+    @SqlQuery("select null::bigint[] as ids, null::text[] as names")
+    NullableArrays nullArraysInRecord();
+
+    @SqlQuery("select array[1]::bigint[] as ids, array['a']::text[] as names")
+    NullableArrays presentArraysInNullableRecord();
+
+    @SqlQuery("select null::bigint[]")
+    long @Nullable [] topLevelNullableNullArray();
+
+    @SqlQuery("select null::bigint[]")
+    List<Long> topLevelNonNullableNullArray();
+
+    @SqlQuery("select null::bigint[] as ids, 1::bigint as total")
+    BoxedList nullArrayInNonNullableRecord();
 }
