@@ -4,6 +4,8 @@
 
 ==== Fixes
 
+* `kiwiproc-maven-plugin` is now published to Maven Central.
+It was missing from the 1.0 and 1.1 releases, so the Maven Plugin instructions could not be followed.
 * An array column such as `bigint[]` mapped to a record component of type `List<Long>`, `long[]` or `Long[]` generated code that did not compile (`List<long>`, an undefined variable, or `long[]` assigned to `Long[]`).
 The element type is now boxed for the intermediate list, `long[]` and `Long[]` are kept distinct, and primitive arrays are built with a new `ArraySupport` helper.
 * A query returning a single array column, such as `select array[1, 2, 3]::bigint[]`, can now return `long[]`, `Long[]`, `int[]`, `String[]` or `List<Long>` directly.
