@@ -22,7 +22,9 @@ import javax.lang.model.util.ElementFilter;
 import org.ethelred.kiwiproc.annotation.DAO;
 import org.ethelred.kiwiproc.meta.*;
 import org.ethelred.kiwiproc.processor.generator.PoetDAOGenerator;
+import org.ethelred.kiwiproc.processor.types.CollectionType;
 import org.ethelred.kiwiproc.processor.types.MapType;
+import org.ethelred.kiwiproc.processor.types.SqlArrayType;
 import org.ethelred.kiwiproc.processor.types.TypeUtils;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfig;
 import org.ethelred.kiwiproc.processorconfig.DataSourceConfigJsonAdapter;
@@ -152,6 +154,13 @@ public class KiwiProcessor extends AnnotationProcessor {
         }
         List<DAOParameterInfo> templateParameterMapping = DAOParameterInfo.from(coreTypes, typeUtils, parameterMapping);
         var returnType = typeUtils.kiwiType(methodElement.getReturnType());
+        if (kind == QueryMethodKind.QUERY
+                && returnType instanceof CollectionType ct
+                && ct.as() == CollectionType.As.UNRESOLVED
+                && isSingleArrayColumn(queryMetaData.resultColumns())) {
+            // e.g. "select array[...]" returning long[] or List<Long>: one row holding the whole collection
+            returnType = ct.asSimple();
+        }
         if (returnType instanceof MapType mapType && mapType.isSortedMap() && !mapType.comparableKey()) {
             logger.error(methodElement, "SortedMap key type must implement Comparable");
             return null;
@@ -298,5 +307,9 @@ public class KiwiProcessor extends AnnotationProcessor {
         }
         var classInfo = builderStage.build();
         codeGenerator.generateImplementations(classInfo);
+    }
+
+    private static boolean isSingleArrayColumn(List<ColumnMetaData> columns) {
+        return columns.size() == 1 && SqlTypeMappingRegistry.get(columns.get(0)).kiwiType() instanceof SqlArrayType;
     }
 }

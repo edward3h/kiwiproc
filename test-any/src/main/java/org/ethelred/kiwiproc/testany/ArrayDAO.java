@@ -26,4 +26,19 @@ public interface ArrayDAO {
 
     @SqlQuery("select array[3, 1, 2]::int[] as values")
     IntArray intArray();
+
+    @SqlQuery("select array[3, 1, 2]::bigint[]")
+    long[] topLevelPrimitiveArray();
+
+    @SqlQuery("select array[3, 1, 2]::bigint[]")
+    Long[] topLevelBoxedArray();
+
+    @SqlQuery("select array[3, 1, 2]::int[]")
+    int[] topLevelIntArray();
+
+    @SqlQuery("select array[3, 1, 2]::bigint[]")
+    List<Long> topLevelList();
+
+    @SqlQuery("select array['b', 'a']::text[]")
+    String[] topLevelStringArray();
 }

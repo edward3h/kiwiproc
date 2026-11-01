@@ -50,4 +50,35 @@ public class ArrayTest {
     void intArrayToPrimitiveIntArrayInRecord() {
         assertThat(dao.intArray().values()).asList().containsExactly(3, 1, 2).inOrder();
     }
+
+    @Test
+    void topLevelPrimitiveArray() {
+        assertThat(dao.topLevelPrimitiveArray())
+                .asList()
+                .containsExactly(3L, 1L, 2L)
+                .inOrder();
+    }
+
+    @Test
+    void topLevelBoxedArray() {
+        assertThat(dao.topLevelBoxedArray())
+                .asList()
+                .containsExactly(3L, 1L, 2L)
+                .inOrder();
+    }
+
+    @Test
+    void topLevelIntArray() {
+        assertThat(dao.topLevelIntArray()).asList().containsExactly(3, 1, 2).inOrder();
+    }
+
+    @Test
+    void topLevelList() {
+        assertThat(dao.topLevelList()).containsExactly(3L, 1L, 2L).inOrder();
+    }
+
+    @Test
+    void topLevelStringArray() {
+        assertThat(dao.topLevelStringArray()).asList().containsExactly("b", "a").inOrder();
+    }
 }

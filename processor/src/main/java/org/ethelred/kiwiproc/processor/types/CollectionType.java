@@ -32,12 +32,14 @@ public record CollectionType(As as, ValidCollection type, KiwiType containedType
 
     @Override
     public RowCount expectedRows() {
-        return RowCount.MANY;
+        // a collection read from a single SQL array column comes from exactly one row
+        return as == As.SIMPLE ? RowCount.EXACTLY_ONE : RowCount.MANY;
     }
 
     @Override
     public KiwiType valueComponentType() {
-        return containedType.valueComponentType();
+        // a SIMPLE collection is itself the value, read from a single SQL array column
+        return as == As.SIMPLE ? this : containedType.valueComponentType();
     }
 
     @Override
