@@ -57,6 +57,7 @@ Java values are treated as non-null, except as described here.
 * Elements of SC, C, M must not be nullable. _The current implementation allows null values, but skips over adding them to the collection._
 * A boxed primitive is treated as nullable, except where it is an element of SC, C, M.
 * An object type annotated with `org.jspecify.annotations.Nullable`. This does not include boxed primitives.
+* An SC annotated with `org.jspecify.annotations.Nullable`, for example `@Nullable List<Long>` or `long @Nullable []`. A SQL `NULL` array is mapped to `null`. If the SC is not annotated, a SQL `NULL` array causes a `NullPointerException` with the message "SQL array was NULL, but the Java type is not @Nullable".
 * The element of an Optional<>, OptionalInt, OptionalDouble, OptionalLong.
 
 JDBC drivers may return 'unknown' for nullability.

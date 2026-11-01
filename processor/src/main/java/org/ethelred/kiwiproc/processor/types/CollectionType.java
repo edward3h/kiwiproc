@@ -3,7 +3,8 @@ package org.ethelred.kiwiproc.processor.types;
 
 import org.ethelred.kiwiproc.processor.RowCount;
 
-public record CollectionType(As as, ValidCollection type, KiwiType containedType) implements KiwiType {
+public record CollectionType(As as, ValidCollection type, KiwiType containedType, boolean isNullable)
+        implements KiwiType {
 
     public enum As {
         UNRESOLVED, // unknown, depends on whether the mapped column is SQL Array or not
@@ -11,8 +12,17 @@ public record CollectionType(As as, ValidCollection type, KiwiType containedType
         SIMPLE // MUST map to a SQL Array in order for the type to be valid
     }
 
+    public CollectionType(As as, ValidCollection type, KiwiType containedType) {
+        this(as, type, containedType, false);
+    }
+
     public CollectionType(ValidCollection type, KiwiType containedType) {
-        this(containedType instanceof RecordType ? As.ROWS : As.UNRESOLVED, type, containedType);
+        this(containedType instanceof RecordType ? As.ROWS : As.UNRESOLVED, type, containedType, false);
+    }
+
+    @Override
+    public KiwiType withIsNullable(boolean b) {
+        return new CollectionType(as, type, containedType, b);
     }
 
     @Override
@@ -33,7 +43,10 @@ public record CollectionType(As as, ValidCollection type, KiwiType containedType
     @Override
     public RowCount expectedRows() {
         // a collection read from a single SQL array column comes from exactly one row
-        return as == As.SIMPLE ? RowCount.EXACTLY_ONE : RowCount.MANY;
+        if (as == As.SIMPLE) {
+            return isNullable ? RowCount.ZERO_OR_ONE : RowCount.EXACTLY_ONE;
+        }
+        return RowCount.MANY;
     }
 
     @Override
@@ -55,7 +68,7 @@ public record CollectionType(As as, ValidCollection type, KiwiType containedType
 
     public KiwiType asSimple() {
         if (containedType.isSimple()) {
-            return new CollectionType(As.SIMPLE, type, containedType);
+            return new CollectionType(As.SIMPLE, type, containedType, isNullable);
         }
         return KiwiType.unsupported();
     }

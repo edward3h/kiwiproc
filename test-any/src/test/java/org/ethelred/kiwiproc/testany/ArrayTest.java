@@ -2,6 +2,7 @@
 package org.ethelred.kiwiproc.testany;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -80,5 +81,36 @@ public class ArrayTest {
     @Test
     void topLevelStringArray() {
         assertThat(dao.topLevelStringArray()).asList().containsExactly("b", "a").inOrder();
+    }
+
+    @Test
+    void nullArraysInNullableRecordComponents() {
+        var result = dao.nullArraysInRecord();
+        assertThat(result.ids()).isNull();
+        assertThat(result.names()).isNull();
+    }
+
+    @Test
+    void presentArraysInNullableRecordComponents() {
+        var result = dao.presentArraysInNullableRecord();
+        assertThat(result.ids()).asList().containsExactly(1L);
+        assertThat(result.names()).containsExactly("a");
+    }
+
+    @Test
+    void nullArrayTopLevelNullable() {
+        assertThat(dao.topLevelNullableNullArray()).isNull();
+    }
+
+    @Test
+    void nullArrayTopLevelNonNullableThrowsClearError() {
+        var e = assertThrows(NullPointerException.class, dao::topLevelNonNullableNullArray);
+        assertThat(e).hasMessageThat().contains("not @Nullable");
+    }
+
+    @Test
+    void nullArrayNonNullableRecordComponentThrowsClearError() {
+        var e = assertThrows(NullPointerException.class, dao::nullArrayInNonNullableRecord);
+        assertThat(e).hasMessageThat().contains("not @Nullable");
     }
 }

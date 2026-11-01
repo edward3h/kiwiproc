@@ -35,7 +35,7 @@ public class CollectionTypeHandler extends DeclaredTypeHandler {
         return findMatch(declaredType)
                 .map(vct -> {
                     var containedType = declaredType.getTypeArguments().get(0);
-                    return collectionOf(vct, visit(containedType));
+                    return collectionOf(vct, visit(containedType)).withIsNullable(utils.isNullable(declaredType));
                 })
                 .orElseThrow();
     }

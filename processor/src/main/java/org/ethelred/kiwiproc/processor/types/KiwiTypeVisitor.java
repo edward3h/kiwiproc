@@ -9,8 +9,10 @@ public class KiwiTypeVisitor extends SimpleTypeVisitor14<KiwiType, Void> {
 
     private final List<DeclaredTypeHandler> declaredTypeHandlers;
     private final CollectionTypeHandler collectionTypeHandler;
+    private final TypeUtils utils;
 
     public KiwiTypeVisitor(TypeUtils utils) {
+        this.utils = utils;
         collectionTypeHandler = new CollectionTypeHandler(this, utils);
         declaredTypeHandlers = List.of(
                 new BoxedTypeHandler(this, utils),
@@ -30,7 +32,9 @@ public class KiwiTypeVisitor extends SimpleTypeVisitor14<KiwiType, Void> {
 
     @Override
     public KiwiType visitArray(ArrayType t, Void ignore) {
-        return collectionTypeHandler.collectionOf(ValidCollection.ARRAY, visit(t.getComponentType()));
+        return collectionTypeHandler
+                .collectionOf(ValidCollection.ARRAY, visit(t.getComponentType()))
+                .withIsNullable(utils.isNullable(t));
     }
 
     @Override
