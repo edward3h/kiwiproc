@@ -408,7 +408,7 @@ public class InstanceGenerator {
         if (returnType instanceof MapType mapType) {
             return new MapContainerBuilder(mapType, methodInfo, ctx);
         }
-        if (returnType instanceof CollectionType collectionType) {
+        if (returnType instanceof CollectionType collectionType && !collectionType.isSimple()) {
             return new CollectionContainerBuilder(collectionType, methodInfo, ctx);
         }
         return new SingleRowContainerBuilder(returnType, methodInfo, ctx);
