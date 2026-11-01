@@ -552,13 +552,7 @@ public class InstanceGenerator {
         public CodeBlock returnValue() {
             return CodeBlock.builder()
                     .add("return ")
-                    .addNamed(
-                            returnType.type().fromListTemplate(),
-                            Map.of(
-                                    "componentClass",
-                                    kiwiTypeConverter.fromKiwiType(returnType.valueComponentType()),
-                                    "listVariable",
-                                    containerVariable))
+                    .add(conversionGenerator.fromList(returnType, containerVariable))
                     .addStatement("")
                     .build();
         }

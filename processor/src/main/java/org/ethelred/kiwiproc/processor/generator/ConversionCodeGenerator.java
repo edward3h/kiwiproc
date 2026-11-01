@@ -101,7 +101,7 @@ class ConversionCodeGenerator {
         var arrayList = ctx.patchName("arrayList");
         var rawItemValue = ctx.patchName("rawItemValue");
         var itemValue = ctx.patchName("itemValue");
-        TypeName componentClass = kiwiTypeConverter.fromKiwiType(sac.ct().containedType());
+        TypeName componentClass = kiwiTypeConverter.fromKiwiType(sac.ct().containedType(), true);
         builder.addStatement("$T $L = $L.getResultSet()", ResultSet.class, arrayRS, accessor)
                 .addStatement("List<$T> $L = new $T<>()", componentClass, arrayList, ArrayList.class)
                 .beginControlFlow("while ($L.next())", arrayRS)
@@ -123,9 +123,7 @@ class ConversionCodeGenerator {
         builder.addStatement("$L.add($L)", arrayList, itemValue)
                 .endControlFlow()
                 .add("$L$L = ", insertVar, assignee)
-                .addNamed(
-                        sac.ct().type().fromListTemplate(),
-                        Map.of("componentClass", componentClass, "listVariable", arrayList))
+                .add(fromList(sac.ct(), arrayList))
                 .addStatement("");
     }
 
@@ -161,9 +159,33 @@ class ConversionCodeGenerator {
         builder.addStatement("$L.add($L)", arrayList, itemValue)
                 .endControlFlow()
                 .add("$L$L = ", insertVar, assignee)
-                .addNamed(
-                        cc.targetType().type().fromListTemplate(),
-                        Map.of("componentClass", componentClass, "listVariable", arrayList))
+                .add(fromList(cc.targetType(), arrayList))
                 .addStatement("");
+    }
+
+    /**
+     * Code that converts the list variable (always a list of boxed elements) into the target collection type.
+     * Arrays of primitives such as {@code long[]} cannot use {@code List.toArray}, so they use a runtime helper.
+     */
+    CodeBlock fromList(CollectionType target, String listVariable) {
+        if (target.type() == ValidCollection.ARRAY
+                && target.containedType() instanceof PrimitiveKiwiType primitive
+                && !primitive.isNullable()) {
+            var name = primitive.primitiveClass().getSimpleName();
+            return CodeBlock.of(
+                    "$T.to$LArray($L)",
+                    ClassName.get("org.ethelred.kiwiproc.impl", "ArraySupport"),
+                    Character.toUpperCase(name.charAt(0)) + name.substring(1),
+                    listVariable);
+        }
+        return CodeBlock.builder()
+                .addNamed(
+                        target.type().fromListTemplate(),
+                        Map.of(
+                                "componentClass",
+                                kiwiTypeConverter.fromKiwiType(target.containedType()),
+                                "listVariable",
+                                listVariable))
+                .build();
     }
 }
